@@ -1,0 +1,66 @@
+# Flutter and Dart generated files
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+build/
+coverage/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE and operating system files
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Platform generated and machine-specific files
+android/.gradle/
+android/local.properties
+android/key.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+ios/Flutter/.last_build_id
+ios/Flutter/ephemeral/
+ios/Pods/
+ios/.symlinks/
+ios/Runner.xcodeproj/xcuserdata/
+ios/Runner.xcworkspace/xcuserdata/
+macos/Flutter/ephemeral/
+linux/flutter/ephemeral/
+windows/flutter/ephemeral/
+
+# Local environment and configuration
+**/.env*
+*.local
+*.local.*
+local.properties
+key.properties
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+**/google-services.json
+**/GoogleService-Info.plist
+
+# Credentials and private signing material
+**/credentials*
+**/*service-account*.json
+**/*firebase-adminsdk*.json
+**/.netrc
+**/.npmrc
+**/secrets/
+**/secret/
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.mobileprovision
+*.provisionprofile
+**/id_rsa*
+**/id_ed25519*
+**/id_ecdsa*
+**/id_dsa*
