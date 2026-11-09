@@ -378,7 +378,7 @@ Cada operação enviada inclui identificador idempotente, usuário autenticado, 
 
 Quando a versão esperada não corresponder, o servidor preserva os estados conflitantes e devolve um conflito explícito. O cliente mantém a versão local, apresenta o conflito e suspende operações dependentes daquela entidade; operações independentes continuam. A resolução é uma nova alteração versionada e auditável. Não se usa sobrescrita silenciosa por última gravação.
 
-Escritas remotas serão restringidas a funções autenticadas que façam as validações e mantenham auditoria na mesma transação. RLS permanece defesa obrigatória para leitura e acesso a linhas; grants SQL também serão limitados, pois políticas RLS não removem grants existentes. A proposta física da Entrega 2 prefere funções de escrita `SECURITY DEFINER` com proprietário de privilégio mínimo, `search_path` vazio, referências qualificadas, validação explícita de identidade/proprietário e execução restrita, já que clientes não terão grants de escrita direta. A alternativa `SECURITY INVOKER` exigiria permitir escrita direta sob RLS e cobrir invariantes e auditoria por constraints/triggers. A decisão permanece PROPOSTA até teste no ambiente Supabase/PostgreSQL.
+Escritas remotas são restringidas a funções autenticadas que façam validações e mantenham auditoria na mesma transação. RLS protege leitura própria e grants SQL bloqueiam DML direto. A Entrega 4 implementa a RPC de categorias com `SECURITY DEFINER`, proprietária `postgres`, `search_path` vazio, referências qualificadas, execução concedida somente a `authenticated` e proprietário derivado de `auth.uid()`. Como `postgres` ignora RLS, toda consulta e escrita da função filtra explicitamente por esse usuário. O teste local cobre os caminhos e permissões da RPC de categorias; RPCs para outras entidades e validação no Supabase gerenciado permanecem pendentes. Esta escolha não concede acesso direto às tabelas nem altera a política de isolamento.
 
 ### 17.5 Proteção local multiplataforma
 
@@ -388,7 +388,7 @@ O banco local deve ser criptografado. Avaliar SQLCipher para Android e iOS e faz
 
 ### 17.6 Migrations e testes
 
-**Status:** Migration PostgreSQL inicial criada e testada localmente na Entrega 3; migrations Drift, RPCs de escrita e validação no Supabase gerenciado permanecem pendentes.
+**Status:** Migrations PostgreSQL de schema e RPC de categorias testadas localmente nas Entregas 3 e 4; migrations Drift, RPCs das demais entidades e validação no Supabase gerenciado permanecem pendentes.
 
 Manter migrations PostgreSQL versionadas em `supabase/migrations/`, revisadas e aplicadas primeiro em ambiente local/teste. Drift mantém versão e migrações locais próprias, com snapshots do esquema. Nenhuma migração de produção deve ser aplicada sem revisão e estratégia de evolução/recuperação.
 
@@ -398,7 +398,7 @@ A estratégia inclui testes unitários de domínio; integração de transações
 
 ### 17.7 Portões de aprovação da Fase 2
 
-O schema físico base foi aprovado e migrado em PostgreSQL local. Antes de deploy no Supabase gerenciado, testar versão/extensões, grants e RLS no projeto alvo; antes de habilitar escritas, implementar e testar RPCs transacionais. Antes de implementar a geração recorrente, definir horário e calendário operacional. Antes de considerar a persistência local multiplataforma preparada, validar criptografia Web e migrações Drift.
+O schema físico base e a RPC de categorias foram testados em PostgreSQL local. Antes do deploy no Supabase gerenciado, testar versão, grants, ownership de funções e RLS no projeto alvo. Antes de habilitar escrita para cada entidade, implementar e testar sua RPC transacional. Antes de implementar a geração recorrente, definir horário e calendário operacional. Antes de considerar a persistência local multiplataforma preparada, validar criptografia Web e migrações Drift.
 
 ### 17.8 Registro de decisões da Fase 2 — atualizado em 09/11/2026
 
@@ -417,6 +417,7 @@ O schema físico base foi aprovado e migrado em PostgreSQL local. Antes de deplo
 | RLS de leitura e grants sem DML direto | APROVADO tecnicamente | Migration inicial e testes locais com duas identidades simuladas; projeto Supabase gerenciado ainda pendente. |
 | Horário/calendário operacional da geração | PENDENTE | Deve ser definido antes da implementação de recorrências. |
 | Criptografia local na Web | PENDENTE | Requer prova técnica antes de escolher mecanismo. |
-| RPCs de escrita, auditoria, versão e idempotência | PROPOSTA | A migration nega DML direto; requer implementação e testes de isolamento/conflitos. |
+| RPC autenticada de categorias | APROVADO tecnicamente na Entrega 4 | `SECURITY DEFINER`, proprietário `postgres`, identidade via `auth.uid()`, controle de versão, idempotência e auditoria; testada em PostgreSQL local. |
+| RPCs para períodos, subcategorias, lançamentos e recorrências | PENDENTE | Permanecem sem escrita remota até implementação e testes específicos. |
 
-O status distingue a migration local testada do deploy remoto e das RPCs de escrita ainda pendentes.
+O status distingue as migrations locais testadas do deploy remoto e das RPCs de escrita das demais entidades ainda pendentes.

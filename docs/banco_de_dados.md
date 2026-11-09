@@ -2,11 +2,11 @@
 
 **Versão:** 0.5  
 **Data da última atualização:** 09/11/2026
-**Status:** Modelo conceitual v0.5 e schema físico-base aprovados; migration PostgreSQL inicial testada localmente. RPCs de escrita, migration Drift e integração Supabase ainda pendentes.
+**Status:** Modelo conceitual v0.5 e schema físico-base aprovados; migration PostgreSQL e RPC de categorias testadas localmente. RPCs das demais entidades, migration Drift e integração Supabase ainda pendentes.
 
 ## 1. Visão geral
 
-Este documento registra o modelo conceitual aprovado e o schema físico-base aprovado em 09/11/2026. A migration PostgreSQL inicial está em `supabase/migrations/`; políticas e RPCs ainda pendentes permanecem identificadas como tais. O schema não autoriza entidades fora do escopo aprovado.
+Este documento registra o modelo conceitual aprovado e o schema físico-base aprovado em 09/11/2026. As migrations PostgreSQL estão em `supabase/migrations/`; RPCs das demais entidades e validação no Supabase gerenciado permanecem identificadas como pendentes. O schema não autoriza entidades fora do escopo aprovado.
 
 O MVP armazena usuários, preferências de período, períodos de apuração, categorias, receitas, despesas, recorrências, destinações simples para investimentos, auditoria e operações de sincronização.
 
@@ -354,7 +354,7 @@ Os valores e registros usados nos futuros testes de banco serão fixtures sinté
 
 ### 16.8 Esquema físico detalhado — Entrega 2
 
-**Data:** 09/11/2026. **Status:** APROVADO pelo responsável em 09/11/2026 como base do schema. A migração PostgreSQL inicial e seus testes constam na seção 16.9. O contrato de escrita por RPC, a migration Drift e a validação no Supabase gerenciado permanecem pendentes.
+**Data:** 09/11/2026. **Status:** APROVADO pelo responsável em 09/11/2026 como base do schema. A migração PostgreSQL inicial e seus testes constam na seção 16.9. As RPCs das demais entidades, a migration Drift e a validação no Supabase gerenciado permanecem pendentes.
 
 #### 16.8.1 Convenções comuns
 
@@ -402,7 +402,7 @@ Para impedir períodos sobrepostos, PostgreSQL oferece o tipo `daterange` com li
 
 Na migração inicial da Entrega 3, RLS foi habilitada nas tabelas remotas. Políticas de leitura para `authenticated` exigem `auth.uid() IS NOT NULL AND auth.uid() = owner_id`; acesso `anon` é negado. Grants são separados: além de revogar `CREATE` público e todo DML direto dos clientes, a migration concede somente `SELECT` a `authenticated`. Essas políticas foram verificadas localmente com duas identidades Supabase simuladas; a integração no Supabase gerenciado ainda está pendente.
 
-Operações que alteram lançamento, auditoria, versão e idempotência passam por funções autenticadas transacionais. A proposta preferida é `SECURITY DEFINER` com proprietário de privilégio mínimo, `search_path = ''`, objetos qualificados, `EXECUTE` restrito a `authenticated` e validação explícita de `auth.uid()`, `owner_id`, FKs, versão esperada e idempotência em cada operação. Como uma função `SECURITY DEFINER` pode operar com privilégios do proprietário e não depender da RLS como barreira efetiva, cada consulta e escrita deve restringir explicitamente o proprietário; RLS continua protegendo acesso direto/leitura. Alternativa: `SECURITY INVOKER` com grants de escrita e policies RLS, mas isso permitiria DML direto e exigiria que constraints/triggers cobrissem invariantes e auditoria. A escolha final depende de teste no projeto Supabase. A chave `service_role` permanece somente no servidor. [Guia Supabase de RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) e [guia de funções](https://supabase.com/docs/guides/database/functions).
+**Decisão de implementação da Entrega 4 para categorias:** `public.apply_category_change` usa `SECURITY DEFINER`, proprietário `postgres`, `search_path = ''`, nomes de objetos qualificados e execução concedida somente a `authenticated`. A função deriva o usuário de `auth.uid()` e restringe cada leitura/escrita ao mesmo `owner_id`; o cliente não fornece proprietário. Como o proprietário `postgres` ignora RLS, a verificação explícita de usuário dentro da função é obrigatória. O teste local cobre permissões, isolamento, versionamento, idempotência e auditoria. Este mecanismo está implementado somente para criar, renomear e desativar categorias; demais RPCs e a validação no Supabase gerenciado permanecem pendentes. A chave `service_role` permanece somente no servidor. [Guia Supabase de RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) e [guia de funções](https://supabase.com/docs/guides/database/functions).
 
 #### 16.8.5 Índices candidatos
 
@@ -419,7 +419,7 @@ Operações que alteram lançamento, auditoria, versão e idempotência passam p
 
 1. As FKs usam `ON DELETE RESTRICT`; implementar e testar futuramente o fluxo transacional de exclusão definitiva da conta, sem perder a proteção contra remoção física acidental de categorias ou histórico.
 2. Não foi adicionada a extensão `btree_gist`. Toda gravação de períodos deve passar por RPC transacional que serialize por proprietário com advisory lock e valide continuidade e ausência de sobreposição; implementar e testar concorrência antes de liberar escrita.
-3. A migration habilita leitura própria por RLS e bloqueia DML direto. Implementar as RPCs de escrita autenticadas, auditoria, controle de versão e idempotência com `SECURITY DEFINER` endurecido; testar no Supabase gerenciado.
+3. A migration habilita leitura própria por RLS e bloqueia DML direto. A Entrega 4 implementa esse fluxo para categorias; criar e testar RPCs equivalentes para as demais entidades e validar todas no Supabase gerenciado.
 4. Medir os índices com consultas representativas antes da otimização final.
 5. Provar criptografia e compatibilidade Drift em Android, iOS e Web; a migration local ainda não foi criada.
 
@@ -440,7 +440,9 @@ Critérios de aceitação do schema; os itens ainda não executados estão marca
 
 **Executado na Entrega 3:** migration aplicada em banco PostgreSQL 18.6 vazio; constraints de sinal, período não vazio, modelo de recorrência, referência composta entre proprietários, chave única de ocorrência e tipo imutável de categoria; zero e ocorrência variável sem valor; leitura isolada entre dois usuários; acesso anônimo e escrita direta negados; valor acima de `2^53 - 1` preservado exatamente no PostgreSQL; remoção de usuário com dados bloqueada por `RESTRICT`. Fixtures são sintéticas.
 
-**Pendente:** parser/conversão BRL no Flutter, round-trip local Drift/Web, cálculos locais/remotos, limites semiabertos na função de criação de períodos, concorrência, RPC idempotente/auditável, conflitos e testes de autorização no Supabase gerenciado.
+**Executado na Entrega 4:** RPC de categorias testada para create/rename/deactivate, replay idempotente, reutilização de chave com payload diferente, controle de versão, conflito com snapshots, auditoria anterior/nova, ausência de sessão, isolamento entre usuários e grants de execução.
+
+**Pendente:** parser/conversão BRL no Flutter, round-trip local Drift/Web, cálculos locais/remotos, criação contígua e concorrente de períodos, RPCs de escrita para as demais entidades, resolução de conflitos e testes de autorização no Supabase gerenciado.
 
 #### 16.8.8 Referências técnicas
 
@@ -453,6 +455,16 @@ Critérios de aceitação do schema; os itens ainda não executados estão marca
 
 ### 16.9 Entrega 3 — migration PostgreSQL inicial
 
-**Implementado:** `supabase/migrations/20261109000100_initial_schema.sql` cria as tabelas remotas aprovadas, constraints, chaves compostas por proprietário, índices, triggers para tipo imutável de categoria e compatibilidade do tipo de categoria. Todas as FKs para `auth.users` e referências históricas usam `ON DELETE RESTRICT`; a limpeza definitiva de conta ficará em uma operação transacional explícita futura. O migration aplica RLS, concede somente leitura própria a `authenticated` e bloqueia DML direto. As RPCs de escrita ainda não existem, então a API não pode gravar estas tabelas.
+**Implementado na Entrega 3:** `supabase/migrations/20261109000100_initial_schema.sql` cria as tabelas remotas aprovadas, constraints, chaves compostas por proprietário, índices, triggers para tipo imutável de categoria e compatibilidade do tipo de categoria. Todas as FKs para `auth.users` e referências históricas usam `ON DELETE RESTRICT`; a limpeza definitiva de conta ficará em uma operação transacional explícita futura. O migration aplica RLS, concede somente leitura própria a `authenticated` e bloqueia DML direto. Naquele ponto, as RPCs de escrita ainda não existiam.
 
-**Testes automatizados:** `tooling/test_postgres_schema.ps1` cria PostgreSQL 18.6 temporário em loopback, inicializa banco vazio, simula `auth.users`, roles `anon`/`authenticated` e `auth.uid()`, aplica todas as migrations e executa `supabase/tests/initial_schema_test.sql`. Para repetir, deixe `initdb.exe`, `pg_ctl.exe` e `psql.exe` no `PATH` e rode `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tooling/test_postgres_schema.ps1`. A suíte passou em 09/11/2026. A autenticação foi simulada; a suíte não substitui integração com Supabase gerenciado.
+**Testes automatizados:** `tooling/test_postgres_schema.ps1` cria PostgreSQL 18.6 temporário em loopback, inicializa banco vazio, simula `auth.users`, roles `anon`/`authenticated` e `auth.uid()`, aplica todas as migrations e executa os arquivos `supabase/tests/*_test.sql`. Para repetir, deixe `initdb.exe`, `pg_ctl.exe` e `psql.exe` no `PATH` e rode `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tooling/test_postgres_schema.ps1`. A suíte passou em 09/11/2026. A autenticação foi simulada; a suíte não substitui integração com Supabase gerenciado.
+
+### 16.10 Entrega 4 — RPC transacional de categorias
+
+`supabase/migrations/20261109000200_category_write_rpc.sql` cria `public.apply_category_change(operation_id, action, category_id, expected_version, kind, name)`. A RPC implementa somente `create`, `rename` e `deactivate`, ações previstas para categorias. O usuário é obtido por `auth.uid()`; não existe parâmetro de proprietário. Criação exige versão esperada zero; alteração exige versão positiva e, em caso de divergência, preserva os snapshots local/remoto em `sync_conflicts` e retorna o conflito sem sobrescrever a categoria.
+
+Cada chamada grava a categoria ou conflito, o resultado idempotente e, quando aplicada, o evento de auditoria na mesma transação PostgreSQL. Repetir a mesma chave e conteúdo retorna a resposta registrada; a mesma chave com conteúdo diferente é rejeitada. A hash é apenas um filtro e a igualdade exata do JSONB da solicitação também é verificada. O tipo da categoria não pode ser alterado. A função é `SECURITY DEFINER`, pertence a `postgres`, usa `search_path` vazio, qualifica objetos e concede `EXECUTE` somente a `authenticated`; o acesso explícito por usuário continua obrigatório porque a função proprietária ignora RLS.
+
+**Testado localmente:** sessão autenticada e ausente, grants, isolamento de proprietário, create/rename/deactivate, avanço da versão, auditoria, repetição idempotente, chave reutilizada com outro conteúdo, conflito persistido e repetido sem duplicação.
+
+**Pendente:** teste no Supabase gerenciado, chamadas concorrentes, resolução do conflito como nova versão e RPCs de períodos, subcategorias, lançamentos e recorrências. O PostgreSQL local usado na suíte simula `auth.uid()` e não comprova configuração ou privilégios do projeto remoto.

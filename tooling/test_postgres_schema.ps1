@@ -57,7 +57,14 @@ try {
         Invoke-PostgresCommand $porquinhoPsql ($porquinhoConnection + @('-d', 'porquinho_test', '-f', $porquinhoMigration.FullName)) "apply $($porquinhoMigration.Name)"
     }
 
-    Invoke-PostgresCommand $porquinhoPsql ($porquinhoConnection + @('-d', 'porquinho_test', '-f', (Join-Path $porquinhoProjectRoot 'supabase/tests/initial_schema_test.sql'))) 'run schema acceptance checks'
+    $porquinhoTests = Get-ChildItem -LiteralPath (Join-Path $porquinhoProjectRoot 'supabase/tests') -Filter '*_test.sql' -File | Sort-Object Name
+    if ($porquinhoTests.Count -eq 0) {
+        throw 'No PostgreSQL acceptance tests were found.'
+    }
+    foreach ($porquinhoTest in $porquinhoTests) {
+        Invoke-PostgresCommand $porquinhoPsql ($porquinhoConnection + @('-d', 'porquinho_test', '-f', $porquinhoTest.FullName)) "run $($porquinhoTest.Name)"
+    }
+
     Write-Output 'PASS: isolated PostgreSQL migration and schema checks.'
 }
 finally {
