@@ -1,26 +1,377 @@
-# Arquitetura
+# Arquitetura do Sistema — Porquinho
 
-## Estado atual
+**Versão:** 0.5  
+**Data:** 08/11/2026  
+**Status:** Baseline arquitetural v0.5; stack principal aprovada; detalhamentos técnicos remanescentes
 
-Não há código-fonte, `pubspec.yaml`, configurações de plataforma ou estrutura de aplicativo nesta pasta. Portanto, não existe uma arquitetura implementada para descrever.
+## 1. Visão geral
 
-## Ambiente identificado
+O Porquinho será um aplicativo Flutter/Dart para Android, iOS e Web. O MVP é um sistema individual de lançamentos financeiros por períodos, com receitas, despesas, destinações simples para investimentos e cálculo da sobra do período.
 
-- Flutter instalado: **3.47.9**, canal stable, conforme `bin/cache/flutter.version.json` do SDK encontrado no ambiente.
-- Dart instalado: **3.13.7**, confirmado executando diretamente o binário Dart do SDK.
-- O `flutter --version` não concluiu neste ambiente: a ferramenta tentou acessar `bin/cache/lockfile` dentro do SDK instalado fora da área gravável. A versão acima foi lida dos metadados locais do SDK; uma execução normal do Flutter CLI continua pendente.
-- Não foi encontrado `pubspec.yaml`, `analysis_options.yaml` ou configuração de plataforma para avaliar.
+A arquitetura não deve incluir módulos de contas bancárias, saldos bancários, Porquinho virtual, reservas, dinheiro livre, compras/parcelas de cartão ou carteira de investimentos.
 
-## Diretrizes para decisões futuras
+Componentes esperados:
 
-As escolhas abaixo são critérios de avaliação, não decisões arquiteturais aprovadas:
+- Interface multiplataforma.
+- Autenticação individual.
+- Camada de aplicação e regras de domínio.
+- Persistência remota.
+- Persistência local para operação offline.
+- Fila de sincronização e detecção de conflitos.
+- Serviço de notificações móveis.
 
-- Definir a organização do código após conhecer os fluxos e o tamanho esperado do produto; evitar camadas e abstrações sem necessidade concreta.
-- Manter UI, regras de domínio e acesso a dados com responsabilidades claras quando a complexidade do produto justificar essa separação.
-- Escolher gerenciamento de estado, roteamento, injeção de dependências e clientes de rede com base nos requisitos, manutenção e suporte do ecossistema.
-- Definir tratamento de erros, telemetria, configuração por ambiente e estratégia de testes antes de depender deles em funcionalidades.
-- Fixar as restrições de SDK e formatos de análise no `pubspec.yaml` e na configuração do projeto quando o aplicativo for criado.
+Regras financeiras independem da interface e devem ser testáveis sem widgets.
 
-## Próxima decisão
+## 2. Tecnologias
 
-Confirmar requisitos e plataformas; então criar ou validar a estrutura Flutter, escolher uma organização mínima e registrar as decisões e alternativas consideradas aqui.
+### 2.1 Aprovadas
+
+| Tecnologia | Uso | Status |
+|---|---|---|
+| Flutter/Dart | Aplicativo multiplataforma | APROVADO |
+| Supabase | Backend e autenticação | APROVADO |
+| PostgreSQL | Banco remoto | APROVADO |
+| SQLite com Drift | Persistência local | APROVADO |
+| Riverpod | Gerenciamento de estado | APROVADO |
+| GoRouter | Navegação | APROVADO |
+| Supabase Auth | Autenticação | APROVADO |
+| Serviço próprio em Dart | Sincronização | APROVADO como abordagem |
+| Git | Versionamento | APROVADO |
+
+Plataformas do MVP: Android, iOS e Web.
+
+### 2.2 Tecnologias aprovadas e detalhamento pendente
+
+A stack foi aprovada conforme a tabela da seção 2.1. Permanecem pendentes apenas configurações e decisões de implementação: ambientes, módulos, migrations, RLS, timezone, observabilidade, chaves e compatibilidade multiplataforma.
+
+### 2.3 Detalhamentos técnicos pendentes
+
+- Organização concreta de diretórios e módulos.
+- Protocolo de sincronização, retentativas e implementação técnica da política de conflitos aprovada.
+- Configuração de OAuth, sessão e armazenamento de credenciais.
+- Estratégia multiplataforma para notificações móveis.
+- Ambientes de desenvolvimento, teste e produção.
+- Implementação de backup, recuperação, retenção, exportação e exclusão de dados.
+
+Backend, banco, estado, roteamento, persistência local e política funcional de conflitos estão aprovados; seus detalhes de implementação não alteram essas decisões.
+
+## 3. Princípios arquiteturais
+
+1. **Domínio independente:** regras financeiras não dependem da interface.
+2. **Separação de responsabilidades:** apresentação, aplicação, domínio e infraestrutura têm limites claros.
+3. **Offline-first:** operações financeiras aprovadas funcionam sem conexão, com implementação incremental desde o início.
+4. **Idempotência:** repetição de sincronização não reaplica lançamentos.
+5. **Isolamento por usuário:** um usuário não acessa dados de outro.
+6. **Precisão financeira:** valores monetários não usam ponto flutuante binário como representação persistente.
+7. **Paridade de regras:** cliente e servidor aplicam as mesmas regras e produzem resultados equivalentes para as mesmas entradas.
+8. **Simplicidade:** não adicionar módulos, serviços ou abstrações sem necessidade aprovada.
+9. **Escopo enxuto:** não reintroduzir contas, Porquinho virtual, compras de cartão ou gestão de investimentos.
+
+## 4. Arquitetura lógica
+
+### 4.1 Componentes
+
+- **Aplicativo Flutter:** telas, navegação e interação.
+- **Apresentação:** Dashboard, Lançamentos e Mais.
+- **Aplicação:** casos de uso para criar, consultar, editar e cancelar receitas, despesas, investimentos, categorias e períodos.
+- **Domínio:** cálculo da sobra, competência, recorrências, status, validações e regras de auditoria.
+- **Repositórios:** contratos de consulta e persistência.
+- **Persistência local:** cópia dos dados necessários ao uso offline e fila de operações pendentes.
+- **Backend remoto:** autenticação, autorização, validação e persistência sincronizada.
+- **Notificações móveis:** alertas de vencimento de despesas.
+
+### 4.2 Fluxo lógico proposto
+
+```mermaid
+flowchart TD
+    U[Usuário] --> APP[Aplicativo Flutter<br/>Android, iOS e Web]
+    APP --> UI[Dashboard, Lançamentos e Mais]
+    UI --> UC[Casos de uso]
+    UC --> DOM[Domínio e cálculo da sobra]
+    UC --> REP[Repositórios]
+    REP --> LOCAL[Persistência local]
+    REP --> QUEUE[Fila de sincronização]
+    QUEUE <--> API[Backend / API]
+    API --> AUTH[Autenticação e autorização]
+    API --> DB[(Banco remoto)]
+    UC --> NOTIF[Agendamento de alertas]
+    NOTIF --> MOBILE[Android e iOS]
+```
+
+O diagrama representa separação lógica, não escolha de tecnologias específicas para cada componente.
+
+## 5. Organização do Flutter
+
+### 5.1 Organização conceitual por funcionalidades
+
+```text
+lib/
+  app/                 # Inicialização, configuração global e rotas
+  core/                # Erros, segurança, utilitários e serviços transversais
+  shared/              # Componentes visuais reutilizáveis
+  features/
+    auth/              # Autenticação
+    dashboard/         # Sobra e resumo do período
+    entries/           # Receitas, despesas e investimentos
+    recurrence/        # Modelos e ocorrências recorrentes
+    categories/        # Categorias e subcategorias de receita/despesa
+    periods/           # Mês-calendário e ciclo personalizado
+    reports/           # Relatórios básicos
+    settings/          # Preferências, tema e segurança
+    sync/              # Persistência local e sincronização
+```
+
+A estrutura física final depende da aprovação da arquitetura detalhada.
+
+### 5.2 Camadas
+
+- **Apresentação:** páginas, formulários, filtros e estados visuais.
+- **Aplicação:** casos de uso e coordenação de fluxos.
+- **Domínio:** entidades, cálculo da sobra, competência e regras financeiras.
+- **Dados/infraestrutura:** repositórios, banco remoto, armazenamento local, sincronização e notificações.
+
+Riverpod e GoRouter estão aprovados. A seleção de bibliotecas auxiliares permanece sujeita a avaliação técnica.
+
+## 6. Cálculos financeiros
+
+A regra central é:
+
+`Sobra do período = receitas contabilizadas - despesas contabilizadas - investimentos lançados`.
+
+Competência:
+
+- Receita: data efetiva de recebimento.
+- Despesa avulsa: data de cadastro/lançamento.
+- Despesa recorrente: data de geração da ocorrência.
+- Investimento: data do lançamento.
+
+A data de pagamento de uma despesa não gera dedução nem altera seu período de competência. Edição ou cancelamento recalcula o período correspondente. Alteração de data pode mover o lançamento entre períodos.
+
+O sistema não calcula saldo atual, saldo bancário, saldo disponível ou dinheiro livre. Não há campo especial de saldo inicial; categoria criada pelo usuário com esse nome é tratada como receita comum.
+
+## 7. Comunicação com backend
+
+- Validar autorização no servidor mesmo quando a interface ocultar ações.
+- Utilizar transações quando uma operação alterar registros relacionados.
+- Identificar operações locais com IDs únicos e idempotentes.
+- Armazenar o estado de sincronização e falhas recuperáveis.
+- Não descartar operações locais em falhas de conectividade.
+- Não sobrescrever alterações concorrentes sem política explícita.
+- Validar no backend as mesmas regras e casos de referência usados no cálculo local.
+
+O protocolo da API e a política de retentativas ainda serão detalhados. A abordagem de conflitos está aprovada: controle de versão, preservação das versões concorrentes, apresentação ao usuário e consolidação em nova versão, conforme seção 16.3.
+
+## 8. Autenticação e autorização
+
+### 8.1 Fluxos aprovados
+
+- Login com Google.
+- Cadastro e login com e-mail e senha.
+- Confirmação de e-mail para cadastro tradicional.
+- Recuperação de senha por e-mail.
+- Bloqueio móvel opcional por PIN ou biometria, solicitado ao abrir o app quando ativado.
+- Web utiliza autenticação normal, sem bloqueio móvel adicional.
+
+### 8.2 Pontos técnicos pendentes
+
+- Provedor de identidade e configuração OAuth.
+- Gestão de sessão e renovação de tokens.
+- Tratamento de conta Google/e-mail com mesmo endereço.
+- Proteção e armazenamento seguro do PIN.
+- Integração com APIs de biometria.
+- Política concreta de autorização no backend.
+
+Autenticação comprova identidade; autorização define quais dados e operações essa identidade pode acessar.
+
+## 9. Segurança e isolamento
+
+- Cada usuário acessa somente seus próprios lançamentos, categorias, recorrências, períodos e configurações.
+- A autorização deve ser validada no backend.
+- Tokens e credenciais não podem ser gravados no repositório.
+- Dados locais devem ser protegidos conforme tecnologia aprovada.
+- Logs não devem expor valores ou dados pessoais sem necessidade.
+- O compartilhamento não faz parte do MVP.
+- Como Supabase/PostgreSQL estão aprovados, definir e testar RLS, chaves estrangeiras e restrições para isolamento por usuário antes da implementação remota.
+
+## 10. Operação offline e sincronização
+
+### 10.1 Escopo offline
+
+O uso offline é essencial. Deve ser implementado incrementalmente desde os primeiros módulos financeiros. O usuário poderá consultar dados sincronizados localmente e criar, editar, cancelar e consultar receitas, despesas, ocorrências recorrentes, destinações para investimentos e categorias, conforme os dados disponíveis no dispositivo.
+
+### 10.2 Requisitos de sincronização
+
+- Persistir localmente antes de apresentar a operação como salva no dispositivo.
+- Manter fila de operações pendentes.
+- Usar identificadores idempotentes.
+- Reenviar operações com segurança após falha transitória.
+- Validar no backend usando as mesmas regras do domínio.
+- Comparar resultados e identificar divergências.
+- Não corrigir ou sobrescrever valores silenciosamente.
+- Informar ao usuário quando um conflito exigir decisão.
+
+A estratégia aprovada usa controle de versão, detecção de concorrência, preservação das versões conflitantes, apresentação ao usuário e resolução por nova versão consolidada. Não usar última gravação vence silencioso.
+
+## 11. Ambientes e dependências
+
+Desenvolvimento, teste e produção devem ser separados. Dados financeiros reais não devem ser usados em desenvolvimento sem política aprovada.
+
+Antes de adicionar pacotes, avaliar compatibilidade com Flutter/Dart, manutenção, licença, segurança, custo e necessidade real no MVP.
+
+## 12. Estratégia de testes
+
+- **Unitários:** fórmula da sobra, competência, recorrências, alteração de período, edição e cancelamento.
+- **Paridade cliente/backend:** mesmos cenários de referência executados localmente e na validação remota.
+- **Integração:** persistência, autenticação, sincronização, auditoria e categorias.
+- **Interface:** Dashboard, Lançamentos, Mais, formulários e estados de conexão.
+- **Regressão multiplataforma:** Android, iOS e Web.
+
+Casos de referência devem cobrir recebimento confirmado, despesa avulsa, despesa recorrente fixa/variável, pagamento sem segunda dedução, investimento simples, cancelamento/edição de lançamento, mês-calendário e ciclo personalizado.
+
+## 13. Distribuição
+
+O MVP será distribuído para Android, iOS e Web. Lojas, hospedagem web, assinatura de builds, pipeline e procedimentos operacionais permanecem pendentes.
+
+## 14. Decisões arquiteturais
+
+| ID | Decisão | Status |
+|---|---|---|
+| DA001 | Flutter e Dart | APROVADO |
+| DA002 | Android, iOS e Web no MVP | APROVADO |
+| DA003 | Uso individual e isolamento por usuário | APROVADO |
+| DA004 | Offline essencial, implementado incrementalmente | APROVADO |
+| DA005 | Regras no domínio, independentes da UI | APROVADO como princípio |
+| DA006 | Backend gerenciado/Supabase e Supabase Auth | APROVADO |
+| DA007 | PostgreSQL | APROVADO |
+| DA008 | Riverpod para estado e GoRouter para navegação | APROVADO |
+| DA009 | SQLite com Drift para persistência local | APROVADO |
+| DA010 | Apenas Dashboard, Lançamentos e Mais na navegação principal | APROVADO |
+| DA011 | Sobra do período como único indicador de resultado | APROVADO |
+
+## 15. Detalhamentos técnicos pendentes
+
+1. Ambientes e organização concreta de módulos.
+2. Migrations, políticas e testes RLS, constraints e modelo físico.
+3. Configuração OAuth, gestão de sessão e armazenamento seguro por plataforma.
+4. Timezone, horário e calendário operacional da geração de recorrências.
+5. Protocolo de sincronização, retentativas e mecanismo técnico para preservar/resolver conflitos segundo a política aprovada.
+6. Estratégia de notificações móveis e validação multiplataforma.
+7. Mecanismo e procedimento de backup, restauração, retenção, exportação CSV e exclusão definitiva.
+8. Observabilidade, publicação e compatibilidade dos mecanismos em Android, iOS e Web.
+
+Backend, banco, autenticação, estado, roteamento, persistência local e política funcional de conflitos estão aprovados na seção 16; não são decisões pendentes.
+
+
+## 16. Baseline arquitetural v0.5 — decisões aprovadas
+
+**Data:** 08/11/2026. Esta seção substitui classificações anteriores de proposta/pendência para as tecnologias e políticas aqui explicitamente aprovadas.
+
+### 16.1 Stack
+
+| Componente | Tecnologia | Status |
+|---|---|---|
+| Aplicativo | Flutter/Dart | APROVADO |
+| Backend e autenticação | Supabase / Supabase Auth | APROVADO |
+| Banco remoto | PostgreSQL | APROVADO |
+| Banco local | SQLite com Drift | APROVADO |
+| Estado | Riverpod | APROVADO |
+| Navegação | GoRouter | APROVADO |
+| Sincronização | Serviço próprio em Dart | APROVADO como abordagem |
+| Versionamento | Git | APROVADO |
+
+A stack está aprovada; configuração de ambientes, módulos concretos, migrations, RLS, observabilidade, configuração OAuth e compatibilidade de mecanismos por plataforma permanecem detalhamentos técnicos.
+
+### 16.2 Períodos e recorrências
+
+Todos os períodos usam `[início, fim)`. O início é inclusivo e o fim exclusivo. Ciclo personalizado preserva o dia original e, em mês curto, utiliza o último dia disponível; retorna ao dia original no mês seguinte quando possível. Exemplo para dia 31: `[31/01,28/02)`, `[28/02,31/03)`, `[31/03,30/04)`. Mudança de configuração entra em vigor no próximo período.
+
+Recorrências mensais preservam o dia de referência e usam o último dia do mês quando a data não existir. Recorrências por período geram uma ocorrência no início de cada período. Na abertura do app e na sincronização, recuperar ocorrências ausentes. A unicidade lógica e física deve impedir mais de uma ocorrência por modelo e referência programada. Edição de ocorrência não altera o modelo nem outras ocorrências; desativação impede geração futura. Horário, timezone e calendário operacional devem ser especificados antes de implementar o agendador.
+
+### 16.3 Sincronização e conflitos
+
+- Registros sincronizáveis possuem controle de versão e cada alteração informa a versão esperada.
+- O backend detecta atualizações concorrentes.
+- Não adotar “última gravação vence” silencioso. Preservar versões conflitantes e apresentar conflito ao usuário.
+- A resolução gera nova versão consolidada e evento rastreável.
+- Operações independentes continuam sincronizando; reenvios são idempotentes.
+- Operações locais não sincronizadas não podem ser descartadas automaticamente no logout.
+
+### 16.4 Segurança, backup e portabilidade
+
+- Banco local criptografado; chaves e tokens armazenados em mecanismos seguros adequados a cada plataforma; senhas nunca persistidas em texto puro.
+- Bloqueio por PIN/biometria opcional em dispositivos móveis.
+- Isolamento por usuário e autorização no backend.
+- Backup remoto diário, retenção de 30 dias, procedimento de recuperação, exclusão definitiva e exportação CSV. A restauração deve respeitar exclusões definitivas, evitando ressurreição de dados.
+- O fluxo de logout deve resolver operações pendentes antes da limpeza local, com opção/decisão explícita quando não for possível sincronizar.
+
+### 16.5 Desempenho e notificações
+
+Metas iniciais: Dashboard local até 1 s; lista de lançamentos até 1 s; salvamento local até 500 ms; atualização da sobra até 300 ms; lote pequeno de sincronização em conexão normal até 5 s. Medir em dispositivos representativos; metas não são garantias.
+
+Alertas de despesa: três dias antes, no vencimento e diariamente após vencimento enquanto pendente, inclusive após o fim do período. Cessar quando paga ou cancelada e respeitar permissões do dispositivo.
+
+### 16.6 Pendências técnicas remanescentes
+
+Não são decisões de produto pendentes; são detalhamentos necessários antes da implementação correspondente: ambientes; organização final dos módulos; migrations; políticas e testes RLS; estratégia de chaves; sessão e autorização; timezone/horário de geração; estratégia de observabilidade; mecanismo de backup e restauração; validação de armazenamento seguro e criptografia em Android, iOS e Web; política de logout com fila offline.
+
+
+## 17. Detalhamento arquitetural da Fase 2 — propostas
+
+**Status:** PROPOSTA. Esta seção registra o desenho técnico inicial para revisão. Não aprova esquema físico, configuração de produção, dependências Flutter ou migrations.
+
+### 17.1 Organização dos módulos
+
+Propõe-se organização por funcionalidade, com as camadas internas `presentation`, `application`, `domain` e `data`:
+
+```text
+lib/
+  app/                 # inicialização, composição e configuração de rotas
+  core/                # tipos e serviços técnicos transversais
+  shared/              # componentes visuais reutilizáveis
+  features/
+    auth/
+    dashboard/
+    entries/
+    recurrence/
+    categories/
+    periods/
+    reports/
+    settings/
+    sync/
+```
+
+As dependências fluem da apresentação para a aplicação e desta para o domínio. A camada `data` implementa contratos de repositório definidos para os casos de uso. Riverpod compõe estado e dependências; GoRouter apresenta apenas Dashboard, Lançamentos e Mais na navegação principal. As regras financeiras permanecem no domínio.
+
+### 17.2 Ambientes e configuração
+
+Propõe-se separar projetos Supabase de desenvolvimento, teste e produção, sem compartilhar dados financeiros reais entre ambientes. URLs e chaves públicas são fornecidas por configuração de build; chaves administrativas, senhas e tokens ficam somente em armazenamento seguro ou gerenciador de segredos do ambiente de execução/CI. Arquivos de exemplo devem conter placeholders, nunca credenciais. A criação dos projetos e o processo operacional de promoção permanecem pendentes de configuração.
+
+### 17.3 Datas e geração recorrente
+
+Propõe-se armazenar datas de competência, vencimento e pagamento como datas de calendário, sem convertê-las em instantes. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC.
+
+Como decisão técnica a confirmar, propõe-se uma zona IANA por usuário para interpretar a data corrente, com `America/Sao_Paulo` como valor inicial candidato. A geração recupera ocorrências vencidas ao abrir o aplicativo e ao sincronizar; não depende de um agendador em segundo plano. Esta proposta não decide um horário de execução nem altera as frequências aprovadas.
+
+### 17.4 Persistência local, fila e conflitos
+
+Propõe-se que o Drift seja a fonte de leitura da interface. Uma operação financeira local grava, na mesma transação, o registro, o evento local de auditoria e a operação de saída. A interface só confirma que foi salva após o commit local.
+
+Cada operação enviada inclui identificador idempotente, usuário autenticado, entidade, versão esperada e conteúdo da alteração. A aplicação remota é transacional: registra o identificador idempotente, valida o proprietário e compara a versão esperada antes de consolidar a nova versão. A repetição do identificador retorna o resultado anterior sem reaplicar efeitos.
+
+Quando a versão esperada não corresponder, o servidor preserva os estados conflitantes e devolve um conflito explícito. O cliente mantém a versão local, apresenta o conflito e suspende operações dependentes daquela entidade; operações independentes continuam. A resolução é uma nova alteração versionada e auditável. Não se usa sobrescrita silenciosa por última gravação.
+
+Propõe-se restringir escritas remotas a funções autenticadas que façam as validações e mantenham auditoria na mesma transação. RLS permanece defesa obrigatória para leitura e acesso a linhas; não substitui validação de domínio ou versão.
+
+### 17.5 Proteção local multiplataforma
+
+O banco local deve ser criptografado. Propõe-se avaliar SQLCipher para Android e iOS e fazer uma prova técnica específica para Web antes de selecionar a implementação local final. A prova deve verificar suporte real a Drift, persistência, consultas, recuperação de chave e comportamento com múltiplas abas. Não considerar a proteção Web resolvida até documentar o mecanismo e suas limitações. Chaves e tokens ficam em armazenamento seguro apropriado à plataforma; senhas não são persistidas.
+
+### 17.6 Migrations e testes
+
+Propõe-se manter migrations PostgreSQL versionadas em `supabase/migrations/`, revisadas e aplicadas primeiro em ambiente local/teste. Drift mantém versão e migrações locais próprias, com snapshots do esquema. Nenhuma migração de produção deve ser aplicada sem revisão e estratégia de evolução/recuperação.
+
+A estratégia de testes inclui: unitários de domínio; integração de transações e migrações Drift; testes de migrations, constraints e RLS com pelo menos dois usuários; idempotência, concorrência e conflitos no protocolo; paridade dos casos financeiros locais/remotos; e regressão Android, Web e iOS em ambiente compatível. A matriz deve cobrir limites `[início, fim)`, meses curtos e anos bissextos, recorrências, edição/cancelamento e pagamento sem segunda dedução.
+
+### 17.7 Portões de aprovação da Fase 2
+
+Antes de criar migrations definitivas, revisar e aprovar o modelo físico, tipos monetários, constraints, índices, referências recorrentes e políticas RLS. Antes de implementar a geração recorrente, resolver timezone e calendário operacional. Antes de considerar a persistência local multiplataforma preparada, validar a estratégia de criptografia Web. Essas pendências são detalhamentos técnicos; não alteram a stack ou as regras funcionais aprovadas.
