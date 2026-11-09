@@ -54,7 +54,7 @@ O aplicativo será individual e multiplataforma (Android, iOS e Web). O offline 
 **Critérios de aceitação:** detalhamentos registrados em arquitetura e banco; modelo lógico revisado; schema e políticas de segurança preparados; cálculos e eventos cobertos por casos de teste.
 
 **Prioridade:** Essencial.  
-**Status:** EM EXECUÇÃO — Entrega 1 (propostas documentadas); esquema físico aguarda aprovação.
+**Status:** EM EXECUÇÃO — Entrega 1 (revisão e classificação documentadas; aguardando validação do responsável); esquema físico aguarda aprovação explícita.
 
 ### Fase 3 — Estrutura Flutter, autenticação e base offline
 
@@ -256,7 +256,7 @@ P1 representa ordem relativa de entrega, não significa que uma funcionalidade a
 
 ## 9. Pendências para planejamento detalhado
 
-1. Configurar ambientes para a stack aprovada e detalhar módulos Flutter.
+1. Validar a Entrega 1 da Fase 2; a organização dos módulos está definida tecnicamente, enquanto ambientes aguardam detalhamento operacional.
 2. Definir timezone, horário e calendário operacional de geração de recorrências.
 3. Implementar e testar ciclos personalizados para dias 29, 30 e 31, inclusive anos bissextos.
 4. Detalhar protocolo, retentativas e persistência de versões conflitantes conforme a política aprovada.
@@ -301,7 +301,7 @@ Dashboard local até 1 s; lista até 1 s; salvamento local até 500 ms; atualiza
 ### 10.5 Dependências técnicas remanescentes
 
 1. Definir timezone, horário e calendário operacional da geração de recorrências.
-2. Detalhar ambientes e organização concreta de módulos Flutter.
+2. Detalhar ambientes de desenvolvimento, teste e produção; a organização concreta dos módulos foi definida na Entrega 1 da Fase 2.
 3. Definir migrations, políticas RLS e testes de isolamento no Supabase/PostgreSQL.
 4. Validar criptografia e armazenamento seguro em Android, iOS e Web.
 5. Detalhar sessão, logout com operações offline pendentes e autorização.
@@ -313,7 +313,7 @@ Esses itens são detalhamentos técnicos e não reabrem as decisões funcionais 
 
 ### 10.6 Próximas etapas
 
-1. Revisar as propostas de módulos, ambientes e testes registradas em `docs/arquitetura.md`.
+1. Validar a Entrega 1 e a classificação das propostas em `docs/arquitetura.md`; definir o detalhamento operacional dos ambientes.
 2. Revisar e aprovar o esquema físico, moeda/escala monetária, constraints, índices e RLS registrados em `docs/banco_de_dados.md`; não criar migrations antes disso.
 3. Resolver timezone e calendário operacional de recorrências antes de implementar geração.
 4. Validar criptografia e armazenamento local em Android, iOS e Web antes da implementação correspondente.
@@ -326,3 +326,4 @@ Esses itens são detalhamentos técnicos e não reabrem as decisões funcionais 
 | 08/11/2026 | 0.4 | Escopo simplificado e sobra como único indicador | Superada pela v0.5 |
 | 08/11/2026 | 0.5 | Correções da auditoria aplicadas; categoria opcional aprovada; propostas técnicas ainda pendentes de aprovação/detalhamento | STATUS HISTÓRICO — validação concluída posteriormente em 08/11/2026 |
 | 08/11/2026 | Fase 1 validada; Fase 2, Entrega 1: propostas de módulos, esquema, RLS, sincronização e testes registradas | PROPOSTAS — aguardam revisão do esquema e decisões técnicas pendentes |
+| 08/11/2026 | Fase 2, Entrega 1: organização de módulos e estratégia de testes revisadas; classificação de decisões registrada em arquitetura e banco | DOCUMENTAÇÃO ATUALIZADA; aguardando validação do responsável; esquema físico permanece PROPOSTA |

@@ -332,3 +332,18 @@ Drift mantém `schemaVersion`, snapshots gerados e migrações locais independen
 6. Testar compatibilidade de criptografia e armazenamento local em Android, iOS e Web antes da implementação correspondente.
 
 Até a resolução dessas pendências e aprovação explícita do esquema físico, este documento permanece PROPOSTA e nenhuma migration definitiva deve ser criada.
+
+### 16.7 Resultado da revisão da Entrega 1 — classificação para validação
+
+| Tema | Status | Registro |
+|---|---|---|
+| Modelo conceitual v0.5 | APROVADO | Permanece a fonte do escopo das entidades; não se criam entidades fora do MVP. |
+| Esquema físico da seção 16 | PROPOSTA | A aprovação do planejamento da Fase 2 não substitui a aprovação explícita do esquema. |
+| Inteiros de 64 bits em unidade mínima | PROPOSTA | Estratégia recomendada; moeda, escala, limites e rejeição de casas excedentes precisam de decisão. |
+| Propriedade, chaves compostas e RLS | PROPOSTA | Princípio de isolamento aprovado; constraints e políticas concretas aguardam validação e testes. |
+| Unicidade de recorrências e associação a períodos | PENDENTE | Referência mensal versus identificador do período e nullability precisam ser fechadas antes da migration. |
+| Não sobreposição e continuidade dos períodos | PENDENTE | Validar constraint disponível ou mecanismo transacional equivalente no PostgreSQL de destino. |
+| Auditoria, idempotência e conflitos | APROVADO como requisitos; desenho físico PROPOSTA | As entidades e constraints finais continuam sujeitas à aprovação do esquema. |
+| Migrations PostgreSQL e Drift | APROVADO como estratégia; execução PENDENTE | Não foram criadas migrations nesta entrega. |
+
+Os valores e registros usados nos futuros testes de banco serão fixtures sintéticas, isoladas dos ambientes com dados reais.

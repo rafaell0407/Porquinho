@@ -42,18 +42,17 @@ Plataformas do MVP: Android, iOS e Web.
 
 ### 2.2 Tecnologias aprovadas e detalhamento pendente
 
-A stack foi aprovada conforme a tabela da seção 2.1. Permanecem pendentes apenas configurações e decisões de implementação: ambientes, módulos, migrations, RLS, timezone, observabilidade, chaves e compatibilidade multiplataforma.
+A stack foi aprovada conforme a tabela da seção 2.1. A organização concreta dos módulos foi aprovada tecnicamente na Entrega 1 da Fase 2 e está registrada na seção 17.1. Permanecem pendentes configurações e decisões de implementação: ambientes, migrations, políticas RLS, timezone, observabilidade, chaves e compatibilidade multiplataforma.
 
 ### 2.3 Detalhamentos técnicos pendentes
 
-- Organização concreta de diretórios e módulos.
 - Protocolo de sincronização, retentativas e implementação técnica da política de conflitos aprovada.
 - Configuração de OAuth, sessão e armazenamento de credenciais.
 - Estratégia multiplataforma para notificações móveis.
 - Ambientes de desenvolvimento, teste e produção.
 - Implementação de backup, recuperação, retenção, exportação e exclusão de dados.
 
-Backend, banco, estado, roteamento, persistência local e política funcional de conflitos estão aprovados; seus detalhes de implementação não alteram essas decisões.
+Backend, banco, estado, roteamento, persistência local e política funcional de conflitos estão aprovados; organização concreta de módulos está definida na seção 17.1. Os demais detalhes de implementação não alteram essas decisões.
 
 ## 3. Princípios arquiteturais
 
@@ -250,7 +249,7 @@ O MVP será distribuído para Android, iOS e Web. Lojas, hospedagem web, assinat
 
 ## 15. Detalhamentos técnicos pendentes
 
-1. Ambientes e organização concreta de módulos.
+1. Ambientes e configuração operacional.
 2. Migrations, políticas e testes RLS, constraints e modelo físico.
 3. Configuração OAuth, gestão de sessão e armazenamento seguro por plataforma.
 4. Timezone, horário e calendário operacional da geração de recorrências.
@@ -279,7 +278,7 @@ Backend, banco, autenticação, estado, roteamento, persistência local e polít
 | Sincronização | Serviço próprio em Dart | APROVADO como abordagem |
 | Versionamento | Git | APROVADO |
 
-A stack está aprovada; configuração de ambientes, módulos concretos, migrations, RLS, observabilidade, configuração OAuth e compatibilidade de mecanismos por plataforma permanecem detalhamentos técnicos.
+A stack está aprovada; organização concreta de módulos está registrada na seção 17.1. Configuração de ambientes, migrations, RLS, observabilidade, configuração OAuth e compatibilidade de mecanismos por plataforma permanecem detalhamentos técnicos.
 
 ### 16.2 Períodos e recorrências
 
@@ -312,24 +311,27 @@ Alertas de despesa: três dias antes, no vencimento e diariamente após vencimen
 
 ### 16.6 Pendências técnicas remanescentes
 
-Não são decisões de produto pendentes; são detalhamentos necessários antes da implementação correspondente: ambientes; organização final dos módulos; migrations; políticas e testes RLS; estratégia de chaves; sessão e autorização; timezone/horário de geração; estratégia de observabilidade; mecanismo de backup e restauração; validação de armazenamento seguro e criptografia em Android, iOS e Web; política de logout com fila offline.
+Não são decisões de produto pendentes; são detalhamentos necessários antes da implementação correspondente: ambientes; migrations; políticas e testes RLS; estratégia de chaves; sessão e autorização; timezone/horário de geração; estratégia de observabilidade; mecanismo de backup e restauração; validação de armazenamento seguro e criptografia em Android, iOS e Web; política de logout com fila offline. A organização de módulos está definida na seção 17.1.
 
 
-## 17. Detalhamento arquitetural da Fase 2 — propostas
+## 17. Detalhamento arquitetural da Fase 2 — decisões e propostas
 
-**Status:** PROPOSTA. Esta seção registra o desenho técnico inicial para revisão. Não aprova esquema físico, configuração de produção, dependências Flutter ou migrations.
+**Status:** Entrega 1 registrada em 08/11/2026. Organização de módulos e estratégia de testes aprovadas tecnicamente para orientar a implementação. O esquema físico, a configuração operacional de produção, as dependências Flutter e as migrations continuam sem aprovação nesta seção.
 
 ### 17.1 Organização dos módulos
 
-Propõe-se organização por funcionalidade, com as camadas internas `presentation`, `application`, `domain` e `data`:
+**Status:** APROVADO tecnicamente na Entrega 1 da Fase 2; aguardando validação desta entrega pelo responsável.
+
+Organização por funcionalidade, com as camadas internas `presentation`, `application`, `domain` e `data` quando necessárias:
 
 ```text
 lib/
   app/                 # inicialização, composição e configuração de rotas
-  core/                # tipos e serviços técnicos transversais
-  shared/              # componentes visuais reutilizáveis
+  core/                # serviços técnicos transversais
+    local_database/    # conexão, schema e migrations Drift
+  shared/              # tema e componentes visuais reutilizáveis
   features/
-    auth/
+    auth/              # presentation, application, domain e data quando necessários
     dashboard/
     entries/
     recurrence/
@@ -338,9 +340,19 @@ lib/
     reports/
     settings/
     sync/
+
+test/
+  unit/
+  integration/
+  contracts/
+  widget/
+
+supabase/
+  migrations/          # PostgreSQL; somente após aprovação explícita do schema
+  tests/
 ```
 
-As dependências fluem da apresentação para a aplicação e desta para o domínio. A camada `data` implementa contratos de repositório definidos para os casos de uso. Riverpod compõe estado e dependências; GoRouter apresenta apenas Dashboard, Lançamentos e Mais na navegação principal. As regras financeiras permanecem no domínio.
+As dependências fluem da apresentação para a aplicação e desta para o domínio. A camada `data` implementa contratos de repositório definidos para os casos de uso. `core` contém mecanismos técnicos compartilhados, sem regras financeiras; cada funcionalidade só cria as camadas de que precisa. Riverpod compõe estado e dependências; GoRouter apresenta apenas Dashboard, Lançamentos e Mais na navegação principal. As regras financeiras permanecem no domínio.
 
 ### 17.2 Ambientes e configuração
 
@@ -348,30 +360,57 @@ Propõe-se separar projetos Supabase de desenvolvimento, teste e produção, sem
 
 ### 17.3 Datas e geração recorrente
 
-Propõe-se armazenar datas de competência, vencimento e pagamento como datas de calendário, sem convertê-las em instantes. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC.
+**Status:** APROVADO tecnicamente para representação dos dados; timezone operacional de recorrências permanece PROPOSTA.
+
+Datas de competência, vencimento e pagamento serão datas de calendário, sem conversão em instantes. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC.
 
 Como decisão técnica a confirmar, propõe-se uma zona IANA por usuário para interpretar a data corrente, com `America/Sao_Paulo` como valor inicial candidato. A geração recupera ocorrências vencidas ao abrir o aplicativo e ao sincronizar; não depende de um agendador em segundo plano. Esta proposta não decide um horário de execução nem altera as frequências aprovadas.
 
 ### 17.4 Persistência local, fila e conflitos
 
-Propõe-se que o Drift seja a fonte de leitura da interface. Uma operação financeira local grava, na mesma transação, o registro, o evento local de auditoria e a operação de saída. A interface só confirma que foi salva após o commit local.
+**Status:** APROVADO como contrato arquitetural inicial na Entrega 1; implementação e testes permanecem pendentes.
+
+O Drift será a fonte de leitura da interface. Uma operação financeira local grava, na mesma transação, o registro, o evento local de auditoria e a operação de saída. A interface só confirma que foi salva após o commit local.
 
 Cada operação enviada inclui identificador idempotente, usuário autenticado, entidade, versão esperada e conteúdo da alteração. A aplicação remota é transacional: registra o identificador idempotente, valida o proprietário e compara a versão esperada antes de consolidar a nova versão. A repetição do identificador retorna o resultado anterior sem reaplicar efeitos.
 
 Quando a versão esperada não corresponder, o servidor preserva os estados conflitantes e devolve um conflito explícito. O cliente mantém a versão local, apresenta o conflito e suspende operações dependentes daquela entidade; operações independentes continuam. A resolução é uma nova alteração versionada e auditável. Não se usa sobrescrita silenciosa por última gravação.
 
-Propõe-se restringir escritas remotas a funções autenticadas que façam as validações e mantenham auditoria na mesma transação. RLS permanece defesa obrigatória para leitura e acesso a linhas; não substitui validação de domínio ou versão.
+Escritas remotas serão restringidas a funções autenticadas que façam as validações e mantenham auditoria na mesma transação. RLS permanece defesa obrigatória para leitura e acesso a linhas; não substitui validação de domínio ou versão. A implementação das funções e as políticas específicas continuam pendentes de testes no ambiente Supabase/PostgreSQL.
 
 ### 17.5 Proteção local multiplataforma
 
-O banco local deve ser criptografado. Propõe-se avaliar SQLCipher para Android e iOS e fazer uma prova técnica específica para Web antes de selecionar a implementação local final. A prova deve verificar suporte real a Drift, persistência, consultas, recuperação de chave e comportamento com múltiplas abas. Não considerar a proteção Web resolvida até documentar o mecanismo e suas limitações. Chaves e tokens ficam em armazenamento seguro apropriado à plataforma; senhas não são persistidas.
+**Status:** PENDENTE de prova técnica multiplataforma.
+
+O banco local deve ser criptografado. Avaliar SQLCipher para Android e iOS e fazer uma prova técnica específica para Web antes de selecionar a implementação local final. A prova deve verificar suporte a Drift, persistência, consultas, recuperação de chave e comportamento com múltiplas abas. Não considerar a proteção Web resolvida até documentar o mecanismo e suas limitações. Chaves e tokens ficam em armazenamento seguro apropriado à plataforma; senhas não são persistidas.
 
 ### 17.6 Migrations e testes
 
-Propõe-se manter migrations PostgreSQL versionadas em `supabase/migrations/`, revisadas e aplicadas primeiro em ambiente local/teste. Drift mantém versão e migrações locais próprias, com snapshots do esquema. Nenhuma migração de produção deve ser aplicada sem revisão e estratégia de evolução/recuperação.
+**Status:** APROVADO como estratégia; migrations efetivas continuam bloqueadas pela aprovação do esquema físico.
 
-A estratégia de testes inclui: unitários de domínio; integração de transações e migrações Drift; testes de migrations, constraints e RLS com pelo menos dois usuários; idempotência, concorrência e conflitos no protocolo; paridade dos casos financeiros locais/remotos; e regressão Android, Web e iOS em ambiente compatível. A matriz deve cobrir limites `[início, fim)`, meses curtos e anos bissextos, recorrências, edição/cancelamento e pagamento sem segunda dedução.
+Manter migrations PostgreSQL versionadas em `supabase/migrations/`, revisadas e aplicadas primeiro em ambiente local/teste. Drift mantém versão e migrações locais próprias, com snapshots do esquema. Nenhuma migração de produção deve ser aplicada sem revisão e estratégia de evolução/recuperação.
+
+**Status:** APROVADO como estratégia para as entregas seguintes; nenhum teste de aplicação foi executado nesta entrega documental.
+
+A estratégia inclui testes unitários de domínio; integração de transações e migrações Drift; testes de migrations, constraints e RLS com pelo menos dois usuários; idempotência, concorrência e conflitos no protocolo; paridade dos casos financeiros locais/remotos; e regressão Android, Web e iOS em ambiente compatível. Casos sintéticos de teste devem ser identificados como fixtures e nunca apresentados como dados reais. A matriz cobre limites `[início, fim)`, meses curtos e anos bissextos, recorrências, edição/cancelamento e pagamento sem segunda dedução.
 
 ### 17.7 Portões de aprovação da Fase 2
 
 Antes de criar migrations definitivas, revisar e aprovar o modelo físico, tipos monetários, constraints, índices, referências recorrentes e políticas RLS. Antes de implementar a geração recorrente, resolver timezone e calendário operacional. Antes de considerar a persistência local multiplataforma preparada, validar a estratégia de criptografia Web. Essas pendências são detalhamentos técnicos; não alteram a stack ou as regras funcionais aprovadas.
+
+### 17.8 Resultado da Entrega 1 — classificação para validação
+
+| Tema | Status após revisão | Observação |
+|---|---|---|
+| Organização por funcionalidade e camadas | APROVADO tecnicamente | Estrutura registrada na seção 17.1; início de implementação depende da validação desta entrega. |
+| Contrato offline local e sincronização versionada | APROVADO como desenho arquitetural | Drift, outbox transacional, idempotência e preservação de conflitos; detalhes de protocolo ainda serão testados. |
+| Representação de datas de calendário e instantes | APROVADO tecnicamente | Datas de competência não viram timestamps; instantes técnicos em UTC. |
+| Estratégia de testes | APROVADO | Execução depende da implementação e de ambientes compatíveis. |
+| Separação operacional de ambientes | PROPOSTA | Dev/teste/produção separados; provisionamento e fluxo de promoção ainda não definidos. |
+| Zona IANA e valor inicial `America/Sao_Paulo` | PROPOSTA | Requer validação do responsável antes de implementar geração de recorrências. |
+| Esquema físico, tipos e constraints | PROPOSTA | Requer aprovação explícita do esquema. |
+| Moeda, escala, limites e casas decimais permitidas | PENDENTE | Requer decisão do responsável antes de fixar a representação monetária. |
+| Criptografia local na Web | PENDENTE | Requer prova técnica antes de escolher mecanismo. |
+| Políticas RLS e funções remotas concretas | PROPOSTA | Requer implementação e testes com isolamento entre usuários. |
+
+Esta classificação não altera regras funcionais nem autoriza migrations definitivas.
