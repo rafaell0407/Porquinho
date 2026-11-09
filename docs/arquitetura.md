@@ -42,7 +42,7 @@ Plataformas do MVP: Android, iOS e Web.
 
 ### 2.2 Tecnologias aprovadas e detalhamento pendente
 
-A stack foi aprovada conforme a tabela da seção 2.1. A organização concreta dos módulos foi aprovada tecnicamente na Entrega 1 da Fase 2 e está registrada na seção 17.1. Permanecem pendentes configurações e decisões de implementação: ambientes, migrations, políticas RLS, timezone, observabilidade, chaves e compatibilidade multiplataforma.
+A stack foi aprovada conforme a tabela da seção 2.1. A organização concreta dos módulos foi aprovada tecnicamente na Entrega 1 da Fase 2 e está registrada na seção 17.1. A zona `America/Sao_Paulo` por usuário foi definida na Entrega 2. Permanecem pendentes configurações e decisões de implementação: ambientes, migrations, políticas RLS, horário/calendário operacional, observabilidade, chaves e compatibilidade multiplataforma.
 
 ### 2.3 Detalhamentos técnicos pendentes
 
@@ -252,7 +252,7 @@ O MVP será distribuído para Android, iOS e Web. Lojas, hospedagem web, assinat
 1. Ambientes e configuração operacional.
 2. Migrations, políticas e testes RLS, constraints e modelo físico.
 3. Configuração OAuth, gestão de sessão e armazenamento seguro por plataforma.
-4. Timezone, horário e calendário operacional da geração de recorrências.
+4. Horário e calendário operacional da geração de recorrências; a zona IANA por usuário está aprovada.
 5. Protocolo de sincronização, retentativas e mecanismo técnico para preservar/resolver conflitos segundo a política aprovada.
 6. Estratégia de notificações móveis e validação multiplataforma.
 7. Mecanismo e procedimento de backup, restauração, retenção, exportação CSV e exclusão definitiva.
@@ -284,7 +284,7 @@ A stack está aprovada; organização concreta de módulos está registrada na s
 
 Todos os períodos usam `[início, fim)`. O início é inclusivo e o fim exclusivo. Ciclo personalizado preserva o dia original e, em mês curto, utiliza o último dia disponível; retorna ao dia original no mês seguinte quando possível. Exemplo para dia 31: `[31/01,28/02)`, `[28/02,31/03)`, `[31/03,30/04)`. Mudança de configuração entra em vigor no próximo período.
 
-Recorrências mensais preservam o dia de referência e usam o último dia do mês quando a data não existir. Recorrências por período geram uma ocorrência no início de cada período. Na abertura do app e na sincronização, recuperar ocorrências ausentes. A unicidade lógica e física deve impedir mais de uma ocorrência por modelo e referência programada. Edição de ocorrência não altera o modelo nem outras ocorrências; desativação impede geração futura. Horário, timezone e calendário operacional devem ser especificados antes de implementar o agendador.
+Recorrências mensais preservam o dia de referência e usam o último dia do mês quando a data não existir. Recorrências por período geram uma ocorrência no início de cada período. Na abertura do app e na sincronização, recuperar ocorrências ausentes. A unicidade lógica e física deve impedir mais de uma ocorrência por modelo e referência programada. Edição de ocorrência não altera o modelo nem outras ocorrências; desativação impede geração futura. A zona por usuário está definida como `America/Sao_Paulo`; horário e calendário operacional devem ser especificados antes de implementar a geração.
 
 ### 16.3 Sincronização e conflitos
 
@@ -311,7 +311,7 @@ Alertas de despesa: três dias antes, no vencimento e diariamente após vencimen
 
 ### 16.6 Pendências técnicas remanescentes
 
-Não são decisões de produto pendentes; são detalhamentos necessários antes da implementação correspondente: ambientes; migrations; políticas e testes RLS; estratégia de chaves; sessão e autorização; timezone/horário de geração; estratégia de observabilidade; mecanismo de backup e restauração; validação de armazenamento seguro e criptografia em Android, iOS e Web; política de logout com fila offline. A organização de módulos está definida na seção 17.1.
+Não são decisões de produto pendentes; são detalhamentos necessários antes da implementação correspondente: ambientes; migrations; políticas e testes RLS; estratégia de chaves; sessão e autorização; horário/calendário operacional da geração; estratégia de observabilidade; mecanismo de backup e restauração; validação de armazenamento seguro e criptografia em Android, iOS e Web; política de logout com fila offline. A organização de módulos está definida na seção 17.1 e a zona IANA por usuário foi aprovada na seção 17.8.
 
 
 ## 17. Detalhamento arquitetural da Fase 2 — decisões e propostas
@@ -320,7 +320,7 @@ Não são decisões de produto pendentes; são detalhamentos necessários antes 
 
 ### 17.1 Organização dos módulos
 
-**Status:** APROVADO tecnicamente na Entrega 1 da Fase 2; aguardando validação desta entrega pelo responsável.
+**Status:** APROVADO tecnicamente na Entrega 1 e validado pelo responsável em 08/11/2026; implementação do aplicativo segue na Fase 3.
 
 Organização por funcionalidade, com as camadas internas `presentation`, `application`, `domain` e `data` quando necessárias:
 
@@ -360,11 +360,11 @@ Propõe-se separar projetos Supabase de desenvolvimento, teste e produção, sem
 
 ### 17.3 Datas e geração recorrente
 
-**Status:** APROVADO tecnicamente para representação dos dados; timezone operacional de recorrências permanece PROPOSTA.
+**Status:** APROVADO tecnicamente para representação dos dados e decisão do responsável para a zona operacional.
 
-Datas de competência, vencimento e pagamento serão datas de calendário, sem conversão em instantes. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC.
+Datas de competência, vencimento e pagamento serão datas de calendário, sem conversão em instantes. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC. A zona IANA armazenada por usuário é `America/Sao_Paulo`, aprovada pelo responsável em 08/11/2026; horário de execução e política para eventual alteração da zona permanecem pendentes.
 
-Como decisão técnica a confirmar, propõe-se uma zona IANA por usuário para interpretar a data corrente, com `America/Sao_Paulo` como valor inicial candidato. A geração recupera ocorrências vencidas ao abrir o aplicativo e ao sincronizar; não depende de um agendador em segundo plano. Esta proposta não decide um horário de execução nem altera as frequências aprovadas.
+A geração recupera ocorrências vencidas ao abrir o aplicativo e ao sincronizar; não depende de um agendador em segundo plano. A data corrente é interpretada na zona do usuário. Esta decisão não define um horário de execução nem altera as frequências aprovadas.
 
 ### 17.4 Persistência local, fila e conflitos
 
@@ -372,11 +372,13 @@ Como decisão técnica a confirmar, propõe-se uma zona IANA por usuário para i
 
 O Drift será a fonte de leitura da interface. Uma operação financeira local grava, na mesma transação, o registro, o evento local de auditoria e a operação de saída. A interface só confirma que foi salva após o commit local.
 
+Para preservar centavos exatos no Flutter Web, a proposta física da Entrega 2 usa `BigInt` no domínio, texto decimal no SQLite/Drift e string decimal no protocolo de sincronização; o PostgreSQL armazena o valor individual como `BIGINT`. A implementação e os testes multiplataforma dependem da aprovação do esquema. A documentação do Dart registra que o `int` compilado para JavaScript não preserva todos os inteiros de 64 bits.
+
 Cada operação enviada inclui identificador idempotente, usuário autenticado, entidade, versão esperada e conteúdo da alteração. A aplicação remota é transacional: registra o identificador idempotente, valida o proprietário e compara a versão esperada antes de consolidar a nova versão. A repetição do identificador retorna o resultado anterior sem reaplicar efeitos.
 
 Quando a versão esperada não corresponder, o servidor preserva os estados conflitantes e devolve um conflito explícito. O cliente mantém a versão local, apresenta o conflito e suspende operações dependentes daquela entidade; operações independentes continuam. A resolução é uma nova alteração versionada e auditável. Não se usa sobrescrita silenciosa por última gravação.
 
-Escritas remotas serão restringidas a funções autenticadas que façam as validações e mantenham auditoria na mesma transação. RLS permanece defesa obrigatória para leitura e acesso a linhas; não substitui validação de domínio ou versão. A implementação das funções e as políticas específicas continuam pendentes de testes no ambiente Supabase/PostgreSQL.
+Escritas remotas serão restringidas a funções autenticadas que façam as validações e mantenham auditoria na mesma transação. RLS permanece defesa obrigatória para leitura e acesso a linhas; grants SQL também serão limitados, pois políticas RLS não removem grants existentes. A proposta física da Entrega 2 prefere funções de escrita `SECURITY DEFINER` com proprietário de privilégio mínimo, `search_path` vazio, referências qualificadas, validação explícita de identidade/proprietário e execução restrita, já que clientes não terão grants de escrita direta. A alternativa `SECURITY INVOKER` exigiria permitir escrita direta sob RLS e cobrir invariantes e auditoria por constraints/triggers. A decisão permanece PROPOSTA até teste no ambiente Supabase/PostgreSQL.
 
 ### 17.5 Proteção local multiplataforma
 
@@ -396,20 +398,22 @@ A estratégia inclui testes unitários de domínio; integração de transações
 
 ### 17.7 Portões de aprovação da Fase 2
 
-Antes de criar migrations definitivas, revisar e aprovar o modelo físico, tipos monetários, constraints, índices, referências recorrentes e políticas RLS. Antes de implementar a geração recorrente, resolver timezone e calendário operacional. Antes de considerar a persistência local multiplataforma preparada, validar a estratégia de criptografia Web. Essas pendências são detalhamentos técnicos; não alteram a stack ou as regras funcionais aprovadas.
+Antes de criar migrations definitivas, revisar e aprovar o modelo físico, tipos monetários, constraints, índices, referências recorrentes e políticas RLS. Antes de implementar a geração recorrente, resolver horário e calendário operacional. Antes de considerar a persistência local multiplataforma preparada, validar a estratégia de criptografia Web. Essas pendências são detalhamentos técnicos; não alteram a stack ou as regras funcionais aprovadas.
 
-### 17.8 Resultado da Entrega 1 — classificação para validação
+### 17.8 Registro de decisões da Fase 2 — atualizado em 09/11/2026
 
 | Tema | Status após revisão | Observação |
 |---|---|---|
-| Organização por funcionalidade e camadas | APROVADO tecnicamente | Estrutura registrada na seção 17.1; início de implementação depende da validação desta entrega. |
+| Organização por funcionalidade e camadas | APROVADO tecnicamente | Estrutura registrada na seção 17.1; implementação Flutter segue na Fase 3. |
 | Contrato offline local e sincronização versionada | APROVADO como desenho arquitetural | Drift, outbox transacional, idempotência e preservação de conflitos; detalhes de protocolo ainda serão testados. |
 | Representação de datas de calendário e instantes | APROVADO tecnicamente | Datas de competência não viram timestamps; instantes técnicos em UTC. |
 | Estratégia de testes | APROVADO | Execução depende da implementação e de ambientes compatíveis. |
 | Separação operacional de ambientes | PROPOSTA | Dev/teste/produção separados; provisionamento e fluxo de promoção ainda não definidos. |
-| Zona IANA e valor inicial `America/Sao_Paulo` | PROPOSTA | Requer validação do responsável antes de implementar geração de recorrências. |
-| Esquema físico, tipos e constraints | PROPOSTA | Requer aprovação explícita do esquema. |
-| Moeda, escala, limites e casas decimais permitidas | PENDENTE | Requer decisão do responsável antes de fixar a representação monetária. |
+| Zona IANA por usuário (`America/Sao_Paulo`) | APROVADO | Decisão do responsável em 08/11/2026; política de alteração futura permanece pendente. |
+| BRL, escala em centavos, zero permitido e negativos/precisão extra rejeitados | APROVADO | Decisão do responsável em 08/11/2026; campos e constraints detalhados na proposta física. |
+| Tipo numérico multiplataforma para BRL | PROPOSTA | `BigInt` no domínio, texto decimal local e no protocolo, `BIGINT` remoto; exige aprovação do esquema e teste em Flutter Web. |
+| Esquema físico, nullability e constraints | PROPOSTA | Detalhado na seção 16.8; requer aprovação explícita antes de migrations. |
+| Horário/calendário operacional da geração | PENDENTE | Deve ser definido antes da implementação de recorrências. |
 | Criptografia local na Web | PENDENTE | Requer prova técnica antes de escolher mecanismo. |
 | Políticas RLS e funções remotas concretas | PROPOSTA | Requer implementação e testes com isolamento entre usuários. |
 

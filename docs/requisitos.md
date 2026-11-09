@@ -191,7 +191,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 
 - Interface responsiva para Android, iOS e Web.
 - Operações financeiras locais disponíveis sem conexão, conforme escopo offline.
-- Precisão monetária decimal; não utilizar ponto flutuante binário para persistência de dinheiro.
+- Valores monetários em BRL, com escala de até duas casas decimais; rejeitar valores negativos e entradas com casas excedentes, sem arredondamento. Zero é permitido. Persistir sem ponto flutuante binário.
 - Cálculos determinísticos, testáveis e equivalentes entre cliente e backend.
 - Metas iniciais de desempenho aprovadas constam na seção 13.6; são objetivos a medir e validar, não garantias.
 - Logs sem exposição desnecessária de dados financeiros ou pessoais.
@@ -216,7 +216,7 @@ Os cinco relatórios aprovados estão especificados na seção 13.7. Esta seçã
 
 ## 11. Detalhamentos pendentes
 
-As regras funcionais desta baseline estão aprovadas. Permanecem detalhamentos técnicos antes das implementações correspondentes: timezone, horário e calendário operacional das recorrências; protocolo e retentativas de sincronização; implementação de alertas móveis; critérios de medição das metas de desempenho; e desenho de backup, restauração, retenção, exportação e exclusão. Não há decisão pendente sobre meses curtos, conflitos, relatórios aprovados ou encerramento manual de períodos.
+As regras funcionais desta baseline estão aprovadas. A zona IANA `America/Sao_Paulo` por usuário foi definida em 08/11/2026. Permanecem detalhamentos técnicos antes das implementações correspondentes: horário e calendário operacional das recorrências; protocolo e retentativas de sincronização; implementação de alertas móveis; critérios de medição das metas de desempenho; e desenho de backup, restauração, retenção, exportação e exclusão. Não há decisão pendente sobre meses curtos, conflitos, relatórios aprovados ou encerramento manual de períodos.
 
 ## 12. Funcionalidades para versões futuras
 
@@ -249,7 +249,7 @@ As regras funcionais desta baseline estão aprovadas. Permanecem detalhamentos t
 - Na abertura do app e na sincronização, verificar e gerar ocorrências faltantes, inclusive atrasadas, sem duplicidade.
 - Edição individual não altera modelo ou outras ocorrências; desativação impede futuras e preserva anteriores.
 - Receitas recorrentes começam pendentes e só são contabilizadas após confirmação do recebimento. Despesas recorrentes são contabilizadas quando geradas e com valor definido.
-- Horário, timezone e calendário operacional da geração devem ser detalhados antes da implementação.
+- A zona de calendário é `America/Sao_Paulo` por usuário, conforme decisão de 08/11/2026. Horário e calendário operacional da geração ainda devem ser detalhados antes da implementação.
 
 ### 13.3 Pagamentos e categorias
 
@@ -293,3 +293,7 @@ Metas de engenharia sujeitas a medição e validação; não são garantias.
 5. Comparativo de receitas, despesas e investimentos por período.
 
 Todos respeitam a configuração de período do usuário. Nos relatórios de receitas e despesas por categoria, lançamentos sem categoria aparecem agrupados em **Sem categoria** e também permanecem nos totais gerais. Não incluem rentabilidade, projeções, saldos bancários, dinheiro livre ou gestão de carteira.
+
+### 13.8 Moeda e precisão monetária
+
+Decisão do responsável em 08/11/2026: todos os valores do MVP são BRL; aceitam até duas casas decimais, zero é válido, valores negativos e casas excedentes são rejeitados e não há arredondamento implícito. Nenhum limite de produto foi definido. A representação PostgreSQL `BIGINT` e a representação local/Web exata registradas na Entrega 2 são propostas técnicas e aguardam aprovação do schema.

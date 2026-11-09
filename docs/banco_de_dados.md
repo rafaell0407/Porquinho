@@ -1,8 +1,8 @@
 # Banco de Dados — Porquinho
 
 **Versão:** 0.5  
-**Data:** 08/11/2026  
-**Status:** Modelo conceitual v0.5 revisado; esquema físico permanece para detalhamento técnico
+**Data da última atualização:** 09/11/2026
+**Status:** Modelo conceitual v0.5 revisado; esquema físico da Entrega 2 registrado como PROPOSTA, aguardando aprovação
 
 ## 1. Visão geral
 
@@ -82,7 +82,7 @@ Destinações para investimento não usam categorias.
 
 Modelos de recorrência de receita e de despesa são entidades conceituais separadas. Campos conceituais: usuário, descrição, tipo, frequência (mensal ou por período), data de início, valor padrão quando fixo, indicador fixo/variável, categoria quando aplicável, vencimento quando aplicável e status ativo/inativo.
 
-O tratamento funcional de datas inexistentes está aprovado: usar o último dia do mês, preservando a referência original para meses seguintes. Horário e timezone de geração permanecem detalhamento técnico.
+O tratamento funcional de datas inexistentes está aprovado: usar o último dia do mês, preservando a referência original para meses seguintes. `America/Sao_Paulo` por usuário foi aprovado em 08/11/2026; horário e calendário operacional da geração permanecem detalhamento técnico.
 
 ### 5.6 Receita
 
@@ -134,13 +134,14 @@ O diagrama AUD-05 revisado e vigente está na seção 15.5. Ele substitui versõ
 
 ## 8. Cálculo e representação monetária
 
-- Persistir valores em representação decimal exata ou unidade mínima inteira, conforme tecnologia aprovada.
-- Não usar float/double binário para persistência monetária.
+- Todos os valores do MVP são BRL, representados em centavos como inteiros assinados de 64 bits.
+- Zero é permitido; valores negativos e entradas com mais de duas casas decimais são rejeitados. Não há arredondamento implícito.
+- Não usar float/double binário para persistência ou cálculo monetário.
 - Centralizar a fórmula da sobra no domínio.
 - Sobra do período = receitas contabilizadas - despesas contabilizadas - destinações para investimentos.
 - Não há saldo inicial especial, saldo bancário, dinheiro livre ou saldo disponível.
 
-Critérios de arredondamento e representação física dependem da decisão técnica.
+A seção 16.8 propõe `BIGINT` assinado de 64 bits por valor individual no PostgreSQL; essa faixa técnica depende da aprovação do esquema físico e não constitui limite de produto aprovado. Nenhum limite de produto foi definido.
 
 ## 9. Integridade e consistência
 
@@ -173,7 +174,7 @@ Backend, banco, modelo lógico conceitual e política funcional de sincronizaç�
 ## 14. Pendências de modelagem
 
 1. Definir esquema físico, tipos, índices e constraints após validar o modelo lógico.
-2. Detalhar horário/timezone e calendário operacional da geração.
+2. Detalhar horário e calendário operacional da geração; a zona `America/Sao_Paulo` por usuário está aprovada.
 3. Especificar fila offline, versionamento e persistência das versões conflitantes.
 4. Detalhar retenção, restauração, exclusão definitiva e exportação.
 5. Validar tecnicamente a integridade das referências polimórficas de auditoria e sincronização.
@@ -196,9 +197,9 @@ Manter entidades/modelos separados para recorrência de receita e recorrência d
 
 Campos conceituais adicionais para modelos: identificador do usuário proprietário, frequência, data de início/vigência, dia de referência (quando mensal), estado ativo/inativo e parâmetros necessários à geração. Para ocorrência: modelo de origem, referência programada/competência, data efetiva, estado, valor e metadados de auditoria.
 
-A combinação modelo + referência programada deve ser única, inclusive por restrição no banco, para garantir idempotência. Ocorrências atrasadas podem ser recuperadas na abertura do app e na sincronização. Edição individual não modifica modelo ou outras ocorrências; desativação preserva ocorrências existentes e impede futuras. Horário e timezone de geração ainda exigem especificação técnica.
+A combinação modelo + referência programada deve ser única, inclusive por restrição no banco, para garantir idempotência. Ocorrências atrasadas podem ser recuperadas na abertura do app e na sincronização. Edição individual não modifica modelo ou outras ocorrências; desativação preserva ocorrências existentes e impede futuras. A zona `America/Sao_Paulo` por usuário está aprovada; horário e calendário operacional ainda exigem especificação técnica.
 
-A semântica canônica da referência usada na chave de unicidade (data programada mensal ou identificador de competência do período) deve ser definida no detalhamento técnico, preservando a regra funcional aprovada de uma ocorrência por referência.
+A semântica canônica da referência usada na chave de unicidade deve ser definida no esquema físico, preservando a regra funcional aprovada de uma ocorrência por modelo e referência programada/competência.
 
 ### 15.3 Categorias, pagamentos e alertas
 
@@ -264,16 +265,16 @@ Proposta de mapeamento:
 
 | Conceito | Tabela candidata | Campos físicos principais |
 |---|---|---|
-| Preferência | `user_preferences` | `owner_id` (único), tema e configuração vigente |
+| Preferência | `user_preferences` | `owner_id` (único), tema opcional e `time_zone_id` IANA com padrão `America/Sao_Paulo` |
 | Configuração de período | `period_configurations` | `id`, `owner_id`, modalidade, dia inicial quando aplicável, início de vigência |
 | Período | `accounting_periods` | `id`, `owner_id`, configuração de origem, `start_date`, `end_date` |
 | Categoria | `categories` | `id`, `owner_id`, tipo imutável, nome, ativo/inativo |
 | Subcategoria | `subcategories` | `id`, `owner_id`, `category_id`, nome, ativo/inativo |
 | Modelo de receita recorrente | `income_recurrence_templates` | proprietário, frequência, parâmetros de agenda, valor fixo/variável, categoria opcional, ativo/inativo |
-| Modelo de despesa recorrente | `expense_recurrence_templates` | proprietário, frequência, parâmetros de agenda, valor fixo/variável, categoria e vencimento quando aplicáveis, ativo/inativo |
-| Receita | `income_entries` | proprietário, descrição, valor, recebimento, status, categoria e período opcionais, modelo e referência programada opcionais |
-| Despesa | `expense_entries` | proprietário, descrição, valor, data de competência, vencimento/pagamento, status, categoria opcional, período e modelo opcionais conforme origem |
-| Destinação para investimento | `investment_allocations` | proprietário, valor, data do lançamento e período; sem categoria ou status de pagamento |
+| Modelo de despesa recorrente | `expense_recurrence_templates` | proprietário, frequência, parâmetros de agenda, valor fixo/variável, categoria opcional, ativo/inativo |
+| Receita | `income_entries` | proprietário, descrição, centavos, recebimento, status, categoria/período opcionais enquanto pendente, modelo e referência programada opcionais |
+| Despesa | `expense_entries` | proprietário, descrição, centavos, competência, vencimento/pagamento, status, categoria opcional, período e modelo opcionais conforme origem |
+| Destinação para investimento | `investment_allocations` | proprietário, centavos, data do lançamento e período; sem categoria ou status de pagamento |
 | Auditoria | `audit_events` | proprietário, entidade/tipo, operação, instante, snapshots anteriores/novos |
 | Idempotência remota | `applied_sync_operations` | proprietário, chave idempotente, resultado e instante de aplicação |
 | Conflito remoto | `sync_conflicts` | proprietário, entidade, versão-base, snapshots concorrentes, estado e resolução |
@@ -283,9 +284,9 @@ Proposta de mapeamento:
 
 ### 16.2 Tipos e constraints propostas
 
-No PostgreSQL, propõem-se `uuid`, `date`, `timestamptz`, `bigint`, `boolean`, enums ou `text` com `CHECK`, conforme compatibilidade de evolução. No SQLite/Drift, IDs e enums podem ser `TEXT`, valores inteiros `INTEGER`, datas ISO `YYYY-MM-DD` e instantes ISO UTC; datas devem continuar sendo datas, sem conversão por timezone.
+No PostgreSQL, propõem-se `uuid`, `date`, `timestamptz`, `bigint`, `boolean` e `text` com `CHECK` para valores enumerados. No SQLite/Drift, IDs, enums e centavos são `TEXT` canônico; o mapeamento Dart converte centavos para `BigInt`. Isso evita perda de precisão no Flutter Web, cujo `int` JavaScript não representa todos os inteiros de 64 bits. Datas são ISO `YYYY-MM-DD` e instantes ISO UTC; datas não são convertidas por timezone.
 
-Para valores monetários, propõe-se unidade mínima inteira em `BIGINT` no PostgreSQL e `INTEGER` de 64 bits no SQLite, sem ponto flutuante. Centavos/BRL são uma hipótese inicial, não decisão aprovada: moeda, escala permitida, limite e tratamento de entradas com mais casas precisam ser confirmados. Não aplicar arredondamento implícito.
+Valores são BRL em centavos. Armazenar `amount_centavos` em `BIGINT` no PostgreSQL e como texto decimal canônico no SQLite/Drift; o domínio Dart usa `BigInt`, e o protocolo de sincronização transmite centavos como string decimal. Não converter valores monetários para `double` nem para `int` no Flutter Web. Zero é permitido; negativos e entradas com mais de duas casas decimais são rejeitados, sem arredondamento. O limite superior técnico por lançamento é o máximo do inteiro assinado de 64 bits; não há limite de produto menor aprovado. Agregações locais usam `BigInt`; as remotas usam `NUMERIC` para soma exata sem overflow intermediário.
 
 Constraints propostas:
 
@@ -324,16 +325,17 @@ Drift mantém `schemaVersion`, snapshots gerados e migrações locais independen
 
 ### 16.6 Pendências antes da aprovação do esquema
 
-1. Confirmar moeda, escala, limites e validação de precisão monetária sem arredondamento implícito.
-2. Aprovar campos e nullability de receita/despesa recorrente pendente, especialmente valor variável e período.
-3. Definir a representação canônica da referência mensal e por período e a respectiva constraint.
-4. Validar mecanismo de não sobreposição de períodos disponível no Supabase/PostgreSQL.
-5. Aprovar tipos, índices, política de exclusão definitiva/tombstones e retenção de auditoria.
-6. Testar compatibilidade de criptografia e armazenamento local em Android, iOS e Web antes da implementação correspondente.
+1. Aprovar campos e nullability de receita/despesa recorrente pendente, especialmente valor variável e período.
+2. Aprovar a representação canônica da referência mensal e por período e a respectiva constraint.
+3. Validar mecanismo de não sobreposição e continuidade de períodos no PostgreSQL de destino.
+4. Aprovar tipos, índices, política de exclusão definitiva/tombstones e retenção de auditoria.
+5. Testar compatibilidade de criptografia e armazenamento local em Android, iOS e Web antes da implementação correspondente.
 
 Até a resolução dessas pendências e aprovação explícita do esquema físico, este documento permanece PROPOSTA e nenhuma migration definitiva deve ser criada.
 
 ### 16.7 Resultado da revisão da Entrega 1 — classificação para validação
+
+Esta tabela registra o estado ao final da Entrega 1. Moeda/escala e zona IANA foram decididas pelo responsável na Entrega 2; ver a seção 16.8.
 
 | Tema | Status | Registro |
 |---|---|---|
@@ -347,3 +349,101 @@ Até a resolução dessas pendências e aprovação explícita do esquema físic
 | Migrations PostgreSQL e Drift | APROVADO como estratégia; execução PENDENTE | Não foram criadas migrations nesta entrega. |
 
 Os valores e registros usados nos futuros testes de banco serão fixtures sintéticas, isoladas dos ambientes com dados reais.
+
+### 16.8 Esquema físico detalhado — Entrega 2
+
+**Data:** 09/11/2026. **Status:** PROPOSTA para validação do responsável. Esta especificação ainda não aprova migrations. As decisões confirmadas nesta entrega são BRL com escala em centavos, zero permitido, negativos e mais de duas casas decimais rejeitados sem arredondamento, e zona IANA `America/Sao_Paulo` por usuário.
+
+#### 16.8.1 Convenções comuns
+
+- Identificadores de domínio são UUIDs criados no cliente para permitir gravação offline. Tabelas remotas de domínio usam `owner_id UUID NOT NULL` e chave primária composta `(owner_id, id)`; `user_preferences` usa `owner_id` como chave primária.
+- `owner_id` referencia `auth.users(id)`. Referências entre dados de usuário usam chaves estrangeiras compostas que incluem `owner_id`, impedindo associações entre proprietários diferentes.
+- Registros mutáveis e sincronizáveis mantêm `version BIGINT`, `created_at TIMESTAMPTZ` e `updated_at TIMESTAMPTZ`. Eventos e resultados imutáveis têm instante próprio. No SQLite, IDs, enums e centavos são `TEXT`; datas são `TEXT` ISO `YYYY-MM-DD`, instantes são texto UTC ISO-8601 e versões usam `INTEGER`.
+- Todos os valores monetários usam BRL em centavos, sem coluna `currency_code` no MVP. O limite superior técnico é `9.223.372.036.854.775.807` centavos por valor; nenhum limite de produto menor está aprovado.
+- `user_preferences.time_zone_id` guarda a zona IANA por usuário, com padrão `America/Sao_Paulo`. A zona determina a data corrente usada para recuperar ocorrências vencidas ao abrir o aplicativo ou sincronizar. Política para uma futura alteração da zona permanece pendente; períodos e datas já persistidos não são instantes e não são convertidos.
+
+#### 16.8.2 Tabelas e campos candidatos
+
+| Tabela | Campos e regras propostas |
+|---|---|
+| `user_preferences` | `owner_id` PK/FK; `theme` opcional (`light`/`dark`); `time_zone_id` obrigatório com padrão aprovado; `version`, `updated_at`. Uma linha por usuário. |
+| `period_configurations` | `id`, `owner_id`, `mode` (`calendar_month`/`custom_cycle`), `custom_start_day` (1–31 somente no ciclo personalizado), `effective_from DATE`, versão e timestamps. Configurações antigas não são reescritas. |
+| `accounting_periods` | `id`, `owner_id`, `configuration_id`, `start_date DATE`, `end_date DATE`, versão e timestamps. Sem estado aberto/encerrado. Período representa `[start_date, end_date)`. |
+| `categories` | `id`, `owner_id`, `kind` (`income`/`expense`), `name`, `is_active`, versão e timestamps. `kind` é imutável; desativar em vez de excluir. |
+| `subcategories` | `id`, `owner_id`, `category_id`, `name`, `is_active`, versão e timestamps. FK composta para categoria do mesmo proprietário e chave candidata `(owner_id, category_id, id)` para referências coerentes nos lançamentos. |
+| `income_recurrence_templates` | `id`, `owner_id`, `description`, `frequency`, `starts_on DATE`, `monthly_reference_day` (1–31 em recorrência mensal; nulo por período), `value_mode` (`fixed`/`variable`), `default_amount_centavos` (obrigatório quando fixo; nulo quando variável), categoria e subcategoria opcionais compatíveis, ativo/inativo, versão e timestamps. |
+| `expense_recurrence_templates` | Mesma estrutura de agenda e valor do modelo de receita, com categoria/subcategoria de despesa opcionais. Não armazena vencimento padrão: o vencimento é da ocorrência e não há regra aprovada para derivá-lo do modelo. |
+| `income_entries` | `id`, `owner_id`, `description`, `amount_centavos` (pode ser nulo somente numa ocorrência variável sem valor), `status` (`pending`/`received`/`cancelled`), `received_on DATE` (nulo antes do recebimento), categoria/subcategoria opcionais, `accounting_period_id` nulo antes do recebimento, `recurrence_template_id`, `scheduled_for_date` e `scheduled_period_id` quando recorrente, versão e timestamps. |
+| `expense_entries` | `id`, `owner_id`, `description`, `amount_centavos` (nulo somente enquanto uma ocorrência variável aguarda valor), `competence_on DATE`, `due_on DATE` opcional, `paid_on DATE` opcional, `status` (`pending`/`paid`/`cancelled`), categoria/subcategoria opcionais, `accounting_period_id` obrigatório, referência opcional ao modelo e agenda, versão e timestamps. |
+| `investment_allocations` | `id`, `owner_id`, `amount_centavos` obrigatório, `allocated_on DATE`, `accounting_period_id`, `cancelled_at` opcional, versão e timestamps. Sem categoria, descrição ou status de pagamento. |
+| `audit_events` | `id`, `owner_id`, `entity_type`, `entity_id`, `operation`, `actor_id`, `occurred_at`, snapshots anteriores/novos JSONB e `operation_id`. Append-only no fluxo normal. |
+| `applied_sync_operations` | `owner_id`, `idempotency_key UUID`, hash do conteúdo recebido, resultado necessário para resposta idempotente e `applied_at`; chave única `(owner_id, idempotency_key)`. Reuso da chave com conteúdo diferente é rejeitado. |
+| `sync_conflicts` | `id`, `owner_id`, entidade/registro, versão-base e versão remota, snapshots local/remoto, estado e dados da resolução. A resolução cria uma nova versão do registro. |
+| `sync_outbox` (somente local) | `idempotency_key`, `owner_id`, entidade/registro, versão esperada, payload, estado, tentativas, próximo retry e último erro recuperável. Persiste na mesma transação local que o registro e a auditoria. |
+
+#### 16.8.3 Nullability e constraints de integridade
+
+- Valores gravados como centavos obedecem `amount_centavos >= 0`; zero é válido. Números negativos são recusados. O parser decimal de entrada aceita no máximo duas casas e rejeita precisão excedente, sem arredondar; conversão/armazenamento local e sincronização preservam centavos exatos como `BigInt`/string decimal.
+- `amount_centavos IS NULL` distingue uma ocorrência recorrente variável ainda sem valor de uma ocorrência cujo valor é zero. Pode permanecer nulo se essa ocorrência for cancelada antes de informar o valor. Uma função transacional valida que somente uma ocorrência variável sem valor pode omitir o campo. Despesas/receitas avulsas, investimentos e recorrências fixas têm valor definido.
+- Receitas usam os estados `pending`, `received` e `cancelled`. Em `received`, `received_on`, valor e período são obrigatórios; receita recorrente `pending` não tem data efetiva de recebimento nem período financeiro. Receita avulsa nasce `received`. Uma receita cancelada pode preservar os campos de recebimento anteriores, se foi cancelada após confirmação.
+- Despesas usam `pending`, `paid` e `cancelled`. Toda despesa tem `competence_on` e período de origem; `paid` exige `paid_on`, enquanto `pending` não tem data de pagamento. Pagamento não altera competência nem período. Vencimento é opcional e fica na ocorrência. Cancelamento mantém o registro e gera auditoria; campos de pagamento anteriores podem ser preservados, e registros cancelados não participam dos cálculos.
+- Todo investimento tem data e período. `cancelled_at` exclui a destinação dos cálculos sem introduzir status pendente/pago.
+- Períodos exigem `start_date < end_date`, início único por usuário e configuração pertencente ao mesmo usuário. A criação ocorre por operação transacional que serializa a geração por usuário e confere a continuidade com os períodos vizinhos; não basta uma verificação de sobreposição. A regra de ciclo `[início, fim)` continua sendo a fonte funcional.
+- Receita, despesa, categoria e subcategoria devem pertencer ao mesmo `owner_id`; o tipo da categoria deve ser compatível com o lançamento/modelo. Quando `subcategory_id` estiver informado, `category_id` também é obrigatório e a subcategoria deve pertencer àquela categoria. Chaves estrangeiras compostas podem impor proprietário e par categoria/subcategoria; a função transacional valida compatibilidade de tipo e exige categoria/subcategoria ativa somente para novas associações. Referências históricas podem continuar apontando para categorias desativadas.
+- Em ocorrência recorrente, `scheduled_for_date` é a data efetivamente agendada; para frequência por período, é igual ao início do período e `scheduled_period_id` referencia esse período. Para mensal, `scheduled_period_id` é nulo e `scheduled_for_date` segue o dia original com ajuste de mês curto aprovado. Lançamentos avulsos não têm modelo nem referência programada.
+- Índice único parcial candidato: `(owner_id, recurrence_template_id, scheduled_for_date)` para linhas recorrentes em cada tabela de ocorrência. A função valida a frequência do modelo e a consistência de `scheduled_period_id`; a unicidade evita repetição de modelo/data programada.
+- Tipos de status/frequência são `TEXT` com `CHECK` para permitir evolução revisável. Nenhum lançamento financeiro é apagado fisicamente pelo fluxo normal.
+
+Para impedir períodos sobrepostos, PostgreSQL oferece o tipo `daterange` com limites canônicos `[)` e constraints de exclusão. Como a constraint de exclusão sozinha não detecta lacunas e pode exigir a extensão `btree_gist` para combinar proprietário e intervalo, a proposta primária é criar períodos somente por função transacional, serializada por proprietário, que valida os limites adjacentes. Uma constraint de exclusão pode ser acrescentada como defesa extra se a extensão estiver disponível no serviço de destino. A implementação precisa cobrir ambas as condições: sem lacunas e sem sobreposições. O PostgreSQL disponibiliza advisory locks transacionais para serializar este recurso definido pela aplicação; seu uso exige que todas as gravações de períodos passem pela mesma função. [Documentação PostgreSQL sobre intervalos e exclusão](https://www.postgresql.org/docs/current/rangetypes.html) e [locks explícitos/advisory](https://www.postgresql.org/docs/18/explicit-locking.html).
+
+#### 16.8.4 RLS, grants e funções
+
+RLS será habilitada em todas as tabelas remotas expostas com dados de usuário. Políticas para `authenticated` exigem `auth.uid() IS NOT NULL AND auth.uid() = owner_id`; acesso `anon` é negado. Grants serão definidos separadamente: políticas RLS não removem permissões SQL concedidas à role. Clientes recebem grants de leitura mínimos e não recebem `INSERT`/`UPDATE`/`DELETE` diretos nas tabelas financeiras.
+
+Operações que alteram lançamento, auditoria, versão e idempotência passam por funções autenticadas transacionais. A proposta preferida é `SECURITY DEFINER` com proprietário de privilégio mínimo, `search_path = ''`, objetos qualificados, `EXECUTE` restrito a `authenticated` e validação explícita de `auth.uid()`, `owner_id`, FKs, versão esperada e idempotência em cada operação. Como uma função `SECURITY DEFINER` pode operar com privilégios do proprietário e não depender da RLS como barreira efetiva, cada consulta e escrita deve restringir explicitamente o proprietário; RLS continua protegendo acesso direto/leitura. Alternativa: `SECURITY INVOKER` com grants de escrita e policies RLS, mas isso permitiria DML direto e exigiria que constraints/triggers cobrissem invariantes e auditoria. A escolha final depende de teste no projeto Supabase. A chave `service_role` permanece somente no servidor. [Guia Supabase de RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) e [guia de funções](https://supabase.com/docs/guides/database/functions).
+
+#### 16.8.5 Índices candidatos
+
+- Índices candidatos para listas/totais por período: receita `(owner_id, accounting_period_id, received_on)`, despesa `(owner_id, accounting_period_id, competence_on)` e investimento `(owner_id, accounting_period_id, allocated_on)`.
+- Índices por categoria: receita `(owner_id, category_id, received_on)` e despesa `(owner_id, category_id, competence_on)`; subcategoria pode ser incluída se as consultas dos relatórios justificarem.
+- Índice parcial em `(owner_id, due_on)` para despesas `status = 'pending'` com vencimento, a validar com as consultas de alertas.
+- Índice de auditoria por `(owner_id, entity_type, entity_id, occurred_at)`.
+- Índice único parcial de recorrência descrito na seção 16.8.3.
+- Índice local da fila por `(state, next_retry_at)`.
+
+Índices criados pelas chaves primárias/únicas não serão duplicados. O plano final depende de testes de consultas com dados sintéticos representativos. PostgreSQL permite índices únicos parciais; a migração Drift deverá testar a mesma unicidade no SQLite da plataforma. [Documentação PostgreSQL de índices parciais](https://www.postgresql.org/docs/18/indexes-partial.html).
+
+#### 16.8.6 Decisões ainda abertas antes da aprovação do schema
+
+1. Aprovar esta proposta de tabelas, campos e nullability, especialmente ocorrências variáveis e campos de referência programada.
+2. Aprovar política de referências históricas e `ON DELETE` para categorias, períodos, modelos, usuário e auditoria; o fluxo de exclusão definitiva deve impedir reaparecimento em restauração.
+3. Confirmar suporte a `btree_gist` no Supabase de destino ou manter somente a função serializada para verificar período contíguo.
+4. Aprovar as policies/grants concretas e o conjunto de funções RPC transacionais.
+5. Validar os índices com casos de consulta representativos.
+6. Provar criptografia e compatibilidade Drift em Android, iOS e Web.
+
+As respostas monetárias e a zona IANA já foram definidas pelo responsável nesta Entrega 2. Nenhuma migration PostgreSQL ou Drift será criada antes da aprovação explícita dos itens do schema e da validação das constraints/RLS em ambiente de teste.
+
+#### 16.8.7 Testes automatizados de aceitação do modelo
+
+Após a aprovação do esquema e a disponibilidade de PostgreSQL/Supabase e SQLite, a suíte deve cobrir, no mínimo:
+
+1. Conversão exata de entrada BRL para centavos; zero aceito; valor negativo, mais de duas casas e overflow do inteiro de 64 bits rejeitados. Verificar parse, armazenamento local, sincronização e cálculo Web acima de `2^53 - 1` usando `BigInt`/texto decimal.
+2. Cada período inclui a data inicial e exclui a final; criação concorrente não produz sobreposição nem lacuna. Casos de ciclos com dias 29, 30 e 31 e ano bissexto.
+3. Unicidade por modelo e data programada; reenvio da mesma operação idempotente não cria segunda ocorrência ou auditoria.
+4. Ocorrência variável com valor ausente distinguida de valor zero; receita pendente sem período financeiro; confirmação associa o período pela data efetiva de recebimento.
+5. Despesa recorrente variável não entra no total enquanto não há valor; pagamento não produz segunda dedução; cancelamento preserva auditoria e exclui dos cálculos.
+6. FKs compostas rejeitam referências cruzadas entre proprietários; associações incompatíveis ou subcategoria sem categoria são recusadas; RLS/RPC impedem leitura/escrita de outro usuário e acesso anônimo.
+7. Repetição de chave idempotente retorna o resultado anterior; chave repetida com conteúdo diferente é recusada; versão esperada divergente preserva estados em conflito.
+8. Migrations PostgreSQL partem de banco vazio; migrações Drift avançam da versão anterior sem perder dados; consultas locais e remotas produzem os mesmos resultados nos casos sintéticos.
+
+Nenhum teste de banco foi executado na Entrega 2: não há migrations aprovadas e o daemon Docker/PostgreSQL local não está acessível no ambiente diagnosticado. As verificações desta entrega ficam limitadas à consistência documental até esses pré-requisitos serem atendidos.
+
+#### 16.8.8 Referências técnicas
+
+- [Dart: representação de números e precisão no Web](https://dart.dev/resources/language/number-representation)
+- [Supabase: Row Level Security](https://supabase.com/docs/guides/database/postgres/row-level-security)
+- [Supabase: Database Functions](https://supabase.com/docs/guides/database/functions)
+- [PostgreSQL: Range Types](https://www.postgresql.org/docs/current/rangetypes.html)
+- [PostgreSQL: Explicit Locking](https://www.postgresql.org/docs/18/explicit-locking.html)
+- [PostgreSQL: Partial Indexes](https://www.postgresql.org/docs/18/indexes-partial.html)

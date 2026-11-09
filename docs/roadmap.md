@@ -54,7 +54,7 @@ O aplicativo será individual e multiplataforma (Android, iOS e Web). O offline 
 **Critérios de aceitação:** detalhamentos registrados em arquitetura e banco; modelo lógico revisado; schema e políticas de segurança preparados; cálculos e eventos cobertos por casos de teste.
 
 **Prioridade:** Essencial.  
-**Status:** EM EXECUÇÃO — Entrega 1 (revisão e classificação documentadas; aguardando validação do responsável); esquema físico aguarda aprovação explícita.
+**Status:** EM EXECUÇÃO — Entrega 1 validada em 08/11/2026; Entrega 2 (proposta detalhada do esquema físico) documentada em 09/11/2026 e aguardando validação/aprovação explícita. Nenhuma migration criada.
 
 ### Fase 3 — Estrutura Flutter, autenticação e base offline
 
@@ -113,7 +113,7 @@ O aplicativo será individual e multiplataforma (Android, iOS e Web). O offline 
 - Fatura de cartão como despesa recorrente variável comum.
 - Vencimentos e alertas móveis.
 
-**Dependências:** Fase 4 e definição técnica de timezone, horário e calendário operacional. A regra funcional para datas inexistentes está aprovada na baseline v0.5.
+**Dependências:** Fase 4 e definição do horário/calendário operacional. A zona por usuário `America/Sao_Paulo` e a regra funcional para datas inexistentes estão aprovadas.
 
 **Testes:** geração mensal e por período, ocorrência fixa/variável, confirmação de receita, edição isolada, despesa recorrente e ausência de duplicidade.
 
@@ -213,7 +213,7 @@ P1 representa ordem relativa de entrega, não significa que uma funcionalidade a
 ## 5. Dependências e detalhamentos técnicos
 
 - Implementar e testar os casos de meses curtos e anos bissextos conforme regra aprovada.
-- Definir timezone, horário e calendário operacional para geração de recorrências.
+- Definir horário e calendário operacional para geração de recorrências; zona IANA por usuário `America/Sao_Paulo` aprovada em 08/11/2026.
 - Implementar e testar alertas após o fim do período enquanto a despesa continuar pendente.
 - Detalhar protocolo, retentativas e persistência técnica dos conflitos conforme política aprovada.
 - Detalhar as consultas dos cinco relatórios já aprovados.
@@ -253,11 +253,13 @@ P1 representa ordem relativa de entrega, não significa que uma funcionalidade a
 | 08/11/2026 | Revisão 0.3: ciclos personalizados e paridade de cálculos offline/backend | INCORPORADO COM REVISÕES |
 | 08/11/2026 | Revisão 0.4: removidos módulos de contas e Porquinho virtual; sobra como único indicador; lançamentos, recorrências, categorias e investimento simples | INCORPORADA NA v0.5 |
 | 08/11/2026 | Fase 1 validada pelo responsável; início da Fase 2 | FASE 1 CONCLUÍDA; FASE 2 EM EXECUÇÃO |
+| 08/11/2026 | Entrega 1 da Fase 2 validada pelo responsável | ORGANIZAÇÃO DOS MÓDULOS E ESTRATÉGIA DE TESTES VALIDADAS |
+| 09/11/2026 | Entrega 2 da Fase 2: esquema físico detalhado registrado para revisão | PROPOSTA; aguarda validação e aprovação explícita do esquema; migrations não criadas |
 
 ## 9. Pendências para planejamento detalhado
 
-1. Validar a Entrega 1 da Fase 2; a organização dos módulos está definida tecnicamente, enquanto ambientes aguardam detalhamento operacional.
-2. Definir timezone, horário e calendário operacional de geração de recorrências.
+1. Detalhar ambientes de desenvolvimento, teste e produção; a organização dos módulos está definida e a Entrega 1 foi validada.
+2. Definir horário e calendário operacional de geração de recorrências; a zona `America/Sao_Paulo` por usuário está aprovada.
 3. Implementar e testar ciclos personalizados para dias 29, 30 e 31, inclusive anos bissextos.
 4. Detalhar protocolo, retentativas e persistência de versões conflitantes conforme a política aprovada.
 5. Implementar e testar alertas de despesas pendentes após o fim do período.
@@ -289,6 +291,8 @@ Entregáveis: seis documentos sincronizados; regras de períodos, recorrências,
 - Conflitos preservam versões, são apresentados ao usuário e resolvidos por nova versão consolidada; sem “última gravação vence” silencioso.
 - Banco local criptografado, tokens/chaves em armazenamento seguro, backup diário com retenção de 30 dias, recuperação, exclusão definitiva e exportação CSV.
 - Cinco relatórios: receitas por categoria, despesas por categoria, total de investimentos, evolução da sobra e comparativo receitas/despesas/investimentos.
+- Valores do MVP em BRL/centavos: zero permitido; negativos e precisão acima de duas casas rejeitados sem arredondamento. Decisão do responsável em 08/11/2026.
+- Zona IANA `America/Sao_Paulo` por usuário para geração de recorrências. Decisão do responsável em 08/11/2026; horário/calendário operacional ainda pendentes.
 
 ### 10.3 Stack aprovada
 
@@ -300,7 +304,7 @@ Dashboard local até 1 s; lista até 1 s; salvamento local até 500 ms; atualiza
 
 ### 10.5 Dependências técnicas remanescentes
 
-1. Definir timezone, horário e calendário operacional da geração de recorrências.
+1. Definir horário e calendário operacional da geração de recorrências; a zona IANA por usuário foi aprovada em 08/11/2026.
 2. Detalhar ambientes de desenvolvimento, teste e produção; a organização concreta dos módulos foi definida na Entrega 1 da Fase 2.
 3. Definir migrations, políticas RLS e testes de isolamento no Supabase/PostgreSQL.
 4. Validar criptografia e armazenamento seguro em Android, iOS e Web.
@@ -313,9 +317,9 @@ Esses itens são detalhamentos técnicos e não reabrem as decisões funcionais 
 
 ### 10.6 Próximas etapas
 
-1. Validar a Entrega 1 e a classificação das propostas em `docs/arquitetura.md`; definir o detalhamento operacional dos ambientes.
-2. Revisar e aprovar o esquema físico, moeda/escala monetária, constraints, índices e RLS registrados em `docs/banco_de_dados.md`; não criar migrations antes disso.
-3. Resolver timezone e calendário operacional de recorrências antes de implementar geração.
+1. Detalhar ambientes de desenvolvimento, teste e produção.
+2. Validar a Entrega 2 e aprovar explicitamente o esquema físico, constraints, índices e RLS registrados em `docs/banco_de_dados.md`; moeda/escala e zona foram definidas. Não criar migrations antes da aprovação do esquema.
+3. Definir horário e calendário operacional de recorrências antes de implementar geração; a zona por usuário está aprovada.
 4. Validar criptografia e armazenamento local em Android, iOS e Web antes da implementação correspondente.
 5. Aprovar o protocolo de sincronização e conflitos e planejar sua implementação incremental offline-first.
 
@@ -326,4 +330,5 @@ Esses itens são detalhamentos técnicos e não reabrem as decisões funcionais 
 | 08/11/2026 | 0.4 | Escopo simplificado e sobra como único indicador | Superada pela v0.5 |
 | 08/11/2026 | 0.5 | Correções da auditoria aplicadas; categoria opcional aprovada; propostas técnicas ainda pendentes de aprovação/detalhamento | STATUS HISTÓRICO — validação concluída posteriormente em 08/11/2026 |
 | 08/11/2026 | Fase 1 validada; Fase 2, Entrega 1: propostas de módulos, esquema, RLS, sincronização e testes registradas | PROPOSTAS — aguardam revisão do esquema e decisões técnicas pendentes |
-| 08/11/2026 | Fase 2, Entrega 1: organização de módulos e estratégia de testes revisadas; classificação de decisões registrada em arquitetura e banco | DOCUMENTAÇÃO ATUALIZADA; aguardando validação do responsável; esquema físico permanece PROPOSTA |
+| 08/11/2026 | Fase 2, Entrega 1: organização de módulos e estratégia de testes revisadas e validadas pelo responsável | CONCLUÍDA |
+| 09/11/2026 | Fase 2, Entrega 2: esquema físico detalhado, constraints, RLS e índices registrados como proposta; moeda e timezone confirmados | DOCUMENTAÇÃO ATUALIZADA; aguarda validação/aprovação explícita do esquema; migrations não criadas |

@@ -304,7 +304,7 @@ Alertas do MVP serão enviados a dispositivos móveis Android e iOS, mediante pe
 
 ## 13. Detalhamentos pendentes
 
-As regras funcionais consolidadas não estão pendentes. Antes das implementações correspondentes, definir tecnicamente: timezone, horário e calendário operacional de geração de recorrências; protocolo e retentativas de sincronização; mecanismo de backup, restauração, retenção, exportação e exclusão; e método/dispositivos representativos para validar as metas iniciais de desempenho. A continuidade dos alertas, os relatórios básicos e a regra de meses curtos estão aprovados.
+As regras funcionais consolidadas não estão pendentes. A zona IANA `America/Sao_Paulo` por usuário foi definida em 08/11/2026. Antes das implementações correspondentes, definir tecnicamente: horário e calendário operacional de geração de recorrências; protocolo e retentativas de sincronização; mecanismo de backup, restauração, retenção, exportação e exclusão; e método/dispositivos representativos para validar as metas iniciais de desempenho. A continuidade dos alertas, os relatórios básicos e a regra de meses curtos estão aprovados.
 
 
 ## 14. Consolidação das regras — baseline v0.5
@@ -327,9 +327,9 @@ O dia originalmente configurado deve ser preservado. Quando não existir no mês
 
 Recorrências mensais mantêm o dia de referência original; se a data não existir, usar o último dia do mês sem alterar a referência dos meses seguintes. Recorrências por período geram uma ocorrência no início de cada período. Na abertura do aplicativo e durante a sincronização, verificar ocorrências faltantes e recuperar as atrasadas. A combinação modelo de recorrência + referência programada/competência identifica unicamente uma ocorrência e deve possuir garantia de unicidade no armazenamento. Edição individual não altera modelo nem ocorrências futuras; desativação impede novas ocorrências e preserva o histórico.
 
-Receitas recorrentes são criadas pendentes e só entram na sobra após confirmação do recebimento. Despesas recorrentes entram na sobra quando geradas e com valor definido; pagamento não gera segunda dedução. Horário, timezone e calendário operacional da geração devem ser especificados tecnicamente antes da implementação.
+Receitas recorrentes são criadas pendentes e só entram na sobra após confirmação do recebimento. Despesas recorrentes entram na sobra quando geradas e com valor definido; pagamento não gera segunda dedução. A zona de calendário por usuário é `America/Sao_Paulo`, decisão de 08/11/2026. Horário e calendário operacional da geração devem ser especificados tecnicamente antes da implementação.
 
-**Status:** APROVADO quanto às regras funcionais; detalhamento de horário/timezone permanece técnico.
+**Status:** APROVADO quanto às regras funcionais e à zona IANA por usuário; horário e calendário operacional permanecem detalhamento técnico.
 
 ### RN039 — Pagamento integral
 
@@ -367,6 +367,12 @@ O usuário pode registrar receitas e despesas sem categoria. Nos relatórios por
 
 **Status:** APROVADO — decisão do responsável pelo produto em 08/11/2026.
 
+### RN045 — Moeda, escala e sinal dos valores
+
+Todos os valores financeiros do MVP são denominados em BRL e representados em centavos. Entradas aceitam até duas casas decimais; casas excedentes e valores negativos são rejeitados, sem arredondamento implícito. Valor zero é permitido. Nenhum limite de produto foi definido. O schema físico da Entrega 2 propõe `BIGINT` assinado de 64 bits por valor individual no PostgreSQL; essa faixa técnica permanece PROPOSTA até a aprovação do schema.
+
+**Status:** APROVADO — decisão do responsável pelo produto em 08/11/2026.
+
 ### 14.1 Resumo de status após v0.5
 
 | Tema | Status |
@@ -374,11 +380,13 @@ O usuário pode registrar receitas e despesas sem categoria. Nos relatórios por
 | Limites de período | APROVADO |
 | Meses curtos e anos bissextos | APROVADO |
 | Geração e idempotência de recorrências | APROVADO funcionalmente |
-| Horário/timezone de geração | DETALHAMENTO TÉCNICO PENDENTE |
+| Zona IANA por usuário | APROVADO: `America/Sao_Paulo` |
+| Horário/calendário operacional da geração | DETALHAMENTO TÉCNICO PENDENTE |
 | Pagamentos parciais | FORA DO MVP |
 | Categorias | APROVADO |
 | Alertas após fim do período | APROVADO |
 | Encerramento manual de período | FORA DO MVP |
+| Moeda BRL, escala em centavos, zero permitido e negativos/mais de duas casas rejeitados | APROVADO |
 | Conflitos de sincronização | APROVADO: preservar versões, informar usuário e consolidar em nova versão |
 | Segurança, backup, recuperação e CSV | APROVADO como requisito; desenho técnico detalhado |
 | Obrigatoriedade de categoria | APROVADO: categoria opcional; sem classificação aparece em “Sem categoria” nos relatórios |

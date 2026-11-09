@@ -173,7 +173,7 @@ O usuário pode editar ou cancelar qualquer lançamento, mesmo pago ou recebido.
 
 - Flutter, Dart, Git, Supabase, PostgreSQL, SQLite com Drift, Riverpod, GoRouter, Supabase Auth e serviço próprio de sincronização em Dart estão aprovados conforme a baseline v0.5 da seção 10.4.
 - Plataformas do MVP: Android, iOS e Web.
-- Ambientes, organização concreta de módulos, migrations, RLS, armazenamento seguro, observabilidade, timezone e compatibilidade multiplataforma são detalhamentos técnicos pendentes; não reabrem a stack aprovada.
+- Ambientes, migrations, RLS, armazenamento seguro, observabilidade, horário/calendário da geração e compatibilidade multiplataforma são detalhamentos técnicos pendentes; organização dos módulos e zona IANA por usuário estão definidas na Fase 2.
 - Dados financeiros devem ser isolados por usuário e protegidos local e remotamente.
 - Não armazene senhas, tokens ou segredos no repositório.
 - Antes de adicionar dependência, avalie manutenção, compatibilidade, licença, segurança, custo e impacto operacional.
@@ -243,20 +243,21 @@ Esta seção prevalece sobre qualquer trecho anterior deste arquivo que ainda cl
 - Ao abrir o aplicativo e ao sincronizar, verificar e recuperar ocorrências vencidas que ainda não foram geradas, sem duplicá-las.
 - Edição de ocorrência não altera modelo nem outras ocorrências. Desativação impede ocorrências futuras e preserva o histórico.
 - Receitas recorrentes nascem pendentes e só entram na sobra após confirmação do recebimento. Despesas recorrentes entram na sobra quando geradas e com valor definido; pagamento posterior não deduz novamente.
-- Horário, timezone e calendário operacional da geração são detalhamento técnico obrigatório antes da implementação da rotina; não presumir UTC ou horário local sem decisão registrada.
+- A zona operacional por usuário foi definida como `America/Sao_Paulo` em 08/11/2026. Horário e calendário operacional da geração continuam como detalhamento técnico obrigatório antes da implementação da rotina.
 
 ### 10.3 Outras regras aprovadas
 
 - Pagamentos parciais estão **FORA DO MVP**. Despesas são pagas integralmente ou permanecem pendentes; não há saldo parcial.
 - Categorias não são excluídas fisicamente. Categorias usadas ou não podem ser desativadas; categorias inativas não aparecem em novos lançamentos e permanecem nos históricos. Renomear não reclassifica retroativamente os lançamentos.
 - Categorias são opcionais em receitas e despesas. Nos relatórios por categoria, lançamentos sem classificação aparecem agrupados em **Sem categoria** e continuam incluídos nos totais gerais. Investimentos permanecem sem categoria.
+- Valores monetários do MVP são BRL em centavos: zero é permitido, valores negativos e mais de duas casas decimais são rejeitados, sem arredondamento implícito. Decisão do responsável em 08/11/2026.
 - Alertas de despesa: três dias antes, no vencimento e diariamente após o vencimento enquanto pendente, inclusive depois do fim do período. Cessam ao pagar ou cancelar, respeitadas as permissões do dispositivo.
 - Não existe encerramento ou arquivamento manual de período no MVP. Períodos históricos permanecem consultáveis; despesas pendentes ficam no período de origem; não há transporte financeiro nem bloqueio de edição.
 
 ### 10.4 Stack aprovada
 
 - Flutter/Dart; Supabase; PostgreSQL; SQLite com Drift; Riverpod; GoRouter; Supabase Auth; serviço próprio de sincronização em Dart; Git.
-- A aprovação da stack não substitui o detalhamento de ambientes, RLS, migrations, módulos, armazenamento seguro, timezone, observabilidade e compatibilidade de cada mecanismo entre Android, iOS e Web.
+- A aprovação da stack não substitui o detalhamento de ambientes, RLS, migrations, armazenamento seguro, horário/calendário de recorrências, observabilidade e compatibilidade de cada mecanismo entre Android, iOS e Web. A organização dos módulos está registrada na arquitetura; a zona `America/Sao_Paulo` foi aprovada para cada usuário.
 
 ### 10.5 Sincronização, proteção e portabilidade
 
