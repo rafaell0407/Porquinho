@@ -372,7 +372,7 @@ A geração recupera ocorrências vencidas ao abrir o aplicativo e ao sincroniza
 
 O Drift será a fonte de leitura da interface. Uma operação financeira local grava, na mesma transação, o registro, o evento local de auditoria e a operação de saída. A interface só confirma que foi salva após o commit local.
 
-Para preservar centavos exatos no Flutter Web, a proposta física da Entrega 2 usa `BigInt` no domínio, texto decimal no SQLite/Drift e string decimal no protocolo de sincronização; o PostgreSQL armazena o valor individual como `BIGINT`. A implementação e os testes multiplataforma dependem da aprovação do esquema. A documentação do Dart registra que o `int` compilado para JavaScript não preserva todos os inteiros de 64 bits.
+Para preservar centavos exatos no Flutter Web, a modelagem física aprovada na Entrega 2 usa `BigInt` no domínio, texto decimal no SQLite/Drift e string decimal no protocolo de sincronização; o PostgreSQL armazena o valor individual como `BIGINT`. A migration da Entrega 3 preserva inteiros acima de `2^53 - 1` no PostgreSQL. Round-trip Drift/Web e cálculo multiplataforma ainda precisam de testes.
 
 Cada operação enviada inclui identificador idempotente, usuário autenticado, entidade, versão esperada e conteúdo da alteração. A aplicação remota é transacional: registra o identificador idempotente, valida o proprietário e compara a versão esperada antes de consolidar a nova versão. A repetição do identificador retorna o resultado anterior sem reaplicar efeitos.
 
@@ -388,17 +388,17 @@ O banco local deve ser criptografado. Avaliar SQLCipher para Android e iOS e faz
 
 ### 17.6 Migrations e testes
 
-**Status:** APROVADO como estratégia; migrations efetivas continuam bloqueadas pela aprovação do esquema físico.
+**Status:** Migration PostgreSQL inicial criada e testada localmente na Entrega 3; migrations Drift, RPCs de escrita e validação no Supabase gerenciado permanecem pendentes.
 
 Manter migrations PostgreSQL versionadas em `supabase/migrations/`, revisadas e aplicadas primeiro em ambiente local/teste. Drift mantém versão e migrações locais próprias, com snapshots do esquema. Nenhuma migração de produção deve ser aplicada sem revisão e estratégia de evolução/recuperação.
 
-**Status:** APROVADO como estratégia para as entregas seguintes; nenhum teste de aplicação foi executado nesta entrega documental.
+**Status:** A estratégia de testes foi aprovada na Entrega 1. Na Entrega 3 passou a suíte da migration PostgreSQL com autenticação simulada; nenhum teste de aplicação Flutter foi executado ainda.
 
 A estratégia inclui testes unitários de domínio; integração de transações e migrações Drift; testes de migrations, constraints e RLS com pelo menos dois usuários; idempotência, concorrência e conflitos no protocolo; paridade dos casos financeiros locais/remotos; e regressão Android, Web e iOS em ambiente compatível. Casos sintéticos de teste devem ser identificados como fixtures e nunca apresentados como dados reais. A matriz cobre limites `[início, fim)`, meses curtos e anos bissextos, recorrências, edição/cancelamento e pagamento sem segunda dedução.
 
 ### 17.7 Portões de aprovação da Fase 2
 
-Antes de criar migrations definitivas, revisar e aprovar o modelo físico, tipos monetários, constraints, índices, referências recorrentes e políticas RLS. Antes de implementar a geração recorrente, resolver horário e calendário operacional. Antes de considerar a persistência local multiplataforma preparada, validar a estratégia de criptografia Web. Essas pendências são detalhamentos técnicos; não alteram a stack ou as regras funcionais aprovadas.
+O schema físico base foi aprovado e migrado em PostgreSQL local. Antes de deploy no Supabase gerenciado, testar versão/extensões, grants e RLS no projeto alvo; antes de habilitar escritas, implementar e testar RPCs transacionais. Antes de implementar a geração recorrente, definir horário e calendário operacional. Antes de considerar a persistência local multiplataforma preparada, validar criptografia Web e migrações Drift.
 
 ### 17.8 Registro de decisões da Fase 2 — atualizado em 09/11/2026
 
@@ -411,10 +411,12 @@ Antes de criar migrations definitivas, revisar e aprovar o modelo físico, tipos
 | Separação operacional de ambientes | PROPOSTA | Dev/teste/produção separados; provisionamento e fluxo de promoção ainda não definidos. |
 | Zona IANA por usuário (`America/Sao_Paulo`) | APROVADO | Decisão do responsável em 08/11/2026; política de alteração futura permanece pendente. |
 | BRL, escala em centavos, zero permitido e negativos/precisão extra rejeitados | APROVADO | Decisão do responsável em 08/11/2026; campos e constraints detalhados na proposta física. |
-| Tipo numérico multiplataforma para BRL | PROPOSTA | `BigInt` no domínio, texto decimal local e no protocolo, `BIGINT` remoto; exige aprovação do esquema e teste em Flutter Web. |
-| Esquema físico, nullability e constraints | PROPOSTA | Detalhado na seção 16.8; requer aprovação explícita antes de migrations. |
+| Tipo numérico multiplataforma para BRL | APROVADO tecnicamente | `BigInt` no domínio, texto decimal local/no protocolo, `BIGINT` remoto; persistência Web e testes Flutter ainda pendentes. |
+| Esquema físico base, nullability e constraints | APROVADO | Validado pelo responsável em 09/11/2026; migration inicial aplicada e testada em PostgreSQL local. |
+| FKs `ON DELETE` | APROVADO tecnicamente | `RESTRICT` para impedir remoção acidental; exclusão da conta será operação transacional explícita em entrega futura. |
+| RLS de leitura e grants sem DML direto | APROVADO tecnicamente | Migration inicial e testes locais com duas identidades simuladas; projeto Supabase gerenciado ainda pendente. |
 | Horário/calendário operacional da geração | PENDENTE | Deve ser definido antes da implementação de recorrências. |
 | Criptografia local na Web | PENDENTE | Requer prova técnica antes de escolher mecanismo. |
-| Políticas RLS e funções remotas concretas | PROPOSTA | Requer implementação e testes com isolamento entre usuários. |
+| RPCs de escrita, auditoria, versão e idempotência | PROPOSTA | A migration nega DML direto; requer implementação e testes de isolamento/conflitos. |
 
-Esta classificação não altera regras funcionais nem autoriza migrations definitivas.
+O status distingue a migration local testada do deploy remoto e das RPCs de escrita ainda pendentes.

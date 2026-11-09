@@ -369,7 +369,7 @@ O usuário pode registrar receitas e despesas sem categoria. Nos relatórios por
 
 ### RN045 — Moeda, escala e sinal dos valores
 
-Todos os valores financeiros do MVP são denominados em BRL e representados em centavos. Entradas aceitam até duas casas decimais; casas excedentes e valores negativos são rejeitados, sem arredondamento implícito. Valor zero é permitido. Nenhum limite de produto foi definido. O schema físico da Entrega 2 propõe `BIGINT` assinado de 64 bits por valor individual no PostgreSQL; essa faixa técnica permanece PROPOSTA até a aprovação do schema.
+Todos os valores financeiros do MVP são denominados em BRL e representados em centavos. Entradas aceitam até duas casas decimais; casas excedentes e valores negativos são rejeitados, sem arredondamento implícito. Valor zero é permitido. Nenhum limite de produto foi definido. Em 09/11/2026 o responsável validou o schema físico PostgreSQL `BIGINT` assinado de 64 bits por valor individual e a estratégia local/Web de exatidão (`BigInt`, texto decimal e protocolo em string). O round-trip Drift/Web continua pendente de teste.
 
 **Status:** APROVADO — decisão do responsável pelo produto em 08/11/2026.
 
@@ -387,6 +387,7 @@ Todos os valores financeiros do MVP são denominados em BRL e representados em c
 | Alertas após fim do período | APROVADO |
 | Encerramento manual de período | FORA DO MVP |
 | Moeda BRL, escala em centavos, zero permitido e negativos/mais de duas casas rejeitados | APROVADO |
+| Representação física PostgreSQL `BIGINT` e estratégia exata local/Web | APROVADO pelo responsável em 09/11/2026; compatibilidade Drift/Web pendente de teste |
 | Conflitos de sincronização | APROVADO: preservar versões, informar usuário e consolidar em nova versão |
 | Segurança, backup, recuperação e CSV | APROVADO como requisito; desenho técnico detalhado |
 | Obrigatoriedade de categoria | APROVADO: categoria opcional; sem classificação aparece em “Sem categoria” nos relatórios |

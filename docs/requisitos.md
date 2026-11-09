@@ -296,4 +296,4 @@ Todos respeitam a configuração de período do usuário. Nos relatórios de rec
 
 ### 13.8 Moeda e precisão monetária
 
-Decisão do responsável em 08/11/2026: todos os valores do MVP são BRL; aceitam até duas casas decimais, zero é válido, valores negativos e casas excedentes são rejeitados e não há arredondamento implícito. Nenhum limite de produto foi definido. A representação PostgreSQL `BIGINT` e a representação local/Web exata registradas na Entrega 2 são propostas técnicas e aguardam aprovação do schema.
+Decisão do responsável em 08/11/2026: todos os valores do MVP são BRL; aceitam até duas casas decimais, zero é válido, valores negativos e casas excedentes são rejeitados e não há arredondamento implícito. Nenhum limite de produto foi definido. O responsável validou em 09/11/2026 a representação PostgreSQL `BIGINT` e a estratégia exata local/Web (`BigInt`, texto decimal e protocolo em string). Os testes de Drift/Web permanecem pendentes.

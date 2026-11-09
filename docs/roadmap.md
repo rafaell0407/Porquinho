@@ -54,7 +54,7 @@ O aplicativo será individual e multiplataforma (Android, iOS e Web). O offline 
 **Critérios de aceitação:** detalhamentos registrados em arquitetura e banco; modelo lógico revisado; schema e políticas de segurança preparados; cálculos e eventos cobertos por casos de teste.
 
 **Prioridade:** Essencial.  
-**Status:** EM EXECUÇÃO — Entrega 1 validada em 08/11/2026; Entrega 2 (proposta detalhada do esquema físico) documentada em 09/11/2026 e aguardando validação/aprovação explícita. Nenhuma migration criada.
+**Status:** EM EXECUÇÃO — Entregas 1 e 2 validadas; Entrega 3 (migration PostgreSQL inicial e RLS de leitura) implementada e testada em cluster local temporário em 09/11/2026. RPCs de escrita, migrations Drift e integração com Supabase gerenciado ainda pendentes.
 
 ### Fase 3 — Estrutura Flutter, autenticação e base offline
 
@@ -254,7 +254,8 @@ P1 representa ordem relativa de entrega, não significa que uma funcionalidade a
 | 08/11/2026 | Revisão 0.4: removidos módulos de contas e Porquinho virtual; sobra como único indicador; lançamentos, recorrências, categorias e investimento simples | INCORPORADA NA v0.5 |
 | 08/11/2026 | Fase 1 validada pelo responsável; início da Fase 2 | FASE 1 CONCLUÍDA; FASE 2 EM EXECUÇÃO |
 | 08/11/2026 | Entrega 1 da Fase 2 validada pelo responsável | ORGANIZAÇÃO DOS MÓDULOS E ESTRATÉGIA DE TESTES VALIDADAS |
-| 09/11/2026 | Entrega 2 da Fase 2: esquema físico detalhado registrado para revisão | PROPOSTA; aguarda validação e aprovação explícita do esquema; migrations não criadas |
+| 09/11/2026 | Entrega 2 da Fase 2: esquema físico detalhado validado pelo responsável | APROVADO como base do schema |
+| 09/11/2026 | Entrega 3 da Fase 2: migration PostgreSQL inicial e RLS de leitura | TESTES AUTOMATIZADOS PASSARAM EM POSTGRESQL 18.6 LOCAL; integração Supabase pendente |
 
 ## 9. Pendências para planejamento detalhado
 
@@ -265,7 +266,7 @@ P1 representa ordem relativa de entrega, não significa que uma funcionalidade a
 5. Implementar e testar alertas de despesas pendentes após o fim do período.
 6. Detalhar consultas e apresentação dos cinco relatórios aprovados.
 7. Especificar retenção, backup, restauração, exportação CSV e exclusão definitiva, respeitando a política aprovada.
-8. Especificar chave única/constraint para ocorrências recorrentes e modelo físico.
+8. Implementar o fluxo transacional de exclusão definitiva e validar que backups não reintroduzam dados removidos.
 
 
 ## 10. Baseline de planejamento v0.5
@@ -304,24 +305,24 @@ Dashboard local até 1 s; lista até 1 s; salvamento local até 500 ms; atualiza
 
 ### 10.5 Dependências técnicas remanescentes
 
-1. Definir horário e calendário operacional da geração de recorrências; a zona IANA por usuário foi aprovada em 08/11/2026.
-2. Detalhar ambientes de desenvolvimento, teste e produção; a organização concreta dos módulos foi definida na Entrega 1 da Fase 2.
-3. Definir migrations, políticas RLS e testes de isolamento no Supabase/PostgreSQL.
-4. Validar criptografia e armazenamento seguro em Android, iOS e Web.
-5. Detalhar sessão, logout com operações offline pendentes e autorização.
-6. Especificar backup/restauração, retenção, exclusão definitiva e proteção contra reaparecimento de dados.
-7. Definir observabilidade e monitoramento.
-8. Definir modelo físico, índices e constraints, incluindo unicidade de ocorrência recorrente.
+1. Testar a migration base, grants e RLS no projeto Supabase gerenciado; a suíte atual usa PostgreSQL local e `auth.uid()` simulado.
+2. Implementar RPCs transacionais de escrita, auditoria, controle de versão, idempotência e criação contígua de períodos.
+3. Criar migrations Drift e provar valores exatos `BigInt`/texto em Flutter Web, além da paridade com PostgreSQL.
+4. Detalhar ambientes de desenvolvimento, teste e produção; a organização dos módulos foi definida na Entrega 1.
+5. Validar criptografia e armazenamento seguro em Android, iOS e Web.
+6. Definir horário e calendário operacional de recorrências; a zona IANA por usuário está aprovada.
+7. Detalhar sessão, logout com operações offline pendentes e autorização.
+8. Especificar backup/restauração, retenção, exclusão definitiva, observabilidade e proteção contra reaparecimento de dados.
 
 Esses itens são detalhamentos técnicos e não reabrem as decisões funcionais aprovadas.
 
 ### 10.6 Próximas etapas
 
-1. Detalhar ambientes de desenvolvimento, teste e produção.
-2. Validar a Entrega 2 e aprovar explicitamente o esquema físico, constraints, índices e RLS registrados em `docs/banco_de_dados.md`; moeda/escala e zona foram definidas. Não criar migrations antes da aprovação do esquema.
-3. Definir horário e calendário operacional de recorrências antes de implementar geração; a zona por usuário está aprovada.
-4. Validar criptografia e armazenamento local em Android, iOS e Web antes da implementação correspondente.
-5. Aprovar o protocolo de sincronização e conflitos e planejar sua implementação incremental offline-first.
+1. Configurar os ambientes de desenvolvimento, teste e produção.
+2. Implementar e testar as RPCs de escrita e sincronização no PostgreSQL, sem permitir DML direto dos clientes.
+3. Criar a migration Drift e testar paridade local/Web de BRL e datas antes da Fase 3.
+4. Validar criptografia e armazenamento local em Android, iOS e Web.
+5. Definir horário e calendário operacional de recorrências; a zona por usuário está aprovada.
 
 ### 10.7 Histórico
 
@@ -331,4 +332,5 @@ Esses itens são detalhamentos técnicos e não reabrem as decisões funcionais 
 | 08/11/2026 | 0.5 | Correções da auditoria aplicadas; categoria opcional aprovada; propostas técnicas ainda pendentes de aprovação/detalhamento | STATUS HISTÓRICO — validação concluída posteriormente em 08/11/2026 |
 | 08/11/2026 | Fase 1 validada; Fase 2, Entrega 1: propostas de módulos, esquema, RLS, sincronização e testes registradas | PROPOSTAS — aguardam revisão do esquema e decisões técnicas pendentes |
 | 08/11/2026 | Fase 2, Entrega 1: organização de módulos e estratégia de testes revisadas e validadas pelo responsável | CONCLUÍDA |
-| 09/11/2026 | Fase 2, Entrega 2: esquema físico detalhado, constraints, RLS e índices registrados como proposta; moeda e timezone confirmados | DOCUMENTAÇÃO ATUALIZADA; aguarda validação/aprovação explícita do esquema; migrations não criadas |
+| 09/11/2026 | Fase 2, Entrega 2: esquema físico detalhado, constraints, RLS e índices registrados | VALIDADA PELO RESPONSÁVEL; schema-base aprovado |
+| 09/11/2026 | Fase 2, Entrega 3: migration inicial, grants read-only, RLS e testes de constraints/isolamento | PASSOU EM POSTGRESQL 18.6 LOCAL; RPCs e Supabase gerenciado pendentes |

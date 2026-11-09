@@ -2,11 +2,11 @@
 
 **Versão:** 0.5  
 **Data da última atualização:** 09/11/2026
-**Status:** Modelo conceitual v0.5 revisado; esquema físico da Entrega 2 registrado como PROPOSTA, aguardando aprovação
+**Status:** Modelo conceitual v0.5 e schema físico-base aprovados; migration PostgreSQL inicial testada localmente. RPCs de escrita, migration Drift e integração Supabase ainda pendentes.
 
 ## 1. Visão geral
 
-Este documento descreve os conceitos de dados necessários ao MVP simplificado do Porquinho. Não representa esquema físico aprovado e não autoriza criação de tabelas ou migrations.
+Este documento registra o modelo conceitual aprovado e o schema físico-base aprovado em 09/11/2026. A migration PostgreSQL inicial está em `supabase/migrations/`; políticas e RPCs ainda pendentes permanecem identificadas como tais. O schema não autoriza entidades fora do escopo aprovado.
 
 O MVP armazena usuários, preferências de período, períodos de apuração, categorias, receitas, despesas, recorrências, destinações simples para investimentos, auditoria e operações de sincronização.
 
@@ -325,13 +325,15 @@ Drift mantém `schemaVersion`, snapshots gerados e migrações locais independen
 
 ### 16.6 Pendências antes da aprovação do esquema
 
+**Registro histórico da Entrega 1:** o texto abaixo registra as pendências existentes antes da validação do schema na Entrega 2. O estado atual e as pendências remanescentes estão nas seções 16.8 e 16.9.
+
 1. Aprovar campos e nullability de receita/despesa recorrente pendente, especialmente valor variável e período.
 2. Aprovar a representação canônica da referência mensal e por período e a respectiva constraint.
 3. Validar mecanismo de não sobreposição e continuidade de períodos no PostgreSQL de destino.
 4. Aprovar tipos, índices, política de exclusão definitiva/tombstones e retenção de auditoria.
 5. Testar compatibilidade de criptografia e armazenamento local em Android, iOS e Web antes da implementação correspondente.
 
-Até a resolução dessas pendências e aprovação explícita do esquema físico, este documento permanece PROPOSTA e nenhuma migration definitiva deve ser criada.
+Naquele momento, até a resolução dessas pendências e aprovação explícita do esquema físico, o documento permanecia PROPOSTA e nenhuma migration definitiva deveria ser criada.
 
 ### 16.7 Resultado da revisão da Entrega 1 — classificação para validação
 
@@ -352,19 +354,19 @@ Os valores e registros usados nos futuros testes de banco serão fixtures sinté
 
 ### 16.8 Esquema físico detalhado — Entrega 2
 
-**Data:** 09/11/2026. **Status:** PROPOSTA para validação do responsável. Esta especificação ainda não aprova migrations. As decisões confirmadas nesta entrega são BRL com escala em centavos, zero permitido, negativos e mais de duas casas decimais rejeitados sem arredondamento, e zona IANA `America/Sao_Paulo` por usuário.
+**Data:** 09/11/2026. **Status:** APROVADO pelo responsável em 09/11/2026 como base do schema. A migração PostgreSQL inicial e seus testes constam na seção 16.9. O contrato de escrita por RPC, a migration Drift e a validação no Supabase gerenciado permanecem pendentes.
 
 #### 16.8.1 Convenções comuns
 
 - Identificadores de domínio são UUIDs criados no cliente para permitir gravação offline. Tabelas remotas de domínio usam `owner_id UUID NOT NULL` e chave primária composta `(owner_id, id)`; `user_preferences` usa `owner_id` como chave primária.
-- `owner_id` referencia `auth.users(id)`. Referências entre dados de usuário usam chaves estrangeiras compostas que incluem `owner_id`, impedindo associações entre proprietários diferentes.
+- `owner_id` referencia `auth.users(id)` com `ON DELETE RESTRICT`; referências entre dados de usuário usam chaves estrangeiras compostas que incluem `owner_id`, impedindo associações entre proprietários diferentes. Exclusão definitiva da conta requer fluxo transacional explícito, após exportação e sincronização, que remova os dados dependentes na ordem segura.
 - Registros mutáveis e sincronizáveis mantêm `version BIGINT`, `created_at TIMESTAMPTZ` e `updated_at TIMESTAMPTZ`. Eventos e resultados imutáveis têm instante próprio. No SQLite, IDs, enums e centavos são `TEXT`; datas são `TEXT` ISO `YYYY-MM-DD`, instantes são texto UTC ISO-8601 e versões usam `INTEGER`.
 - Todos os valores monetários usam BRL em centavos, sem coluna `currency_code` no MVP. O limite superior técnico é `9.223.372.036.854.775.807` centavos por valor; nenhum limite de produto menor está aprovado.
 - `user_preferences.time_zone_id` guarda a zona IANA por usuário, com padrão `America/Sao_Paulo`. A zona determina a data corrente usada para recuperar ocorrências vencidas ao abrir o aplicativo ou sincronizar. Política para uma futura alteração da zona permanece pendente; períodos e datas já persistidos não são instantes e não são convertidos.
 
-#### 16.8.2 Tabelas e campos candidatos
+#### 16.8.2 Tabelas e campos do schema aprovado
 
-| Tabela | Campos e regras propostas |
+| Tabela | Campos e regras aprovados; situação de implementação |
 |---|---|
 | `user_preferences` | `owner_id` PK/FK; `theme` opcional (`light`/`dark`); `time_zone_id` obrigatório com padrão aprovado; `version`, `updated_at`. Uma linha por usuário. |
 | `period_configurations` | `id`, `owner_id`, `mode` (`calendar_month`/`custom_cycle`), `custom_start_day` (1–31 somente no ciclo personalizado), `effective_from DATE`, versão e timestamps. Configurações antigas não são reescritas. |
@@ -398,7 +400,7 @@ Para impedir períodos sobrepostos, PostgreSQL oferece o tipo `daterange` com li
 
 #### 16.8.4 RLS, grants e funções
 
-RLS será habilitada em todas as tabelas remotas expostas com dados de usuário. Políticas para `authenticated` exigem `auth.uid() IS NOT NULL AND auth.uid() = owner_id`; acesso `anon` é negado. Grants serão definidos separadamente: políticas RLS não removem permissões SQL concedidas à role. Clientes recebem grants de leitura mínimos e não recebem `INSERT`/`UPDATE`/`DELETE` diretos nas tabelas financeiras.
+Na migração inicial da Entrega 3, RLS foi habilitada nas tabelas remotas. Políticas de leitura para `authenticated` exigem `auth.uid() IS NOT NULL AND auth.uid() = owner_id`; acesso `anon` é negado. Grants são separados: além de revogar `CREATE` público e todo DML direto dos clientes, a migration concede somente `SELECT` a `authenticated`. Essas políticas foram verificadas localmente com duas identidades Supabase simuladas; a integração no Supabase gerenciado ainda está pendente.
 
 Operações que alteram lançamento, auditoria, versão e idempotência passam por funções autenticadas transacionais. A proposta preferida é `SECURITY DEFINER` com proprietário de privilégio mínimo, `search_path = ''`, objetos qualificados, `EXECUTE` restrito a `authenticated` e validação explícita de `auth.uid()`, `owner_id`, FKs, versão esperada e idempotência em cada operação. Como uma função `SECURITY DEFINER` pode operar com privilégios do proprietário e não depender da RLS como barreira efetiva, cada consulta e escrita deve restringir explicitamente o proprietário; RLS continua protegendo acesso direto/leitura. Alternativa: `SECURITY INVOKER` com grants de escrita e policies RLS, mas isso permitiria DML direto e exigiria que constraints/triggers cobrissem invariantes e auditoria. A escolha final depende de teste no projeto Supabase. A chave `service_role` permanece somente no servidor. [Guia Supabase de RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) e [guia de funções](https://supabase.com/docs/guides/database/functions).
 
@@ -413,20 +415,19 @@ Operações que alteram lançamento, auditoria, versão e idempotência passam p
 
 Índices criados pelas chaves primárias/únicas não serão duplicados. O plano final depende de testes de consultas com dados sintéticos representativos. PostgreSQL permite índices únicos parciais; a migração Drift deverá testar a mesma unicidade no SQLite da plataforma. [Documentação PostgreSQL de índices parciais](https://www.postgresql.org/docs/18/indexes-partial.html).
 
-#### 16.8.6 Decisões ainda abertas antes da aprovação do schema
+#### 16.8.6 Pendências técnicas após aprovação do schema
 
-1. Aprovar esta proposta de tabelas, campos e nullability, especialmente ocorrências variáveis e campos de referência programada.
-2. Aprovar política de referências históricas e `ON DELETE` para categorias, períodos, modelos, usuário e auditoria; o fluxo de exclusão definitiva deve impedir reaparecimento em restauração.
-3. Confirmar suporte a `btree_gist` no Supabase de destino ou manter somente a função serializada para verificar período contíguo.
-4. Aprovar as policies/grants concretas e o conjunto de funções RPC transacionais.
-5. Validar os índices com casos de consulta representativos.
-6. Provar criptografia e compatibilidade Drift em Android, iOS e Web.
+1. As FKs usam `ON DELETE RESTRICT`; implementar e testar futuramente o fluxo transacional de exclusão definitiva da conta, sem perder a proteção contra remoção física acidental de categorias ou histórico.
+2. Não foi adicionada a extensão `btree_gist`. Toda gravação de períodos deve passar por RPC transacional que serialize por proprietário com advisory lock e valide continuidade e ausência de sobreposição; implementar e testar concorrência antes de liberar escrita.
+3. A migration habilita leitura própria por RLS e bloqueia DML direto. Implementar as RPCs de escrita autenticadas, auditoria, controle de versão e idempotência com `SECURITY DEFINER` endurecido; testar no Supabase gerenciado.
+4. Medir os índices com consultas representativas antes da otimização final.
+5. Provar criptografia e compatibilidade Drift em Android, iOS e Web; a migration local ainda não foi criada.
 
-As respostas monetárias e a zona IANA já foram definidas pelo responsável nesta Entrega 2. Nenhuma migration PostgreSQL ou Drift será criada antes da aprovação explícita dos itens do schema e da validação das constraints/RLS em ambiente de teste.
+A Entrega 2 foi validada pelo responsável em 09/11/2026. A migration da Entrega 3 foi aplicada somente a um PostgreSQL temporário local; não foi implantada em projeto Supabase ou produção.
 
 #### 16.8.7 Testes automatizados de aceitação do modelo
 
-Após a aprovação do esquema e a disponibilidade de PostgreSQL/Supabase e SQLite, a suíte deve cobrir, no mínimo:
+Critérios de aceitação do schema; os itens ainda não executados estão marcados como pendentes:
 
 1. Conversão exata de entrada BRL para centavos; zero aceito; valor negativo, mais de duas casas e overflow do inteiro de 64 bits rejeitados. Verificar parse, armazenamento local, sincronização e cálculo Web acima de `2^53 - 1` usando `BigInt`/texto decimal.
 2. Cada período inclui a data inicial e exclui a final; criação concorrente não produz sobreposição nem lacuna. Casos de ciclos com dias 29, 30 e 31 e ano bissexto.
@@ -437,7 +438,9 @@ Após a aprovação do esquema e a disponibilidade de PostgreSQL/Supabase e SQLi
 7. Repetição de chave idempotente retorna o resultado anterior; chave repetida com conteúdo diferente é recusada; versão esperada divergente preserva estados em conflito.
 8. Migrations PostgreSQL partem de banco vazio; migrações Drift avançam da versão anterior sem perder dados; consultas locais e remotas produzem os mesmos resultados nos casos sintéticos.
 
-Nenhum teste de banco foi executado na Entrega 2: não há migrations aprovadas e o daemon Docker/PostgreSQL local não está acessível no ambiente diagnosticado. As verificações desta entrega ficam limitadas à consistência documental até esses pré-requisitos serem atendidos.
+**Executado na Entrega 3:** migration aplicada em banco PostgreSQL 18.6 vazio; constraints de sinal, período não vazio, modelo de recorrência, referência composta entre proprietários, chave única de ocorrência e tipo imutável de categoria; zero e ocorrência variável sem valor; leitura isolada entre dois usuários; acesso anônimo e escrita direta negados; valor acima de `2^53 - 1` preservado exatamente no PostgreSQL; remoção de usuário com dados bloqueada por `RESTRICT`. Fixtures são sintéticas.
+
+**Pendente:** parser/conversão BRL no Flutter, round-trip local Drift/Web, cálculos locais/remotos, limites semiabertos na função de criação de períodos, concorrência, RPC idempotente/auditável, conflitos e testes de autorização no Supabase gerenciado.
 
 #### 16.8.8 Referências técnicas
 
@@ -447,3 +450,9 @@ Nenhum teste de banco foi executado na Entrega 2: não há migrations aprovadas 
 - [PostgreSQL: Range Types](https://www.postgresql.org/docs/current/rangetypes.html)
 - [PostgreSQL: Explicit Locking](https://www.postgresql.org/docs/18/explicit-locking.html)
 - [PostgreSQL: Partial Indexes](https://www.postgresql.org/docs/18/indexes-partial.html)
+
+### 16.9 Entrega 3 — migration PostgreSQL inicial
+
+**Implementado:** `supabase/migrations/20261109000100_initial_schema.sql` cria as tabelas remotas aprovadas, constraints, chaves compostas por proprietário, índices, triggers para tipo imutável de categoria e compatibilidade do tipo de categoria. Todas as FKs para `auth.users` e referências históricas usam `ON DELETE RESTRICT`; a limpeza definitiva de conta ficará em uma operação transacional explícita futura. O migration aplica RLS, concede somente leitura própria a `authenticated` e bloqueia DML direto. As RPCs de escrita ainda não existem, então a API não pode gravar estas tabelas.
+
+**Testes automatizados:** `tooling/test_postgres_schema.ps1` cria PostgreSQL 18.6 temporário em loopback, inicializa banco vazio, simula `auth.users`, roles `anon`/`authenticated` e `auth.uid()`, aplica todas as migrations e executa `supabase/tests/initial_schema_test.sql`. Para repetir, deixe `initdb.exe`, `pg_ctl.exe` e `psql.exe` no `PATH` e rode `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tooling/test_postgres_schema.ps1`. A suíte passou em 09/11/2026. A autenticação foi simulada; a suíte não substitui integração com Supabase gerenciado.
