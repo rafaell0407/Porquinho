@@ -54,7 +54,7 @@ O aplicativo será individual e multiplataforma (Android, iOS e Web). O offline 
 **Critérios de aceitação:** detalhamentos registrados em arquitetura e banco; modelo lógico revisado; schema e políticas de segurança preparados; cálculos e eventos cobertos por casos de teste.
 
 **Prioridade:** Essencial.  
-**Status:** EM EXECUÇÃO — Entregas 1 e 2 validadas; migration PostgreSQL e RPC de categorias passaram em PostgreSQL local nas Entregas 3 e 4. RPCs das demais entidades, migrations Drift e integração com Supabase gerenciado ainda pendentes.
+**Status:** EM EXECUÇÃO — Entregas 1 e 2 validadas; migrations PostgreSQL de schema, categorias e períodos passaram em PostgreSQL local nas Entregas 3 a 5, incluindo concorrência. RPCs das demais entidades, migrations Drift e integração com Supabase gerenciado ainda pendentes.
 
 ### Fase 3 — Estrutura Flutter, autenticação e base offline
 
@@ -257,6 +257,7 @@ P1 representa ordem relativa de entrega, não significa que uma funcionalidade a
 | 09/11/2026 | Entrega 2 da Fase 2: esquema físico detalhado validado pelo responsável | APROVADO como base do schema |
 | 09/11/2026 | Entrega 3 da Fase 2: migration PostgreSQL inicial e RLS de leitura | TESTES AUTOMATIZADOS PASSARAM EM POSTGRESQL 18.6 LOCAL; integração Supabase pendente |
 | 09/11/2026 | Entrega 4 da Fase 2: RPC transacional para criar, renomear e desativar categorias | TESTES AUTOMATIZADOS PASSARAM EM POSTGRESQL 18.6 LOCAL; integração Supabase e outras RPCs pendentes |
+| 09/11/2026 | Entrega 5 da Fase 2: RPC de períodos com trava por usuário e auditoria | TESTES FUNCIONAIS E DUAS SESSÕES CONCORRENTES PASSARAM EM POSTGRESQL 18.6 LOCAL; AGUARDA VALIDAÇÃO DO RESPONSÁVEL E SUPABASE GERENCIADO |
 
 ## 9. Pendências para planejamento detalhado
 
@@ -307,7 +308,7 @@ Dashboard local até 1 s; lista até 1 s; salvamento local até 500 ms; atualiza
 ### 10.5 Dependências técnicas remanescentes
 
 1. Testar a migration base, grants e RLS no projeto Supabase gerenciado; a suíte atual usa PostgreSQL local e `auth.uid()` simulado.
-2. Implementar RPCs transacionais para períodos, subcategorias, lançamentos e recorrências, com auditoria, controle de versão e idempotência; a RPC de categorias foi concluída na Entrega 4.
+2. Implementar RPCs transacionais para subcategorias, lançamentos e recorrências, com auditoria, controle de versão e idempotência; categorias e períodos foram concluídos nas Entregas 4 e 5.
 3. Criar migrations Drift e provar valores exatos `BigInt`/texto em Flutter Web, além da paridade com PostgreSQL.
 4. Detalhar ambientes de desenvolvimento, teste e produção; a organização dos módulos foi definida na Entrega 1.
 5. Validar criptografia e armazenamento seguro em Android, iOS e Web.
@@ -320,11 +321,12 @@ Esses itens são detalhamentos técnicos e não reabrem as decisões funcionais 
 ### 10.6 Próximas etapas
 
 1. Configurar os ambientes de desenvolvimento, teste e produção.
-2. Implementar a RPC transacional de criação contígua de períodos com trava por proprietário e testes de concorrência.
-3. Implementar RPCs de subcategorias, lançamentos e recorrências com auditoria, versionamento e idempotência.
-4. Criar a migration Drift e testar paridade local/Web de BRL e datas antes da Fase 3.
-5. Validar criptografia e armazenamento local em Android, iOS e Web.
-6. Definir horário e calendário operacional de recorrências; a zona por usuário está aprovada.
+2. Validar com o responsável a proposta de primeira fronteira após mudança de modalidade/dia de período.
+3. Testar migrations, grants, RLS e ownership das funções no Supabase gerenciado.
+4. Implementar RPCs de subcategorias, lançamentos e recorrências com auditoria, versionamento e idempotência.
+5. Criar a migration Drift e testar paridade local/Web de BRL e datas antes da Fase 3.
+6. Validar criptografia e armazenamento local em Android, iOS e Web.
+7. Definir horário e calendário operacional de recorrências; a zona por usuário está aprovada.
 
 ### 10.7 Histórico
 
@@ -337,3 +339,4 @@ Esses itens são detalhamentos técnicos e não reabrem as decisões funcionais 
 | 09/11/2026 | Fase 2, Entrega 2: esquema físico detalhado, constraints, RLS e índices registrados | VALIDADA PELO RESPONSÁVEL; schema-base aprovado |
 | 09/11/2026 | Fase 2, Entrega 3: migration inicial, grants read-only, RLS e testes de constraints/isolamento | PASSOU EM POSTGRESQL 18.6 LOCAL; RPCs e Supabase gerenciado pendentes |
 | 09/11/2026 | Fase 2, Entrega 4: RPC de categorias com versionamento, idempotência, auditoria e conflitos | PASSOU EM POSTGRESQL 18.6 LOCAL; demais RPCs e Supabase gerenciado pendentes |
+| 09/11/2026 | Fase 2, Entrega 5: RPC de criação de períodos e teste de duas sessões simultâneas | PASSOU EM POSTGRESQL 18.6 LOCAL; AGUARDA VALIDAÇÃO DO RESPONSÁVEL; fronteira após mudança PROPOSTA e Supabase gerenciado pendente |

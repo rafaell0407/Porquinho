@@ -378,7 +378,7 @@ Cada operação enviada inclui identificador idempotente, usuário autenticado, 
 
 Quando a versão esperada não corresponder, o servidor preserva os estados conflitantes e devolve um conflito explícito. O cliente mantém a versão local, apresenta o conflito e suspende operações dependentes daquela entidade; operações independentes continuam. A resolução é uma nova alteração versionada e auditável. Não se usa sobrescrita silenciosa por última gravação.
 
-Escritas remotas são restringidas a funções autenticadas que façam validações e mantenham auditoria na mesma transação. RLS protege leitura própria e grants SQL bloqueiam DML direto. A Entrega 4 implementa a RPC de categorias com `SECURITY DEFINER`, proprietária `postgres`, `search_path` vazio, referências qualificadas, execução concedida somente a `authenticated` e proprietário derivado de `auth.uid()`. Como `postgres` ignora RLS, toda consulta e escrita da função filtra explicitamente por esse usuário. O teste local cobre os caminhos e permissões da RPC de categorias; RPCs para outras entidades e validação no Supabase gerenciado permanecem pendentes. Esta escolha não concede acesso direto às tabelas nem altera a política de isolamento.
+Escritas remotas são restringidas a funções autenticadas que façam validações e mantenham auditoria na mesma transação. RLS protege leitura própria e grants SQL bloqueiam DML direto. As Entregas 4 e 5 implementam RPCs de categoria e período com `SECURITY DEFINER`, proprietária `postgres`, `search_path` vazio, referências qualificadas, execução concedida somente a `authenticated` e proprietário derivado de `auth.uid()`. Como `postgres` ignora RLS, toda consulta e escrita das funções filtra explicitamente por esse usuário. A RPC de período serializa chamadas do mesmo proprietário com trava advisory e valida as fronteiras; testes locais cobrem isolamento e duas chamadas simultâneas. RPCs para outras entidades e validação no Supabase gerenciado permanecem pendentes. A primeira fronteira após alteração da configuração está registrada como PROPOSTA na RN002 até validação do responsável.
 
 ### 17.5 Proteção local multiplataforma
 
@@ -388,7 +388,7 @@ O banco local deve ser criptografado. Avaliar SQLCipher para Android e iOS e faz
 
 ### 17.6 Migrations e testes
 
-**Status:** Migrations PostgreSQL de schema e RPC de categorias testadas localmente nas Entregas 3 e 4; migrations Drift, RPCs das demais entidades e validação no Supabase gerenciado permanecem pendentes.
+**Status:** Migrations PostgreSQL de schema, categoria e período testadas localmente nas Entregas 3 a 5; migrations Drift, RPCs das demais entidades e validação no Supabase gerenciado permanecem pendentes.
 
 Manter migrations PostgreSQL versionadas em `supabase/migrations/`, revisadas e aplicadas primeiro em ambiente local/teste. Drift mantém versão e migrações locais próprias, com snapshots do esquema. Nenhuma migração de produção deve ser aplicada sem revisão e estratégia de evolução/recuperação.
 
@@ -398,7 +398,7 @@ A estratégia inclui testes unitários de domínio; integração de transações
 
 ### 17.7 Portões de aprovação da Fase 2
 
-O schema físico base e a RPC de categorias foram testados em PostgreSQL local. Antes do deploy no Supabase gerenciado, testar versão, grants, ownership de funções e RLS no projeto alvo. Antes de habilitar escrita para cada entidade, implementar e testar sua RPC transacional. Antes de implementar a geração recorrente, definir horário e calendário operacional. Antes de considerar a persistência local multiplataforma preparada, validar criptografia Web e migrações Drift.
+O schema físico base e as RPCs de categoria e período passaram em PostgreSQL local, incluindo duas sessões concorrentes. Antes do deploy no Supabase gerenciado, testar versão, grants, ownership de funções e RLS no projeto alvo. Antes de habilitar escrita para cada entidade, implementar e testar sua RPC transacional. Validar com o responsável a proposta de primeira fronteira após mudança de configuração. Antes de implementar a geração recorrente, definir horário e calendário operacional. Antes de considerar a persistência local multiplataforma preparada, validar criptografia Web e migrações Drift.
 
 ### 17.8 Registro de decisões da Fase 2 — atualizado em 09/11/2026
 
@@ -418,6 +418,7 @@ O schema físico base e a RPC de categorias foram testados em PostgreSQL local. 
 | Horário/calendário operacional da geração | PENDENTE | Deve ser definido antes da implementação de recorrências. |
 | Criptografia local na Web | PENDENTE | Requer prova técnica antes de escolher mecanismo. |
 | RPC autenticada de categorias | APROVADO tecnicamente na Entrega 4 | `SECURITY DEFINER`, proprietário `postgres`, identidade via `auth.uid()`, controle de versão, idempotência e auditoria; testada em PostgreSQL local. |
-| RPCs para períodos, subcategorias, lançamentos e recorrências | PENDENTE | Permanecem sem escrita remota até implementação e testes específicos. |
+| RPC de criação de períodos | APROVADO tecnicamente na Entrega 5 | Trava advisory por proprietário, fronteiras semiabertas, idempotência e auditoria; teste concorrente local passou. A primeira fronteira após mudança de configuração está PROPOSTA, aguardando validação do responsável. |
+| RPCs para subcategorias, lançamentos e recorrências | PENDENTE | Permanecem sem escrita remota até implementação e testes específicos. |
 
-O status distingue as migrations locais testadas do deploy remoto e das RPCs de escrita das demais entidades ainda pendentes.
+O status distingue migrations e RPCs locais testadas do deploy remoto e das RPCs das demais entidades ainda pendentes.

@@ -33,6 +33,8 @@ Alteração de modalidade ou dia inicial passa a valer somente a partir do próx
 
 **Status:** APROVADO.
 
+**Detalhamento de transição implementado na Entrega 5 — PROPOSTA, aguardando validação do responsável:** quando a configuração muda, o primeiro período com a nova configuração começa no fim do período anterior e termina na próxima fronteira da nova modalidade/dia inicial que seja posterior ao início. Os períodos seguintes seguem a agenda regular aprovada. Essa interpretação mantém a continuidade, inclusive quando a nova fronteira mensal não coincide com a fronteira anterior.
+
 ### RN003 — Dias inexistentes em meses curtos
 
 Esta regra foi resolvida na baseline v0.5: preservar o dia original configurado e, quando ele não existir no mês, usar o último dia disponível. No mês seguinte, retornar ao dia original quando possível. Ver RN037.

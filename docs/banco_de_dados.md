@@ -2,11 +2,11 @@
 
 **Versão:** 0.5  
 **Data da última atualização:** 09/11/2026
-**Status:** Modelo conceitual v0.5 e schema físico-base aprovados; migration PostgreSQL e RPC de categorias testadas localmente. RPCs das demais entidades, migration Drift e integração Supabase ainda pendentes.
+**Status:** Modelo conceitual v0.5 e schema físico-base aprovados; migrations PostgreSQL de schema, categorias e períodos testadas localmente. RPCs das demais entidades, migration Drift e integração Supabase ainda pendentes.
 
 ## 1. Visão geral
 
-Este documento registra o modelo conceitual aprovado e o schema físico-base aprovado em 09/11/2026. As migrations PostgreSQL estão em `supabase/migrations/`; RPCs das demais entidades e validação no Supabase gerenciado permanecem identificadas como pendentes. O schema não autoriza entidades fora do escopo aprovado.
+Este documento registra o modelo conceitual aprovado e o schema físico-base aprovado em 09/11/2026. As migrations PostgreSQL estão em `supabase/migrations/`; RPCs das demais entidades e validação no Supabase gerenciado permanecem identificadas como pendentes. A interpretação da primeira fronteira após mudança de período está como PROPOSTA na RN002 até validação do responsável. O schema não autoriza entidades fora do escopo aprovado.
 
 O MVP armazena usuários, preferências de período, períodos de apuração, categorias, receitas, despesas, recorrências, destinações simples para investimentos, auditoria e operações de sincronização.
 
@@ -402,7 +402,7 @@ Para impedir períodos sobrepostos, PostgreSQL oferece o tipo `daterange` com li
 
 Na migração inicial da Entrega 3, RLS foi habilitada nas tabelas remotas. Políticas de leitura para `authenticated` exigem `auth.uid() IS NOT NULL AND auth.uid() = owner_id`; acesso `anon` é negado. Grants são separados: além de revogar `CREATE` público e todo DML direto dos clientes, a migration concede somente `SELECT` a `authenticated`. Essas políticas foram verificadas localmente com duas identidades Supabase simuladas; a integração no Supabase gerenciado ainda está pendente.
 
-**Decisão de implementação da Entrega 4 para categorias:** `public.apply_category_change` usa `SECURITY DEFINER`, proprietário `postgres`, `search_path = ''`, nomes de objetos qualificados e execução concedida somente a `authenticated`. A função deriva o usuário de `auth.uid()` e restringe cada leitura/escrita ao mesmo `owner_id`; o cliente não fornece proprietário. Como o proprietário `postgres` ignora RLS, a verificação explícita de usuário dentro da função é obrigatória. O teste local cobre permissões, isolamento, versionamento, idempotência e auditoria. Este mecanismo está implementado somente para criar, renomear e desativar categorias; demais RPCs e a validação no Supabase gerenciado permanecem pendentes. A chave `service_role` permanece somente no servidor. [Guia Supabase de RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) e [guia de funções](https://supabase.com/docs/guides/database/functions).
+**Decisões de implementação das Entregas 4 e 5:** as RPCs `public.apply_category_change` e `public.create_accounting_period` usam `SECURITY DEFINER`, proprietário `postgres`, `search_path = ''`, nomes de objetos qualificados e execução concedida somente a `authenticated`. Ambas derivam o usuário de `auth.uid()` e restringem cada leitura/escrita ao mesmo `owner_id`; o cliente não fornece proprietário. Como `postgres` ignora RLS, a verificação explícita de usuário dentro das funções é obrigatória. Os testes locais cobrem permissões e isolamento. Categoria implementa criação/renomeação/desativação, versionamento, idempotência, auditoria e conflito; período implementa criação contígua, configuração efetiva, trava transacional por usuário, idempotência, auditoria e conflitos de criação. RPCs de outras entidades e validação no Supabase gerenciado permanecem pendentes. A chave `service_role` permanece somente no servidor. [Guia Supabase de RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) e [guia de funções](https://supabase.com/docs/guides/database/functions).
 
 #### 16.8.5 Índices candidatos
 
@@ -418,7 +418,7 @@ Na migração inicial da Entrega 3, RLS foi habilitada nas tabelas remotas. Pol�
 #### 16.8.6 Pendências técnicas após aprovação do schema
 
 1. As FKs usam `ON DELETE RESTRICT`; implementar e testar futuramente o fluxo transacional de exclusão definitiva da conta, sem perder a proteção contra remoção física acidental de categorias ou histórico.
-2. Não foi adicionada a extensão `btree_gist`. Toda gravação de períodos deve passar por RPC transacional que serialize por proprietário com advisory lock e valide continuidade e ausência de sobreposição; implementar e testar concorrência antes de liberar escrita.
+2. Não foi adicionada a extensão `btree_gist`. A Entrega 5 implementa a criação de período por RPC transacional, serializada por proprietário com advisory lock, e valida continuidade e ausência de sobreposição. O teste concorrente local passou; validar no Supabase gerenciado antes de liberar escrita remota.
 3. A migration habilita leitura própria por RLS e bloqueia DML direto. A Entrega 4 implementa esse fluxo para categorias; criar e testar RPCs equivalentes para as demais entidades e validar todas no Supabase gerenciado.
 4. Medir os índices com consultas representativas antes da otimização final.
 5. Provar criptografia e compatibilidade Drift em Android, iOS e Web; a migration local ainda não foi criada.
@@ -442,7 +442,9 @@ Critérios de aceitação do schema; os itens ainda não executados estão marca
 
 **Executado na Entrega 4:** RPC de categorias testada para create/rename/deactivate, replay idempotente, reutilização de chave com payload diferente, controle de versão, conflito com snapshots, auditoria anterior/nova, ausência de sessão, isolamento entre usuários e grants de execução.
 
-**Pendente:** parser/conversão BRL no Flutter, round-trip local Drift/Web, cálculos locais/remotos, criação contígua e concorrente de períodos, RPCs de escrita para as demais entidades, resolução de conflitos e testes de autorização no Supabase gerenciado.
+**Executado na Entrega 5:** datas mensais; início/fim semiabertos; criação inicial e continuação; rejeição de gaps e overlaps; alteração de configuração no período seguinte; transição para ciclo personalizado; dias 20 e 31, fevereiro bissexto, retorno ao dia original; idempotência, conflitos, auditoria, rollback, isolamento e DML direto bloqueado. Duas sessões simultâneas confirmaram espera na trava advisory e criaram períodos consecutivos sem gap.
+
+**Pendente:** parser/conversão BRL no Flutter, round-trip local Drift/Web, cálculos locais/remotos, validação no Supabase gerenciado, RPCs de escrita para as demais entidades e resolução de conflitos. A regra de fronteira do primeiro período após mudança de configuração está registrada como PROPOSTA para validação do responsável.
 
 #### 16.8.8 Referências técnicas
 
@@ -457,7 +459,7 @@ Critérios de aceitação do schema; os itens ainda não executados estão marca
 
 **Implementado na Entrega 3:** `supabase/migrations/20261109000100_initial_schema.sql` cria as tabelas remotas aprovadas, constraints, chaves compostas por proprietário, índices, triggers para tipo imutável de categoria e compatibilidade do tipo de categoria. Todas as FKs para `auth.users` e referências históricas usam `ON DELETE RESTRICT`; a limpeza definitiva de conta ficará em uma operação transacional explícita futura. O migration aplica RLS, concede somente leitura própria a `authenticated` e bloqueia DML direto. Naquele ponto, as RPCs de escrita ainda não existiam.
 
-**Testes automatizados:** `tooling/test_postgres_schema.ps1` cria PostgreSQL 18.6 temporário em loopback, inicializa banco vazio, simula `auth.users`, roles `anon`/`authenticated` e `auth.uid()`, aplica todas as migrations e executa os arquivos `supabase/tests/*_test.sql`. Para repetir, deixe `initdb.exe`, `pg_ctl.exe` e `psql.exe` no `PATH` e rode `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tooling/test_postgres_schema.ps1`. A suíte passou em 09/11/2026. A autenticação foi simulada; a suíte não substitui integração com Supabase gerenciado.
+**Testes automatizados:** `tooling/test_postgres_schema.ps1` cria PostgreSQL 18.6 temporário em loopback, inicializa banco vazio, simula `auth.users`, roles `anon`/`authenticated` e `auth.uid()`, aplica todas as migrations, executa `supabase/tests/*_test.sql` e roda um teste concorrente em duas sessões. Para repetir, deixe `initdb.exe`, `pg_ctl.exe` e `psql.exe` no `PATH` e rode `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tooling/test_postgres_schema.ps1`. A suíte passou em 09/11/2026. A autenticação foi simulada; a suíte não substitui integração com Supabase gerenciado.
 
 ### 16.10 Entrega 4 — RPC transacional de categorias
 
@@ -467,4 +469,14 @@ Cada chamada grava a categoria ou conflito, o resultado idempotente e, quando ap
 
 **Testado localmente:** sessão autenticada e ausente, grants, isolamento de proprietário, create/rename/deactivate, avanço da versão, auditoria, repetição idempotente, chave reutilizada com outro conteúdo, conflito persistido e repetido sem duplicação.
 
-**Pendente:** teste no Supabase gerenciado, chamadas concorrentes, resolução do conflito como nova versão e RPCs de períodos, subcategorias, lançamentos e recorrências. O PostgreSQL local usado na suíte simula `auth.uid()` e não comprova configuração ou privilégios do projeto remoto.
+**Pendente após a Entrega 4:** teste no Supabase gerenciado, resolução do conflito como nova versão e RPCs de subcategorias, lançamentos e recorrências. O PostgreSQL local usado na suíte simula `auth.uid()` e não comprova configuração ou privilégios do projeto remoto.
+
+### 16.11 Entrega 5 — RPC transacional de períodos
+
+`supabase/migrations/20261109000300_accounting_period_rpc.sql` cria `public.create_accounting_period(operation_id, period_id, configuration_id, start_date, mode, custom_start_day)`. A chamada deriva o usuário de `auth.uid()`, cria a configuração inicial ou uma nova configuração efetiva no início do período e grava o período e a auditoria atomicamente. Repetição da mesma chave e conteúdo retorna o resultado anterior; conflito com período/configuração existente preserva snapshots em `sync_conflicts`.
+
+A RPC serializa operações do mesmo proprietário com `pg_advisory_xact_lock`, calcula o fim exclusivo a partir da configuração e valida a adjacência com o período anterior e seguinte. Mês-calendário começa no dia 1. Ciclo personalizado preserva o dia configurado, ajusta meses curtos e retorna ao dia original quando possível. **A primeira fronteira após mudança de modalidade/dia é uma PROPOSTA registrada na RN002:** o novo período começa no fim do anterior e termina na próxima fronteira da nova agenda posterior a esse início.
+
+**Testado localmente:** meses e ciclos personalizados, fevereiro de 2028, dias 20/31, gaps/overlaps, replay, colisão de versão/ID, mudança efetiva de configuração, auditoria, rollback, isolamento, bloqueio de escrita direta e duas sessões concorrentes observadas esperando na mesma trava por usuário. Todo o teste usa PostgreSQL 18.6 temporário e identidade Auth simulada.
+
+**Pendente:** validação no Supabase gerenciado e aprovação do responsável para a proposta da primeira fronteira de transição. A migração não foi implantada remotamente.
