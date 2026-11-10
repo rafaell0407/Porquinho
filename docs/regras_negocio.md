@@ -33,7 +33,7 @@ Alteração de modalidade ou dia inicial passa a valer somente a partir do próx
 
 **Status:** APROVADO.
 
-**Detalhamento de transição implementado na Entrega 5 — PROPOSTA, aguardando validação do responsável:** quando a configuração muda, o primeiro período com a nova configuração começa no fim do período anterior e termina na próxima fronteira da nova modalidade/dia inicial que seja posterior ao início. Os períodos seguintes seguem a agenda regular aprovada. Essa interpretação mantém a continuidade, inclusive quando a nova fronteira mensal não coincide com a fronteira anterior.
+**Detalhamento de transição — APROVADO pelo responsável em 09/11/2026:** quando a configuração muda, o primeiro período com a nova configuração começa no fim do período anterior e termina na próxima fronteira da nova modalidade/dia inicial que seja posterior ao início. Os períodos seguintes seguem a agenda regular aprovada. Essa regra mantém a continuidade, inclusive quando a nova fronteira mensal não coincide com a fronteira anterior.
 
 ### RN003 — Dias inexistentes em meses curtos
 
@@ -306,7 +306,7 @@ Alertas do MVP serão enviados a dispositivos móveis Android e iOS, mediante pe
 
 ## 13. Detalhamentos pendentes
 
-As regras funcionais consolidadas não estão pendentes. A zona IANA `America/Sao_Paulo` por usuário foi definida em 08/11/2026. Antes das implementações correspondentes, definir tecnicamente: horário e calendário operacional de geração de recorrências; protocolo e retentativas de sincronização; mecanismo de backup, restauração, retenção, exportação e exclusão; e método/dispositivos representativos para validar as metas iniciais de desempenho. A continuidade dos alertas, os relatórios básicos e a regra de meses curtos estão aprovados.
+As regras funcionais consolidadas não estão pendentes. A zona IANA `America/Sao_Paulo` por usuário foi definida em 08/11/2026. Permanecem detalhamentos técnicos: protocolo e retentativas de sincronização; mecanismo de backup, restauração, retenção, exportação e exclusão; e método/dispositivos representativos para validar as metas iniciais de desempenho. A continuidade dos alertas, os relatórios básicos e a regra de meses curtos estão aprovados.
 
 
 ## 14. Consolidação das regras — baseline v0.5
@@ -327,11 +327,11 @@ O dia originalmente configurado deve ser preservado. Quando não existir no mês
 
 ### RN038 — Geração idempotente de recorrências
 
-Recorrências mensais mantêm o dia de referência original; se a data não existir, usar o último dia do mês sem alterar a referência dos meses seguintes. Recorrências por período geram uma ocorrência no início de cada período. Na abertura do aplicativo e durante a sincronização, verificar ocorrências faltantes e recuperar as atrasadas. A combinação modelo de recorrência + referência programada/competência identifica unicamente uma ocorrência e deve possuir garantia de unicidade no armazenamento. Edição individual não altera modelo nem ocorrências futuras; desativação impede novas ocorrências e preserva o histórico.
+Recorrências mensais mantêm o dia de referência original; se a data não existir, usar o último dia do mês sem alterar a referência dos meses seguintes. A primeira ocorrência mensal é a primeira data de referência igual ou posterior ao início da recorrência (por exemplo, criada em 10 de maio com referência no dia 31, começa em 31 de maio). Recorrências por período geram uma ocorrência no início de cada período; se criadas durante um período, também geram a ocorrência desse período, mesmo que sua data seja anterior à criação. Na abertura do aplicativo e durante a sincronização, verificar ocorrências faltantes e recuperar as atrasadas até a data corrente na zona do usuário, sem depender de agendador em segundo plano. A combinação modelo de recorrência + referência programada/competência identifica unicamente uma ocorrência e deve possuir garantia de unicidade no armazenamento. Edição individual não altera modelo nem ocorrências futuras; desativação impede novas ocorrências e preserva o histórico.
 
-Receitas recorrentes são criadas pendentes e só entram na sobra após confirmação do recebimento. Despesas recorrentes entram na sobra quando geradas e com valor definido; pagamento não gera segunda dedução. A zona de calendário por usuário é `America/Sao_Paulo`, decisão de 08/11/2026. Horário e calendário operacional da geração devem ser especificados tecnicamente antes da implementação.
+Receitas recorrentes são criadas pendentes e só entram na sobra após confirmação do recebimento. Despesas recorrentes entram na sobra quando geradas e com valor definido; pagamento não gera segunda dedução. A zona de calendário por usuário é `America/Sao_Paulo`, decisão de 08/11/2026. A geração ocorre ao abrir o aplicativo e sincronizar, usando a data corrente nessa zona.
 
-**Status:** APROVADO quanto às regras funcionais e à zona IANA por usuário; horário e calendário operacional permanecem detalhamento técnico.
+**Status:** APROVADO. Primeira data mensal e inclusão do período atual na recorrência por período foram decididas em 09/11/2026.
 
 ### RN039 — Pagamento integral
 
@@ -371,7 +371,7 @@ O usuário pode registrar receitas e despesas sem categoria. Nos relatórios por
 
 ### RN045 — Moeda, escala e sinal dos valores
 
-Todos os valores financeiros do MVP são denominados em BRL e representados em centavos. Entradas aceitam até duas casas decimais; casas excedentes e valores negativos são rejeitados, sem arredondamento implícito. Valor zero é permitido. Nenhum limite de produto foi definido. Em 09/11/2026 o responsável validou o schema físico PostgreSQL `BIGINT` assinado de 64 bits por valor individual e a estratégia local/Web de exatidão (`BigInt`, texto decimal e protocolo em string). O round-trip Drift/Web continua pendente de teste.
+Todos os valores financeiros do MVP são denominados em BRL e representados em centavos. Entradas aceitam até duas casas decimais; casas excedentes e valores negativos são rejeitados, sem arredondamento implícito. Valor zero é permitido. Nenhum limite de produto foi definido. Em 09/11/2026 o responsável validou o schema físico PostgreSQL `BIGINT` assinado de 64 bits por valor individual e a estratégia local/Web de exatidão (`BigInt`, texto decimal e protocolo em string). Drift grava e lê valores exatos no SQLite nativo; a validação Web continua pendente.
 
 **Status:** APROVADO — decisão do responsável pelo produto em 08/11/2026.
 
@@ -383,13 +383,13 @@ Todos os valores financeiros do MVP são denominados em BRL e representados em c
 | Meses curtos e anos bissextos | APROVADO |
 | Geração e idempotência de recorrências | APROVADO funcionalmente |
 | Zona IANA por usuário | APROVADO: `America/Sao_Paulo` |
-| Horário/calendário operacional da geração | DETALHAMENTO TÉCNICO PENDENTE |
+| Geração ao abrir e sincronizar, usando a zona IANA | APROVADO; implementado localmente |
 | Pagamentos parciais | FORA DO MVP |
 | Categorias | APROVADO |
 | Alertas após fim do período | APROVADO |
 | Encerramento manual de período | FORA DO MVP |
 | Moeda BRL, escala em centavos, zero permitido e negativos/mais de duas casas rejeitados | APROVADO |
-| Representação física PostgreSQL `BIGINT` e estratégia exata local/Web | APROVADO pelo responsável em 09/11/2026; compatibilidade Drift/Web pendente de teste |
+| Representação física PostgreSQL `BIGINT` e estratégia exata local/Web | APROVADO pelo responsável em 09/11/2026; round-trip Drift nativo testado; Web pendente |
 | Conflitos de sincronização | APROVADO: preservar versões, informar usuário e consolidar em nova versão |
 | Segurança, backup, recuperação e CSV | APROVADO como requisito; desenho técnico detalhado |
 | Obrigatoriedade de categoria | APROVADO: categoria opcional; sem classificação aparece em “Sem categoria” nos relatórios |

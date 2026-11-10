@@ -42,7 +42,7 @@ Plataformas do MVP: Android, iOS e Web.
 
 ### 2.2 Tecnologias aprovadas e detalhamento pendente
 
-A stack foi aprovada conforme a tabela da seção 2.1. A organização concreta dos módulos foi aprovada tecnicamente na Entrega 1 da Fase 2 e está registrada na seção 17.1. A zona `America/Sao_Paulo` por usuário foi definida na Entrega 2. Permanecem pendentes configurações e decisões de implementação: ambientes, migrations, políticas RLS, horário/calendário operacional, observabilidade, chaves e compatibilidade multiplataforma.
+A stack foi aprovada conforme a tabela da seção 2.1. A organização concreta dos módulos foi aprovada tecnicamente na Entrega 1 da Fase 2 e está registrada na seção 17.1. A zona `America/Sao_Paulo` por usuário foi definida na Entrega 2. Permanecem pendentes configurações e decisões de implementação: ambientes, políticas RLS, observabilidade, chaves e compatibilidade multiplataforma.
 
 ### 2.3 Detalhamentos técnicos pendentes
 
@@ -252,7 +252,6 @@ O MVP será distribuído para Android, iOS e Web. Lojas, hospedagem web, assinat
 1. Ambientes e configuração operacional.
 2. Migrations, políticas e testes RLS, constraints e modelo físico.
 3. Configuração OAuth, gestão de sessão e armazenamento seguro por plataforma.
-4. Horário e calendário operacional da geração de recorrências; a zona IANA por usuário está aprovada.
 5. Protocolo de sincronização, retentativas e mecanismo técnico para preservar/resolver conflitos segundo a política aprovada.
 6. Estratégia de notificações móveis e validação multiplataforma.
 7. Mecanismo e procedimento de backup, restauração, retenção, exportação CSV e exclusão definitiva.
@@ -284,7 +283,7 @@ A stack está aprovada; organização concreta de módulos está registrada na s
 
 Todos os períodos usam `[início, fim)`. O início é inclusivo e o fim exclusivo. Ciclo personalizado preserva o dia original e, em mês curto, utiliza o último dia disponível; retorna ao dia original no mês seguinte quando possível. Exemplo para dia 31: `[31/01,28/02)`, `[28/02,31/03)`, `[31/03,30/04)`. Mudança de configuração entra em vigor no próximo período.
 
-Recorrências mensais preservam o dia de referência e usam o último dia do mês quando a data não existir. Recorrências por período geram uma ocorrência no início de cada período. Na abertura do app e na sincronização, recuperar ocorrências ausentes. A unicidade lógica e física deve impedir mais de uma ocorrência por modelo e referência programada. Edição de ocorrência não altera o modelo nem outras ocorrências; desativação impede geração futura. A zona por usuário está definida como `America/Sao_Paulo`; horário e calendário operacional devem ser especificados antes de implementar a geração.
+Recorrências mensais preservam o dia de referência e usam o último dia do mês quando a data não existir. A primeira ocorrência mensal é a primeira data de referência igual ou posterior ao início do modelo. Recorrências por período geram ocorrência no início de cada período, inclusive no período atual quando o modelo é criado durante esse período. Na abertura do app e na sincronização, recuperar ocorrências ausentes até a data corrente na zona do usuário, sem agendador em segundo plano. A unicidade lógica e física impede mais de uma ocorrência por modelo e referência programada. Edição individual não altera o modelo nem outras ocorrências; desativação impede ocorrências futuras. A zona é `America/Sao_Paulo`.
 
 ### 16.3 Sincronização e conflitos
 
@@ -311,7 +310,7 @@ Alertas de despesa: três dias antes, no vencimento e diariamente após vencimen
 
 ### 16.6 Pendências técnicas remanescentes
 
-Não são decisões de produto pendentes; são detalhamentos necessários antes da implementação correspondente: ambientes; migrations; políticas e testes RLS; estratégia de chaves; sessão e autorização; horário/calendário operacional da geração; estratégia de observabilidade; mecanismo de backup e restauração; validação de armazenamento seguro e criptografia em Android, iOS e Web; política de logout com fila offline. A organização de módulos está definida na seção 17.1 e a zona IANA por usuário foi aprovada na seção 17.8.
+Não são decisões de produto pendentes; são detalhamentos necessários antes da implementação correspondente: ambientes; migrations; políticas e testes RLS; estratégia de chaves; sessão e autorização; estratégia de observabilidade; mecanismo de backup e restauração; validação de armazenamento seguro e criptografia em Android, iOS e Web; política de logout com fila offline. A organização de módulos está definida na seção 17.1 e a zona IANA por usuário foi aprovada na seção 17.8.
 
 
 ## 17. Detalhamento arquitetural da Fase 2 — decisões e propostas
@@ -356,29 +355,33 @@ As dependências fluem da apresentação para a aplicação e desta para o domí
 
 ### 17.2 Ambientes e configuração
 
-Propõe-se separar projetos Supabase de desenvolvimento, teste e produção, sem compartilhar dados financeiros reais entre ambientes. URLs e chaves públicas são fornecidas por configuração de build; chaves administrativas, senhas e tokens ficam somente em armazenamento seguro ou gerenciador de segredos do ambiente de execução/CI. Arquivos de exemplo devem conter placeholders, nunca credenciais. A criação dos projetos e o processo operacional de promoção permanecem pendentes de configuração.
+**Status:** stack local do Supabase iniciada em 09/11/2026 com Docker Desktop 29.9.2; migrations locais 20261109000100–20261109000900 aplicadas no banco local. Ambientes Supabase hospedados de desenvolvimento, teste e produção e processo de promoção ainda são PROPOSTA/PENDENTE de provisionamento.
+
+O ambiente local versionado em `supabase/config.toml` usa o projeto lógico `porquinho-dev`; o banco local é isolado dos ambientes hospedados. O seed automático fica desativado até existir fixture sintética aprovada. A suíte PostgreSQL atual cria cluster temporário e usa Auth simulado. As nove migrations existentes também foram aplicadas e conferidas no Supabase local; a validação de RLS e grants no Supabase gerenciado permanece pendente.
+
+Para os ambientes hospedados, propõe-se separar projetos Supabase de desenvolvimento, teste e produção, sem compartilhar dados financeiros reais. URLs e chaves públicas serão fornecidas por configuração de build; chaves administrativas, senhas e tokens ficam somente em armazenamento seguro ou gerenciador de segredos do ambiente de execução/CI. Arquivos de exemplo devem conter placeholders, nunca credenciais. Os projetos hospedados ainda dependem de organização/projeto e referências fornecidas pelo responsável, além do processo de promoção.
 
 ### 17.3 Datas e geração recorrente
 
 **Status:** APROVADO tecnicamente para representação dos dados e decisão do responsável para a zona operacional.
 
-Datas de competência, vencimento e pagamento serão datas de calendário, sem conversão em instantes. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC. A zona IANA armazenada por usuário é `America/Sao_Paulo`, aprovada pelo responsável em 08/11/2026; horário de execução e política para eventual alteração da zona permanecem pendentes.
+Datas de competência, vencimento e pagamento serão datas de calendário, sem conversão em instantes. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC. A zona IANA armazenada por usuário é `America/Sao_Paulo`, aprovada pelo responsável em 08/11/2026. A data corrente é calculada nessa zona e a geração de ocorrências ocorre ao abrir o aplicativo e durante a sincronização; não há execução em segundo plano.
 
-A geração recupera ocorrências vencidas ao abrir o aplicativo e ao sincronizar; não depende de um agendador em segundo plano. A data corrente é interpretada na zona do usuário. Esta decisão não define um horário de execução nem altera as frequências aprovadas.
+A geração recupera ocorrências vencidas ao abrir o aplicativo e ao sincronizar; não depende de um agendador em segundo plano. A primeira ocorrência mensal é a primeira data de referência igual ou posterior ao início do modelo. Um modelo por período criado no meio do período inclui a ocorrência do período atual, mesmo com data anterior à criação.
 
 ### 17.4 Persistência local, fila e conflitos
 
-**Status:** APROVADO como contrato arquitetural inicial na Entrega 1; implementação e testes permanecem pendentes.
+**Status:** Contrato APROVADO na Entrega 1; schema Drift v1 e testes do SQLite nativo implementados na Entrega 9. Conexão persistente criptografada, operação offline transacional e integração do app permanecem pendentes.
 
 O Drift será a fonte de leitura da interface. Uma operação financeira local grava, na mesma transação, o registro, o evento local de auditoria e a operação de saída. A interface só confirma que foi salva após o commit local.
 
-Para preservar centavos exatos no Flutter Web, a modelagem física aprovada na Entrega 2 usa `BigInt` no domínio, texto decimal no SQLite/Drift e string decimal no protocolo de sincronização; o PostgreSQL armazena o valor individual como `BIGINT`. A migration da Entrega 3 preserva inteiros acima de `2^53 - 1` no PostgreSQL. Round-trip Drift/Web e cálculo multiplataforma ainda precisam de testes.
+Para preservar centavos exatos no Flutter Web, a modelagem física aprovada na Entrega 2 usa `BigInt` no domínio, texto decimal no SQLite/Drift e string decimal no protocolo de sincronização; o PostgreSQL armazena o valor individual como `BIGINT`. A migration da Entrega 3 preserva inteiros acima de `2^53 - 1` no PostgreSQL. O schema Drift v1 e o round-trip SQLite nativo passaram; round-trip Drift/Web e cálculo multiplataforma ainda precisam de testes.
 
 Cada operação enviada inclui identificador idempotente, usuário autenticado, entidade, versão esperada e conteúdo da alteração. A aplicação remota é transacional: registra o identificador idempotente, valida o proprietário e compara a versão esperada antes de consolidar a nova versão. A repetição do identificador retorna o resultado anterior sem reaplicar efeitos.
 
 Quando a versão esperada não corresponder, o servidor preserva os estados conflitantes e devolve um conflito explícito. O cliente mantém a versão local, apresenta o conflito e suspende operações dependentes daquela entidade; operações independentes continuam. A resolução é uma nova alteração versionada e auditável. Não se usa sobrescrita silenciosa por última gravação.
 
-Escritas remotas são restringidas a funções autenticadas que façam validações e mantenham auditoria na mesma transação. RLS protege leitura própria e grants SQL bloqueiam DML direto. As Entregas 4 e 5 implementam RPCs de categoria e período com `SECURITY DEFINER`, proprietária `postgres`, `search_path` vazio, referências qualificadas, execução concedida somente a `authenticated` e proprietário derivado de `auth.uid()`. Como `postgres` ignora RLS, toda consulta e escrita das funções filtra explicitamente por esse usuário. A RPC de período serializa chamadas do mesmo proprietário com trava advisory e valida as fronteiras; testes locais cobrem isolamento e duas chamadas simultâneas. RPCs para outras entidades e validação no Supabase gerenciado permanecem pendentes. A primeira fronteira após alteração da configuração está registrada como PROPOSTA na RN002 até validação do responsável.
+Escritas remotas são restringidas a funções autenticadas que façam validações e mantenham auditoria na mesma transação. RLS protege leitura própria e grants SQL bloqueiam DML direto. As Entregas 4 a 6 implementam RPCs de categoria, período e subcategoria; as Entregas 7A e 7B adicionam destinações a investimentos e lançamentos avulsos de receitas/despesas; a Entrega 7C adiciona modelos recorrentes; a Entrega 8 adiciona geração e ciclo de vida de ocorrências. Essas funções usam `SECURITY DEFINER`, proprietária `postgres`, `search_path` vazio, referências qualificadas, execução concedida somente a `authenticated` e proprietário derivado de `auth.uid()`. Como `postgres` ignora RLS, toda consulta e escrita das funções filtra explicitamente por esse usuário. A RPC de período serializa chamadas do mesmo proprietário com trava advisory e valida as fronteiras; os testes locais cobrem isolamento e duas chamadas simultâneas. A validação no Supabase gerenciado permanece pendente. A Entrega 5 e a regra de transição foram validadas pelo responsável em 09/11/2026.
 
 ### 17.5 Proteção local multiplataforma
 
@@ -388,7 +391,7 @@ O banco local deve ser criptografado. Avaliar SQLCipher para Android e iOS e faz
 
 ### 17.6 Migrations e testes
 
-**Status:** Migrations PostgreSQL de schema, categoria e período testadas localmente nas Entregas 3 a 5; migrations Drift, RPCs das demais entidades e validação no Supabase gerenciado permanecem pendentes.
+**Status:** Migrations PostgreSQL/RPCs passaram localmente nas Entregas 3 a 8; schema Drift v1 e testes nativos passaram na Entrega 9. Adapter persistente criptografado, validação Web e integração Supabase gerenciada permanecem pendentes.
 
 Manter migrations PostgreSQL versionadas em `supabase/migrations/`, revisadas e aplicadas primeiro em ambiente local/teste. Drift mantém versão e migrações locais próprias, com snapshots do esquema. Nenhuma migração de produção deve ser aplicada sem revisão e estratégia de evolução/recuperação.
 
@@ -398,7 +401,7 @@ A estratégia inclui testes unitários de domínio; integração de transações
 
 ### 17.7 Portões de aprovação da Fase 2
 
-O schema físico base e as RPCs de categoria e período passaram em PostgreSQL local, incluindo duas sessões concorrentes. Antes do deploy no Supabase gerenciado, testar versão, grants, ownership de funções e RLS no projeto alvo. Antes de habilitar escrita para cada entidade, implementar e testar sua RPC transacional. Validar com o responsável a proposta de primeira fronteira após mudança de configuração. Antes de implementar a geração recorrente, definir horário e calendário operacional. Antes de considerar a persistência local multiplataforma preparada, validar criptografia Web e migrações Drift.
+O schema físico base e as RPCs de categoria, período, subcategoria e ocorrências passaram em PostgreSQL local. A Entrega 5 e a regra de transição após mudança de configuração foram validadas pelo responsável em 09/11/2026. Antes do deploy no Supabase gerenciado, testar versão, grants, ownership de funções e RLS no projeto alvo. Antes de considerar a persistência local multiplataforma preparada, validar criptografia Web e migrações Drift.
 
 ### 17.8 Registro de decisões da Fase 2 — atualizado em 09/11/2026
 
@@ -415,10 +418,12 @@ O schema físico base e as RPCs de categoria e período passaram em PostgreSQL l
 | Esquema físico base, nullability e constraints | APROVADO | Validado pelo responsável em 09/11/2026; migration inicial aplicada e testada em PostgreSQL local. |
 | FKs `ON DELETE` | APROVADO tecnicamente | `RESTRICT` para impedir remoção acidental; exclusão da conta será operação transacional explícita em entrega futura. |
 | RLS de leitura e grants sem DML direto | APROVADO tecnicamente | Migration inicial e testes locais com duas identidades simuladas; projeto Supabase gerenciado ainda pendente. |
-| Horário/calendário operacional da geração | PENDENTE | Deve ser definido antes da implementação de recorrências. |
 | Criptografia local na Web | PENDENTE | Requer prova técnica antes de escolher mecanismo. |
 | RPC autenticada de categorias | APROVADO tecnicamente na Entrega 4 | `SECURITY DEFINER`, proprietário `postgres`, identidade via `auth.uid()`, controle de versão, idempotência e auditoria; testada em PostgreSQL local. |
-| RPC de criação de períodos | APROVADO tecnicamente na Entrega 5 | Trava advisory por proprietário, fronteiras semiabertas, idempotência e auditoria; teste concorrente local passou. A primeira fronteira após mudança de configuração está PROPOSTA, aguardando validação do responsável. |
-| RPCs para subcategorias, lançamentos e recorrências | PENDENTE | Permanecem sem escrita remota até implementação e testes específicos. |
+| RPC de criação de períodos | VALIDADA pelo responsável em 09/11/2026 (Entrega 5) | Trava advisory por proprietário, fronteiras semiabertas, idempotência e auditoria; teste concorrente local passou. Regra da primeira fronteira após mudança de configuração também aprovada. |
+| RPC autenticada de subcategorias | IMPLEMENTADA E TESTADA LOCALMENTE na Entrega 6; aguarda validação do responsável | `SECURITY DEFINER`, proprietário `postgres`, identidade via `auth.uid()`, idempotência, versionamento, conflitos e auditoria. |
+| RPCs de lançamentos, modelos e ocorrências recorrentes | IMPLEMENTADAS E TESTADAS LOCALMENTE | Deploy e validação no Supabase gerenciado permanecem pendentes. |
 
-O status distingue migrations e RPCs locais testadas do deploy remoto e das RPCs das demais entidades ainda pendentes.
+O status distingue migrations e RPCs locais testadas do deploy remoto, ainda pendente.
+
+Na Entrega 7A foi implementada a RPC `public.apply_investment_allocation_change` com gravação autenticada, associação por data ao período, idempotência, versionamento, auditoria e conflitos. Na Entrega 7B foram implementadas as RPCs de receitas e despesas avulsas. Na Entrega 7C foram implementadas as RPCs de modelos; na Entrega 8, geração e ciclo de vida das ocorrências. Os testes PostgreSQL locais passaram. A validação remota continua pendente.

@@ -2,11 +2,11 @@
 
 **Versão:** 0.5  
 **Data da última atualização:** 09/11/2026
-**Status:** Modelo conceitual v0.5 e schema físico-base aprovados; migrations PostgreSQL de schema, categorias e períodos testadas localmente. RPCs das demais entidades, migration Drift e integração Supabase ainda pendentes.
+**Status:** Modelo conceitual v0.5 e schema físico-base aprovados; migrations PostgreSQL/RPCs testadas localmente e schema Drift v1 criado/testado em SQLite nativo. Abertura persistente criptografada, validação Web e integração Supabase gerenciado ainda pendentes.
 
 ## 1. Visão geral
 
-Este documento registra o modelo conceitual aprovado e o schema físico-base aprovado em 09/11/2026. As migrations PostgreSQL estão em `supabase/migrations/`; RPCs das demais entidades e validação no Supabase gerenciado permanecem identificadas como pendentes. A interpretação da primeira fronteira após mudança de período está como PROPOSTA na RN002 até validação do responsável. O schema não autoriza entidades fora do escopo aprovado.
+Este documento registra o modelo conceitual aprovado e o schema físico-base aprovado em 09/11/2026. As migrations PostgreSQL estão em `supabase/migrations/`; RPCs até o ciclo de vida de ocorrências recorrentes foram implementadas e testadas localmente nas Entregas 7A a 8. A validação no Supabase gerenciado permanece pendente. A regra de transição na primeira fronteira após mudança de período foi aprovada pelo responsável em 09/11/2026 e está descrita na RN002. O schema não autoriza entidades fora do escopo aprovado.
 
 O MVP armazena usuários, preferências de período, períodos de apuração, categorias, receitas, despesas, recorrências, destinações simples para investimentos, auditoria e operações de sincronização.
 
@@ -82,7 +82,7 @@ Destinações para investimento não usam categorias.
 
 Modelos de recorrência de receita e de despesa são entidades conceituais separadas. Campos conceituais: usuário, descrição, tipo, frequência (mensal ou por período), data de início, valor padrão quando fixo, indicador fixo/variável, categoria quando aplicável, vencimento quando aplicável e status ativo/inativo.
 
-O tratamento funcional de datas inexistentes está aprovado: usar o último dia do mês, preservando a referência original para meses seguintes. `America/Sao_Paulo` por usuário foi aprovado em 08/11/2026; horário e calendário operacional da geração permanecem detalhamento técnico.
+O tratamento funcional de datas inexistentes está aprovado: usar o último dia do mês, preservando a referência original para meses seguintes. `America/Sao_Paulo` por usuário foi aprovado em 08/11/2026; a geração ocorre ao abrir o app e durante a sincronização.
 
 ### 5.6 Receita
 
@@ -174,7 +174,7 @@ Backend, banco, modelo lógico conceitual e política funcional de sincronizaç�
 ## 14. Pendências de modelagem
 
 1. Definir esquema físico, tipos, índices e constraints após validar o modelo lógico.
-2. Detalhar horário e calendário operacional da geração; a zona `America/Sao_Paulo` por usuário está aprovada.
+2. A geração usa data corrente na zona do usuário e ocorre ao abrir o app e durante a sincronização; não há agendador em segundo plano.
 3. Especificar fila offline, versionamento e persistência das versões conflitantes.
 4. Detalhar retenção, restauração, exclusão definitiva e exportação.
 5. Validar tecnicamente a integridade das referências polimórficas de auditoria e sincronização.
@@ -197,7 +197,7 @@ Manter entidades/modelos separados para recorrência de receita e recorrência d
 
 Campos conceituais adicionais para modelos: identificador do usuário proprietário, frequência, data de início/vigência, dia de referência (quando mensal), estado ativo/inativo e parâmetros necessários à geração. Para ocorrência: modelo de origem, referência programada/competência, data efetiva, estado, valor e metadados de auditoria.
 
-A combinação modelo + referência programada deve ser única, inclusive por restrição no banco, para garantir idempotência. Ocorrências atrasadas podem ser recuperadas na abertura do app e na sincronização. Edição individual não modifica modelo ou outras ocorrências; desativação preserva ocorrências existentes e impede futuras. A zona `America/Sao_Paulo` por usuário está aprovada; horário e calendário operacional ainda exigem especificação técnica.
+A combinação modelo + referência programada deve ser única, inclusive por restrição no banco, para garantir idempotência. Ocorrências atrasadas são recuperadas na abertura do app e na sincronização. A primeira mensal é a primeira data de referência igual ou posterior ao início do modelo; recorrência por período criada no período atual inclui a ocorrência desse período. Edição individual não modifica modelo ou outras ocorrências; desativação preserva ocorrências existentes e impede futuras. A geração usa a data corrente na zona `America/Sao_Paulo` do usuário.
 
 A semântica canônica da referência usada na chave de unicidade deve ser definida no esquema físico, preservando a regra funcional aprovada de uma ocorrência por modelo e referência programada/competência.
 
@@ -354,7 +354,7 @@ Os valores e registros usados nos futuros testes de banco serão fixtures sinté
 
 ### 16.8 Esquema físico detalhado — Entrega 2
 
-**Data:** 09/11/2026. **Status:** APROVADO pelo responsável em 09/11/2026 como base do schema. A migração PostgreSQL inicial e seus testes constam na seção 16.9. As RPCs das demais entidades, a migration Drift e a validação no Supabase gerenciado permanecem pendentes.
+**Data:** 09/11/2026. **Status:** APROVADO pelo responsável em 09/11/2026 como base do schema. A migração PostgreSQL inicial e seus testes constam na seção 16.9. As RPCs de gravação estão documentadas nas seções 16.10 a 16.16; o schema local Drift v1 consta na seção 16.17. Abertura persistente criptografada, validação Web e integração no Supabase gerenciado permanecem pendentes.
 
 #### 16.8.1 Convenções comuns
 
@@ -393,7 +393,7 @@ Os valores e registros usados nos futuros testes de banco serão fixtures sinté
 - Períodos exigem `start_date < end_date`, início único por usuário e configuração pertencente ao mesmo usuário. A criação ocorre por operação transacional que serializa a geração por usuário e confere a continuidade com os períodos vizinhos; não basta uma verificação de sobreposição. A regra de ciclo `[início, fim)` continua sendo a fonte funcional.
 - Receita, despesa, categoria e subcategoria devem pertencer ao mesmo `owner_id`; o tipo da categoria deve ser compatível com o lançamento/modelo. Quando `subcategory_id` estiver informado, `category_id` também é obrigatório e a subcategoria deve pertencer àquela categoria. Chaves estrangeiras compostas podem impor proprietário e par categoria/subcategoria; a função transacional valida compatibilidade de tipo e exige categoria/subcategoria ativa somente para novas associações. Referências históricas podem continuar apontando para categorias desativadas.
 - Em ocorrência recorrente, `scheduled_for_date` é a data efetivamente agendada; para frequência por período, é igual ao início do período e `scheduled_period_id` referencia esse período. Para mensal, `scheduled_period_id` é nulo e `scheduled_for_date` segue o dia original com ajuste de mês curto aprovado. Lançamentos avulsos não têm modelo nem referência programada.
-- Índice único parcial candidato: `(owner_id, recurrence_template_id, scheduled_for_date)` para linhas recorrentes em cada tabela de ocorrência. A função valida a frequência do modelo e a consistência de `scheduled_period_id`; a unicidade evita repetição de modelo/data programada.
+- Índice único parcial `(owner_id, recurrence_template_id, scheduled_for_date)` nas tabelas de ocorrência para evitar repetição de modelo/data programada. Implementado no PostgreSQL e no schema Drift v1; a RPC valida a frequência e a consistência de `scheduled_period_id`.
 - Tipos de status/frequência são `TEXT` com `CHECK` para permitir evolução revisável. Nenhum lançamento financeiro é apagado fisicamente pelo fluxo normal.
 
 Para impedir períodos sobrepostos, PostgreSQL oferece o tipo `daterange` com limites canônicos `[)` e constraints de exclusão. Como a constraint de exclusão sozinha não detecta lacunas e pode exigir a extensão `btree_gist` para combinar proprietário e intervalo, a proposta primária é criar períodos somente por função transacional, serializada por proprietário, que valida os limites adjacentes. Uma constraint de exclusão pode ser acrescentada como defesa extra se a extensão estiver disponível no serviço de destino. A implementação precisa cobrir ambas as condições: sem lacunas e sem sobreposições. O PostgreSQL disponibiliza advisory locks transacionais para serializar este recurso definido pela aplicação; seu uso exige que todas as gravações de períodos passem pela mesma função. [Documentação PostgreSQL sobre intervalos e exclusão](https://www.postgresql.org/docs/current/rangetypes.html) e [locks explícitos/advisory](https://www.postgresql.org/docs/18/explicit-locking.html).
@@ -402,7 +402,7 @@ Para impedir períodos sobrepostos, PostgreSQL oferece o tipo `daterange` com li
 
 Na migração inicial da Entrega 3, RLS foi habilitada nas tabelas remotas. Políticas de leitura para `authenticated` exigem `auth.uid() IS NOT NULL AND auth.uid() = owner_id`; acesso `anon` é negado. Grants são separados: além de revogar `CREATE` público e todo DML direto dos clientes, a migration concede somente `SELECT` a `authenticated`. Essas políticas foram verificadas localmente com duas identidades Supabase simuladas; a integração no Supabase gerenciado ainda está pendente.
 
-**Decisões de implementação das Entregas 4 e 5:** as RPCs `public.apply_category_change` e `public.create_accounting_period` usam `SECURITY DEFINER`, proprietário `postgres`, `search_path = ''`, nomes de objetos qualificados e execução concedida somente a `authenticated`. Ambas derivam o usuário de `auth.uid()` e restringem cada leitura/escrita ao mesmo `owner_id`; o cliente não fornece proprietário. Como `postgres` ignora RLS, a verificação explícita de usuário dentro das funções é obrigatória. Os testes locais cobrem permissões e isolamento. Categoria implementa criação/renomeação/desativação, versionamento, idempotência, auditoria e conflito; período implementa criação contígua, configuração efetiva, trava transacional por usuário, idempotência, auditoria e conflitos de criação. RPCs de outras entidades e validação no Supabase gerenciado permanecem pendentes. A chave `service_role` permanece somente no servidor. [Guia Supabase de RLS](https://supabase.com/docs/guides/database/postgres/row-level-security) e [guia de funções](https://supabase.com/docs/guides/database/functions).
+**Decisões de implementação das Entregas 4 a 8:** as RPCs autenticadas usam `SECURITY DEFINER`, proprietário `postgres`, `search_path = ''`, nomes qualificados e execução concedida somente a `authenticated`. Todas derivam o usuário de `auth.uid()` e restringem cada leitura/escrita ao mesmo `owner_id`; o cliente não fornece proprietário. Como `postgres` ignora RLS, a verificação explícita de usuário dentro das funções é obrigatória. Os testes locais cobrem permissões e isolamento. Categorias, subcategorias, períodos, investimentos, lançamentos avulsos e recorrências possuem operações transacionais versionadas, idempotentes e auditadas; conflitos preservam snapshots. A validação no Supabase gerenciado permanece pendente. A chave `service_role` permanece somente no servidor. [Guia Supabase de RLS](https://supabase.com/docs/guides/database/row-level-security) e [guia de funções](https://supabase.com/docs/guides/database/functions).
 
 #### 16.8.5 Índices candidatos
 
@@ -421,7 +421,7 @@ Na migração inicial da Entrega 3, RLS foi habilitada nas tabelas remotas. Pol�
 2. Não foi adicionada a extensão `btree_gist`. A Entrega 5 implementa a criação de período por RPC transacional, serializada por proprietário com advisory lock, e valida continuidade e ausência de sobreposição. O teste concorrente local passou; validar no Supabase gerenciado antes de liberar escrita remota.
 3. A migration habilita leitura própria por RLS e bloqueia DML direto. A Entrega 4 implementa esse fluxo para categorias; criar e testar RPCs equivalentes para as demais entidades e validar todas no Supabase gerenciado.
 4. Medir os índices com consultas representativas antes da otimização final.
-5. Provar criptografia e compatibilidade Drift em Android, iOS e Web; a migration local ainda não foi criada.
+5. Provar criptografia e compatibilidade Drift em Android, iOS e Web; o schema v1 local já foi criado, mas ainda não há abertura persistente conectada ao app.
 
 A Entrega 2 foi validada pelo responsável em 09/11/2026. A migration da Entrega 3 foi aplicada somente a um PostgreSQL temporário local; não foi implantada em projeto Supabase ou produção.
 
@@ -444,7 +444,7 @@ Critérios de aceitação do schema; os itens ainda não executados estão marca
 
 **Executado na Entrega 5:** datas mensais; início/fim semiabertos; criação inicial e continuação; rejeição de gaps e overlaps; alteração de configuração no período seguinte; transição para ciclo personalizado; dias 20 e 31, fevereiro bissexto, retorno ao dia original; idempotência, conflitos, auditoria, rollback, isolamento e DML direto bloqueado. Duas sessões simultâneas confirmaram espera na trava advisory e criaram períodos consecutivos sem gap.
 
-**Pendente:** parser/conversão BRL no Flutter, round-trip local Drift/Web, cálculos locais/remotos, validação no Supabase gerenciado, RPCs de escrita para as demais entidades e resolução de conflitos. A regra de fronteira do primeiro período após mudança de configuração está registrada como PROPOSTA para validação do responsável.
+**Pendente:** parser/conversão BRL no Flutter, round-trip Drift/Web, cálculos locais/remotos, validação no Supabase gerenciado e resolução de conflitos. A regra de fronteira após mudança de configuração foi aprovada em 09/11/2026.
 
 #### 16.8.8 Referências técnicas
 
@@ -469,14 +469,60 @@ Cada chamada grava a categoria ou conflito, o resultado idempotente e, quando ap
 
 **Testado localmente:** sessão autenticada e ausente, grants, isolamento de proprietário, create/rename/deactivate, avanço da versão, auditoria, repetição idempotente, chave reutilizada com outro conteúdo, conflito persistido e repetido sem duplicação.
 
-**Pendente após a Entrega 4:** teste no Supabase gerenciado, resolução do conflito como nova versão e RPCs de subcategorias, lançamentos e recorrências. O PostgreSQL local usado na suíte simula `auth.uid()` e não comprova configuração ou privilégios do projeto remoto.
+**Pendente após a Entrega 4:** teste no Supabase gerenciado, resolução do conflito como nova versão e RPCs de lançamentos/recorrências. A RPC de subcategorias foi implementada e testada localmente na Entrega 6. O PostgreSQL local usado na suíte simula `auth.uid()` e não comprova configuração ou privilégios do projeto remoto.
 
 ### 16.11 Entrega 5 — RPC transacional de períodos
 
 `supabase/migrations/20261109000300_accounting_period_rpc.sql` cria `public.create_accounting_period(operation_id, period_id, configuration_id, start_date, mode, custom_start_day)`. A chamada deriva o usuário de `auth.uid()`, cria a configuração inicial ou uma nova configuração efetiva no início do período e grava o período e a auditoria atomicamente. Repetição da mesma chave e conteúdo retorna o resultado anterior; conflito com período/configuração existente preserva snapshots em `sync_conflicts`.
 
-A RPC serializa operações do mesmo proprietário com `pg_advisory_xact_lock`, calcula o fim exclusivo a partir da configuração e valida a adjacência com o período anterior e seguinte. Mês-calendário começa no dia 1. Ciclo personalizado preserva o dia configurado, ajusta meses curtos e retorna ao dia original quando possível. **A primeira fronteira após mudança de modalidade/dia é uma PROPOSTA registrada na RN002:** o novo período começa no fim do anterior e termina na próxima fronteira da nova agenda posterior a esse início.
+A RPC serializa operações do mesmo proprietário com `pg_advisory_xact_lock`, calcula o fim exclusivo a partir da configuração e valida a adjacência com o período anterior e seguinte. Mês-calendário começa no dia 1. Ciclo personalizado preserva o dia configurado, ajusta meses curtos e retorna ao dia original quando possível. **A primeira fronteira após mudança de modalidade/dia foi aprovada em 09/11/2026:** o novo período começa no fim do anterior e termina na próxima fronteira da nova agenda posterior a esse início.
 
 **Testado localmente:** meses e ciclos personalizados, fevereiro de 2028, dias 20/31, gaps/overlaps, replay, colisão de versão/ID, mudança efetiva de configuração, auditoria, rollback, isolamento, bloqueio de escrita direta e duas sessões concorrentes observadas esperando na mesma trava por usuário. Todo o teste usa PostgreSQL 18.6 temporário e identidade Auth simulada.
 
-**Pendente:** validação no Supabase gerenciado e aprovação do responsável para a proposta da primeira fronteira de transição. A migração não foi implantada remotamente.
+**Validada pelo responsável em 09/11/2026** para prosseguimento da Fase 2, incluindo a regra da primeira fronteira após mudança de configuração. Permanecem pendentes a validação no Supabase gerenciado e o deploy remoto da migration.
+
+### 16.12 Entrega 6 — RPC transacional de subcategorias
+
+**Status:** IMPLEMENTADA E TESTADA LOCALMENTE; aguarda validação do responsável e teste no Supabase gerenciado.
+
+`supabase/migrations/20261109000400_subcategory_write_rpc.sql` cria `public.apply_subcategory_change(operation_id, action, subcategory_id, category_id, expected_version, name)`. A RPC implementa `create`, `rename` e `deactivate`; deriva o proprietário de `auth.uid()` e, na criação, exige que a categoria pertença ao usuário e esteja ativa. Alterações com versão esperada desatualizada preservam snapshots em `sync_conflicts` e não sobrescrevem a subcategoria.
+
+A operação bem-sucedida, o resultado idempotente e o evento de auditoria são gravados na mesma transação. Repetir a mesma chave e solicitação retorna a resposta anterior; reutilizar a chave com conteúdo diferente é rejeitado. A função é `SECURITY DEFINER`, pertence a `postgres`, usa `search_path` vazio e concede execução somente a `authenticated`.
+
+**Testado localmente em PostgreSQL 18.6:** criação, renomeação, desativação, categoria inativa, autenticação ausente, privilégios, isolamento entre dois usuários, replay idempotente, chave reutilizada com outro conteúdo, conflito de versão com snapshots, auditoria de valores anteriores/novos e bloqueio de DML direto.
+
+**Pendente:** validação no Supabase gerenciado, RPCs de lançamentos/recorrências, migration Drift e resolução de conflitos como nova versão. Os testes locais usam Auth simulado e não comprovam configuração ou privilégios do projeto remoto.
+
+### 16.13 Entrega 7A — RPC transacional de destinações a investimentos
+
+`supabase/migrations/20261109000500_investment_allocation_rpc.sql` cria `public.apply_investment_allocation_change(operation_id, action, allocation_id, expected_version, amount_centavos, allocated_on)`. A função autenticada deriva o proprietário de `auth.uid()` e implementa criação, edição e cancelamento lógico. Criação/edição localizam o período pela data com intervalo `[start_date, end_date)`. Edição preserva o estado de cancelamento existente; o cancelamento registra `cancelled_at`. Valores são `BIGINT` não negativo, e zero permanece válido.
+
+A RPC usa `SECURITY DEFINER`, proprietária `postgres`, `search_path` vazio, grants somente para `authenticated`, idempotência por operação, controle otimista de versão, snapshots de conflito e auditoria na mesma transação. O teste automatizado está em `supabase/tests/rpc_investment_allocation_test.sql` e cobre permissões, associação ao período, valor acima de `2^53`, replay, edição, conflito, cancelamento, auditoria e isolamento entre usuários.
+
+**Status:** implementação e teste local concluídos. A suíte PostgreSQL isolada passou, incluindo execução concorrente da RPC de períodos. Validação no Supabase gerenciado permanece pendente.
+
+### 16.14 Entrega 7B — RPCs de receitas e despesas avulsas
+
+`supabase/migrations/20261109000600_cash_entry_write_rpcs.sql` cria `public.apply_income_entry_change` e `public.apply_expense_entry_change`. Ambas derivam `owner_id` de `auth.uid()`, recebem UUID estável do registro e operação idempotente, payload JSONB, ação e versão esperada; aplicam `SECURITY DEFINER`, proprietária `postgres`, `search_path` vazio e grants somente a `authenticated`.
+
+A RPC de receita cria lançamentos avulsos já recebidos e associa o período pela data efetiva; permite edição/cancelamento em qualquer status sem alterar o modelo de recorrência. A RPC de despesa cria lançamentos pendentes e associa pela competência/data de cadastro; pagamento registra `paid_on` sem mover o período nem criar nova despesa. Ambas preservam auditoria, retornam conflitos com snapshots em versão desatualizada e evitam reutilização indevida de chave idempotente. Edições de registros cancelados preservam o status cancelado. Novas associações exigem categorias/subcategorias ativas; referências históricas podem ser mantidas.
+
+O teste `supabase/tests/rpc_cash_entry_test.sql` cobre permissões, atribuição de períodos, limite semiaberto, replay, edição entre períodos, conflito, pagamento, status após edição, cancelamento, auditoria e isolamento entre usuários. **Status:** implementação e suíte PostgreSQL local concluídas; integração Supabase gerenciado pendente.
+
+### 16.15 Entrega 7C — RPCs de modelos de recorrência
+
+`supabase/migrations/20261109000700_recurrence_template_write_rpcs.sql` cria `public.apply_income_recurrence_template_change` e `public.apply_expense_recurrence_template_change`. As funções autenticadas permitem criar, editar e desativar modelos, com versionamento otimista, idempotência, snapshots de conflito e auditoria transacional. Validam frequência mensal ou por período, dia de referência mensal, data inicial, modo fixo/variável, centavos não negativos e associações ativas compatíveis de categoria/subcategoria. Desativar mantém o modelo e seu histórico.
+
+O teste `supabase/tests/rpc_recurrence_template_test.sql` verifica grants, configuração `SECURITY DEFINER`, modelos mensais e por período, valores fixos/variáveis, replay, edição, conflito, desativação, auditoria e isolamento entre usuários. **Status:** funções e suíte PostgreSQL local concluídas.
+
+### 16.16 Entrega 8 — geração e ciclo de vida de ocorrências recorrentes
+
+As migrations `20261109000800_recurrence_occurrence_rpcs.sql` e `20261109000900_allow_unpriced_variable_expense_occurrence_edits.sql` implementam geração idempotente de ocorrências mensais e por período, além de edição, recebimento, pagamento e cancelamento individual. A geração recupera ocorrências vencidas ao abrir o aplicativo e durante sincronização, usando a data corrente na zona IANA do usuário. A primeira ocorrência mensal ocorre na primeira data de referência igual ou posterior ao início do modelo; modelo por período criado durante o período atual também gera sua ocorrência no início desse período. Conflitos de versão preservam snapshots; gravações mantêm auditoria e idempotência. Despesas variáveis sem valor podem receber outras edições sem contabilização até informar o valor.
+
+O teste `supabase/tests/rpc_recurrence_occurrence_test.sql` cobre grants, segurança, calendário mensal incluindo meses curtos, recuperação por período, modelos inativos, valor variável não informado, ciclo de vida das ocorrências, auditoria, idempotência e isolamento entre usuários. **Status:** migrations aplicadas no Supabase local e teste direcionado aprovado; validação no Supabase gerenciado permanece pendente.
+
+### 16.17 Entrega 9 — schema local Drift v1
+
+`lib/core/local_database/app_database.dart` define as 14 tabelas locais do schema aprovado, chaves compostas por proprietário, referências locais, índices únicos de agenda recorrente, constraints de status e ciclo, e centavos como texto decimal convertido para `BigInt`. A versão 1 está registrada em `drift_schemas/porquinho/drift_schema_v1.json`; o código tipado é gerado em `app_database.g.dart`. A conexão recebe um `QueryExecutor` injetado; esta entrega não configura armazenamento persistente sem criptografia.
+
+O teste `test/core/local_database/app_database_test.dart` verifica criação do schema, chaves estrangeiras, versão, limites de `BigInt` e gravação/leitura exata de 9.007.199.254.740.993 centavos em SQLite nativo. **Status:** geração, análise estática e testes locais passaram. Teste Flutter Web, adapter de armazenamento persistente criptografado e sincronização com PostgreSQL permanecem pendentes.

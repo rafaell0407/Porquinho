@@ -54,7 +54,7 @@ O aplicativo será individual e multiplataforma (Android, iOS e Web). O offline 
 **Critérios de aceitação:** detalhamentos registrados em arquitetura e banco; modelo lógico revisado; schema e políticas de segurança preparados; cálculos e eventos cobertos por casos de teste.
 
 **Prioridade:** Essencial.  
-**Status:** EM EXECUÇÃO — Entregas 1 e 2 validadas; migrations PostgreSQL de schema, categorias e períodos passaram em PostgreSQL local nas Entregas 3 a 5, incluindo concorrência. RPCs das demais entidades, migrations Drift e integração com Supabase gerenciado ainda pendentes.
+**Status:** EM EXECUÇÃO — Entregas 1 e 2 validadas; migrations PostgreSQL e RPCs passaram em PostgreSQL local nas Entregas 3 a 8, incluindo concorrência. O schema Drift v1 e os testes de SQLite nativo passaram na Entrega 9. A regra da primeira fronteira após mudança de configuração foi aprovada em 09/11/2026. Permanecem pendentes validação do Drift Web, abertura persistente criptografada, validação do Vector e integração com Supabase gerenciado.
 
 ### Fase 3 — Estrutura Flutter, autenticação e base offline
 
@@ -113,7 +113,7 @@ O aplicativo será individual e multiplataforma (Android, iOS e Web). O offline 
 - Fatura de cartão como despesa recorrente variável comum.
 - Vencimentos e alertas móveis.
 
-**Dependências:** Fase 4 e definição do horário/calendário operacional. A zona por usuário `America/Sao_Paulo` e a regra funcional para datas inexistentes estão aprovadas.
+**Dependências:** Fase 4. A zona por usuário `America/Sao_Paulo`, a geração na abertura/sincronização e as regras para primeira ocorrência estão aprovadas.
 
 **Testes:** geração mensal e por período, ocorrência fixa/variável, confirmação de receita, edição isolada, despesa recorrente e ausência de duplicidade.
 
@@ -213,7 +213,6 @@ P1 representa ordem relativa de entrega, não significa que uma funcionalidade a
 ## 5. Dependências e detalhamentos técnicos
 
 - Implementar e testar os casos de meses curtos e anos bissextos conforme regra aprovada.
-- Definir horário e calendário operacional para geração de recorrências; zona IANA por usuário `America/Sao_Paulo` aprovada em 08/11/2026.
 - Implementar e testar alertas após o fim do período enquanto a despesa continuar pendente.
 - Detalhar protocolo, retentativas e persistência técnica dos conflitos conforme política aprovada.
 - Detalhar as consultas dos cinco relatórios já aprovados.
@@ -258,11 +257,17 @@ P1 representa ordem relativa de entrega, não significa que uma funcionalidade a
 | 09/11/2026 | Entrega 3 da Fase 2: migration PostgreSQL inicial e RLS de leitura | TESTES AUTOMATIZADOS PASSARAM EM POSTGRESQL 18.6 LOCAL; integração Supabase pendente |
 | 09/11/2026 | Entrega 4 da Fase 2: RPC transacional para criar, renomear e desativar categorias | TESTES AUTOMATIZADOS PASSARAM EM POSTGRESQL 18.6 LOCAL; integração Supabase e outras RPCs pendentes |
 | 09/11/2026 | Entrega 5 da Fase 2: RPC de períodos com trava por usuário e auditoria | TESTES FUNCIONAIS E DUAS SESSÕES CONCORRENTES PASSARAM EM POSTGRESQL 18.6 LOCAL; AGUARDA VALIDAÇÃO DO RESPONSÁVEL E SUPABASE GERENCIADO |
+| 09/11/2026 | Entrega 5 da Fase 2 validada pelo responsável | APROVADA PARA SEGUIR; integração Supabase gerenciado pendente; proposta de fronteira após mudança de configuração continua PROPOSTA |
+| 09/11/2026 | Entrega 6 da Fase 2: RPC transacional de subcategorias com versionamento, idempotência, auditoria e conflitos | TESTES AUTOMATIZADOS PASSARAM EM POSTGRESQL 18.6 LOCAL; AGUARDA VALIDAÇÃO DO RESPONSÁVEL; RPCs de lançamentos/recorrências e integração Supabase pendentes |
+| 09/11/2026 | Entrega 6 validada pelo responsável; Entrega 7A: RPC transacional de destinações a investimentos | IMPLEMENTADA; suíte PostgreSQL local passou, incluindo valor exato acima de 2^53, replay, conflito, auditoria e isolamento |
+| 09/11/2026 | Entrega 7B: RPCs transacionais para receitas e despesas avulsas | IMPLEMENTADAS; suíte PostgreSQL local passou com atribuição de período, pagamento sem troca de competência, edição, cancelamento, conflitos, auditoria e isolamento |
+| 09/11/2026 | Entrega 7C: RPCs transacionais de modelos de recorrência de receita e despesa | IMPLEMENTADAS; suíte PostgreSQL local passou com frequências, valores fixos/variáveis, idempotência, edição, desativação, conflitos, auditoria e isolamento |
+| 09/11/2026 | Entrega 8: geração idempotente e ciclo de vida de ocorrências recorrentes | IMPLEMENTADA; suíte PostgreSQL local passou com datas mensais, meses curtos, recuperação por período, edição, confirmação, pagamento, cancelamento, auditoria e isolamento |
+| 09/11/2026 | Supabase local iniciado após recuperação do Docker Desktop | `porquinho-dev` ativo; banco/Auth/REST saudáveis e migrations 00100–00900 aplicadas; Vector reiniciando |
 
 ## 9. Pendências para planejamento detalhado
 
 1. Detalhar ambientes de desenvolvimento, teste e produção; a organização dos módulos está definida e a Entrega 1 foi validada.
-2. Definir horário e calendário operacional de geração de recorrências; a zona `America/Sao_Paulo` por usuário está aprovada.
 3. Implementar e testar ciclos personalizados para dias 29, 30 e 31, inclusive anos bissextos.
 4. Detalhar protocolo, retentativas e persistência de versões conflitantes conforme a política aprovada.
 5. Implementar e testar alertas de despesas pendentes após o fim do período.
@@ -285,7 +290,7 @@ Entregáveis: seis documentos sincronizados; regras de períodos, recorrências,
 
 - Períodos semiabertos `[início, fim)`, início inclusivo e fim exclusivo.
 - Ciclo personalizado preserva dia original e usa último dia disponível em mês curto, retornando ao dia original quando possível; inclui anos bissextos.
-- Recorrências mensais e por período; recuperação de ocorrências ausentes; idempotência por modelo + referência programada.
+- Recorrências mensais e por período; primeira mensal na primeira referência não anterior ao início; recorrência criada durante o período inclui sua ocorrência; recuperação na abertura e sincronização; idempotência por modelo + referência programada.
 - Pagamentos parciais fora do MVP; pagamento integral.
 - Categorias são desativadas, nunca excluídas fisicamente.
 - Categorias são opcionais em receitas e despesas; lançamentos sem categoria aparecem como “Sem categoria” nos relatórios por categoria e permanecem nos totais gerais.
@@ -295,7 +300,7 @@ Entregáveis: seis documentos sincronizados; regras de períodos, recorrências,
 - Banco local criptografado, tokens/chaves em armazenamento seguro, backup diário com retenção de 30 dias, recuperação, exclusão definitiva e exportação CSV.
 - Cinco relatórios: receitas por categoria, despesas por categoria, total de investimentos, evolução da sobra e comparativo receitas/despesas/investimentos.
 - Valores do MVP em BRL/centavos: zero permitido; negativos e precisão acima de duas casas rejeitados sem arredondamento. Decisão do responsável em 08/11/2026.
-- Zona IANA `America/Sao_Paulo` por usuário para geração de recorrências. Decisão do responsável em 08/11/2026; horário/calendário operacional ainda pendentes.
+- Zona IANA `America/Sao_Paulo` por usuário; recuperação de ocorrências na abertura e sincronização. Decisão do responsável em 08/11/2026 e complementada em 09/11/2026.
 
 ### 10.3 Stack aprovada
 
@@ -307,26 +312,21 @@ Dashboard local até 1 s; lista até 1 s; salvamento local até 500 ms; atualiza
 
 ### 10.5 Dependências técnicas remanescentes
 
-1. Testar a migration base, grants e RLS no projeto Supabase gerenciado; a suíte atual usa PostgreSQL local e `auth.uid()` simulado.
-2. Implementar RPCs transacionais para subcategorias, lançamentos e recorrências, com auditoria, controle de versão e idempotência; categorias e períodos foram concluídos nas Entregas 4 e 5.
-3. Criar migrations Drift e provar valores exatos `BigInt`/texto em Flutter Web, além da paridade com PostgreSQL.
-4. Detalhar ambientes de desenvolvimento, teste e produção; a organização dos módulos foi definida na Entrega 1.
-5. Validar criptografia e armazenamento seguro em Android, iOS e Web.
-6. Definir horário e calendário operacional de recorrências; a zona IANA por usuário está aprovada.
-7. Detalhar sessão, logout com operações offline pendentes e autorização.
-8. Especificar backup/restauração, retenção, exclusão definitiva, observabilidade e proteção contra reaparecimento de dados.
+1. Validar migrations, grants e RLS no projeto Supabase gerenciado; a suíte atual usa PostgreSQL local e `auth.uid()` simulado.
+2. Validar Drift no Flutter Web e sua paridade com PostgreSQL; o schema v1 e a persistência SQLite nativa passaram localmente.
+3. Detalhar ambientes de desenvolvimento, teste e produção; a organização dos módulos foi definida na Entrega 1.
+4. Validar criptografia e armazenamento seguro em Android, iOS e Web.
+5. Detalhar sessão, logout com operações offline pendentes e autorização.
+6. Especificar backup/restauração, retenção, exclusão definitiva, observabilidade e proteção contra reaparecimento de dados.
 
 Esses itens são detalhamentos técnicos e não reabrem as decisões funcionais aprovadas.
 
 ### 10.6 Próximas etapas
 
-1. Configurar os ambientes de desenvolvimento, teste e produção.
-2. Validar com o responsável a proposta de primeira fronteira após mudança de modalidade/dia de período.
-3. Testar migrations, grants, RLS e ownership das funções no Supabase gerenciado.
-4. Implementar RPCs de subcategorias, lançamentos e recorrências com auditoria, versionamento e idempotência.
-5. Criar a migration Drift e testar paridade local/Web de BRL e datas antes da Fase 3.
-6. Validar criptografia e armazenamento local em Android, iOS e Web.
-7. Definir horário e calendário operacional de recorrências; a zona por usuário está aprovada.
+1. Supabase local iniciado e migrations 20261109000100–20261109000900 conferidas em 09/11/2026; provisionar projetos hospedados dev/teste/produção após definir organização e referências.
+2. Testar migrations, grants, RLS e ownership das funções no Supabase gerenciado.
+3. Validar paridade local/Web de BRL e datas, e preparar armazenamento persistente criptografado antes da Fase 3.
+4. Validar criptografia e armazenamento local em Android, iOS e Web.
 
 ### 10.7 Histórico
 
@@ -340,3 +340,8 @@ Esses itens são detalhamentos técnicos e não reabrem as decisões funcionais 
 | 09/11/2026 | Fase 2, Entrega 3: migration inicial, grants read-only, RLS e testes de constraints/isolamento | PASSOU EM POSTGRESQL 18.6 LOCAL; RPCs e Supabase gerenciado pendentes |
 | 09/11/2026 | Fase 2, Entrega 4: RPC de categorias com versionamento, idempotência, auditoria e conflitos | PASSOU EM POSTGRESQL 18.6 LOCAL; demais RPCs e Supabase gerenciado pendentes |
 | 09/11/2026 | Fase 2, Entrega 5: RPC de criação de períodos e teste de duas sessões simultâneas | PASSOU EM POSTGRESQL 18.6 LOCAL; AGUARDA VALIDAÇÃO DO RESPONSÁVEL; fronteira após mudança PROPOSTA e Supabase gerenciado pendente |
+| 09/11/2026 | Fase 2, Entrega 5 validada pelo responsável | APROVADA; primeira fronteira após mudança permanece PROPOSTA; Supabase gerenciado pendente |
+| 09/11/2026 | Fase 2, Entrega 6: RPC de subcategorias e testes de permissões, isolamento, idempotência, conflitos e auditoria | PASSOU EM POSTGRESQL 18.6 LOCAL; AGUARDA VALIDAÇÃO DO RESPONSÁVEL; lançamentos, recorrências e Supabase gerenciado pendentes |
+| 09/11/2026 | Supabase local iniciado com Docker Desktop; migrations 00100–00900 conferidas no banco local | CONCLUÍDA; validação gerenciada e RLS/grants remotos permanecem pendentes |
+| 09/11/2026 | Responsável aprovou a regra de primeira fronteira após mudança de modalidade/dia | APROVADA; implementada e coberta pela RPC/teste local da Entrega 5 |
+| 09/11/2026 | Entrega 9: schema Drift local v1 e teste de precisão monetária em SQLite nativo | PASSOU; validação Web, conexão persistente criptografada e integração remota pendentes |

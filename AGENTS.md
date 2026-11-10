@@ -5,6 +5,26 @@
 **Data de referência:** 08/11/2026  
 **Idioma:** Português brasileiro
 
+## Eficiência e consumo de tokens
+
+1. Leia somente os arquivos necessários para cada tarefa.
+2. Não releia documentações já analisadas, salvo necessidade.
+3. Não faça análises gerais do projeto em tarefas pontuais.
+4. Não repita verificações já aprovadas sem justificativa.
+5. Faça alterações incrementais, evitando reescrever arquivos.
+6. Execute apenas testes relacionados às alterações.
+7. Não apresente explicações extensas durante a implementação.
+8. Não gere relatórios intermediários desnecessários.
+9. Não utilize subagentes sem benefício concreto.
+10. Preserve as decisões arquiteturais já aprovadas.
+11. Se encontrar um problema fora do escopo, registre-o
+    sem tentar resolvê-lo automaticamente.
+12. Ao concluir, apresente um resumo objetivo:
+    - Arquivos modificados.
+    - Funcionalidades implementadas.
+    - Testes executados.
+    - Problemas encontrados.
+
 ## 1. Identidade e responsabilidades
 
 Atue como engenheiro de software responsável por apoiar o planejamento, desenvolvimento, manutenção, testes e documentação do Porquinho.
@@ -22,8 +42,6 @@ Suas responsabilidades incluem:
 O agente não tem autoridade para decidir regras financeiras em nome do responsável pelo produto.
 
 ## 2. Documentação obrigatória
-
-Antes de iniciar uma tarefa, consulte os documentos aplicáveis. Em alterações que atravessem várias áreas, consulte os seis documentos:
 
 | Documento | Responsabilidade | Pergunta que responde |
 |---|---|---|
@@ -173,7 +191,7 @@ O usuário pode editar ou cancelar qualquer lançamento, mesmo pago ou recebido.
 
 - Flutter, Dart, Git, Supabase, PostgreSQL, SQLite com Drift, Riverpod, GoRouter, Supabase Auth e serviço próprio de sincronização em Dart estão aprovados conforme a baseline v0.5 da seção 10.4.
 - Plataformas do MVP: Android, iOS e Web.
-- Ambientes, migrations, RLS, armazenamento seguro, observabilidade, horário/calendário da geração e compatibilidade multiplataforma são detalhamentos técnicos pendentes; organização dos módulos e zona IANA por usuário estão definidas na Fase 2.
+- Ambientes, RLS, armazenamento seguro, observabilidade e compatibilidade multiplataforma são detalhamentos técnicos pendentes; organização dos módulos e zona IANA por usuário estão definidas na Fase 2.
 - Dados financeiros devem ser isolados por usuário e protegidos local e remotamente.
 - Não armazene senhas, tokens ou segredos no repositório.
 - Antes de adicionar dependência, avalie manutenção, compatibilidade, licença, segurança, custo e impacto operacional.
@@ -233,6 +251,7 @@ Esta seção prevalece sobre qualquer trecho anterior deste arquivo que ainda cl
 - Para ciclo personalizado, preservar o dia inicial originalmente configurado. Se esse dia não existir no mês, usar o último dia daquele mês; no mês seguinte, voltar ao dia originalmente configurado quando existir.
 - Exemplo de ciclo iniciado no dia 31: `[31/01, 28/02)`, `[28/02, 31/03)`, `[31/03, 30/04)`. As datas finais são exclusivas. Em ano bissexto, fevereiro termina em 29/02; a mesma regra se aplica.
 - Mudanças na configuração passam a valer no próximo período. Períodos históricos preservam a configuração que os originou.
+- Quando a configuração muda, o primeiro período da nova agenda começa no fim do período anterior e termina na próxima fronteira da modalidade/dia novo que seja posterior ao seu início; períodos seguintes seguem a agenda regular. Aprovado em 09/11/2026.
 
 ### 10.2 Recorrências
 
@@ -240,10 +259,12 @@ Esta seção prevalece sobre qualquer trecho anterior deste arquivo que ainda cl
 - Recorrência mensal preserva o dia de referência original; quando inexistente, agenda no último dia do mês, sem alterar a referência dos meses seguintes.
 - Recorrência por período gera uma ocorrência por período, no início desse período.
 - A geração deve ser idempotente. A chave lógica única é modelo de recorrência + referência programada/competência; a unicidade também deve ser garantida no armazenamento.
-- Ao abrir o aplicativo e ao sincronizar, verificar e recuperar ocorrências vencidas que ainda não foram geradas, sem duplicá-las.
+- A primeira ocorrência mensal é a primeira data de referência igual ou posterior ao início do modelo; por exemplo, modelo criado em 10 de maio com referência dia 31 começa em 31 de maio.
+- Recorrência por período criada durante o período atual gera também a ocorrência desse período, mesmo que a data seja anterior à criação.
+- Ao abrir o aplicativo e ao sincronizar, recuperar ocorrências vencidas até a data corrente na zona do usuário, sem duplicá-las nem depender de agendador em segundo plano.
 - Edição de ocorrência não altera modelo nem outras ocorrências. Desativação impede ocorrências futuras e preserva o histórico.
 - Receitas recorrentes nascem pendentes e só entram na sobra após confirmação do recebimento. Despesas recorrentes entram na sobra quando geradas e com valor definido; pagamento posterior não deduz novamente.
-- A zona operacional por usuário foi definida como `America/Sao_Paulo` em 08/11/2026. Horário e calendário operacional da geração continuam como detalhamento técnico obrigatório antes da implementação da rotina.
+- A zona operacional por usuário é `America/Sao_Paulo` (08/11/2026); a geração ocorre na abertura do aplicativo e durante a sincronização.
 
 ### 10.3 Outras regras aprovadas
 
@@ -257,7 +278,7 @@ Esta seção prevalece sobre qualquer trecho anterior deste arquivo que ainda cl
 ### 10.4 Stack aprovada
 
 - Flutter/Dart; Supabase; PostgreSQL; SQLite com Drift; Riverpod; GoRouter; Supabase Auth; serviço próprio de sincronização em Dart; Git.
-- A aprovação da stack não substitui o detalhamento de ambientes, RLS, migrations, armazenamento seguro, horário/calendário de recorrências, observabilidade e compatibilidade de cada mecanismo entre Android, iOS e Web. A organização dos módulos está registrada na arquitetura; a zona `America/Sao_Paulo` foi aprovada para cada usuário.
+- A aprovação da stack não substitui o detalhamento de ambientes, RLS, migrations, armazenamento seguro, observabilidade e compatibilidade de cada mecanismo entre Android, iOS e Web. A organização dos módulos está registrada na arquitetura; a zona `America/Sao_Paulo` foi aprovada para cada usuário.
 
 ### 10.5 Sincronização, proteção e portabilidade
 

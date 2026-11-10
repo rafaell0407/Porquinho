@@ -216,7 +216,7 @@ Os cinco relatórios aprovados estão especificados na seção 13.7. Esta seçã
 
 ## 11. Detalhamentos pendentes
 
-As regras funcionais desta baseline estão aprovadas. A zona IANA `America/Sao_Paulo` por usuário foi definida em 08/11/2026. Permanecem detalhamentos técnicos antes das implementações correspondentes: horário e calendário operacional das recorrências; protocolo e retentativas de sincronização; implementação de alertas móveis; critérios de medição das metas de desempenho; e desenho de backup, restauração, retenção, exportação e exclusão. Não há decisão pendente sobre meses curtos, conflitos, relatórios aprovados ou encerramento manual de períodos.
+As regras funcionais desta baseline estão aprovadas. A zona IANA `America/Sao_Paulo` por usuário foi definida em 08/11/2026. Permanecem detalhamentos técnicos antes das implementações correspondentes: protocolo e retentativas de sincronização; implementação de alertas móveis; critérios de medição das metas de desempenho; e desenho de backup, restauração, retenção, exportação e exclusão. Não há decisão pendente sobre meses curtos, conflitos, relatórios aprovados ou encerramento manual de períodos.
 
 ## 12. Funcionalidades para versões futuras
 
@@ -244,12 +244,14 @@ As regras funcionais desta baseline estão aprovadas. A zona IANA `America/Sao_P
 
 - Frequências do MVP: mensal e por período de apuração.
 - Recorrência mensal mantém dia de referência; se inexistente, usa o último dia do mês sem alterar a referência original para os meses seguintes.
+- A primeira ocorrência mensal usa a primeira data de referência igual ou posterior ao início do modelo; exemplo: modelo iniciado em 10 de maio com dia 31 começa em 31 de maio.
 - Recorrência por período gera uma ocorrência no início de cada período.
+- Se um modelo por período for criado durante o período atual, gera também a ocorrência desse período, mesmo que a data da ocorrência anteceda a criação.
 - Geração idempotente, com unicidade por modelo + referência programada/competência.
 - Na abertura do app e na sincronização, verificar e gerar ocorrências faltantes, inclusive atrasadas, sem duplicidade.
 - Edição individual não altera modelo ou outras ocorrências; desativação impede futuras e preserva anteriores.
 - Receitas recorrentes começam pendentes e só são contabilizadas após confirmação do recebimento. Despesas recorrentes são contabilizadas quando geradas e com valor definido.
-- A zona de calendário é `America/Sao_Paulo` por usuário, conforme decisão de 08/11/2026. Horário e calendário operacional da geração ainda devem ser detalhados antes da implementação.
+- A zona de calendário é `America/Sao_Paulo` por usuário, conforme decisão de 08/11/2026. Na abertura do aplicativo e durante a sincronização, recuperar ocorrências faltantes até a data corrente nessa zona; não há dependência de agendador em segundo plano.
 
 ### 13.3 Pagamentos e categorias
 
@@ -296,4 +298,4 @@ Todos respeitam a configuração de período do usuário. Nos relatórios de rec
 
 ### 13.8 Moeda e precisão monetária
 
-Decisão do responsável em 08/11/2026: todos os valores do MVP são BRL; aceitam até duas casas decimais, zero é válido, valores negativos e casas excedentes são rejeitados e não há arredondamento implícito. Nenhum limite de produto foi definido. O responsável validou em 09/11/2026 a representação PostgreSQL `BIGINT` e a estratégia exata local/Web (`BigInt`, texto decimal e protocolo em string). Os testes de Drift/Web permanecem pendentes.
+Decisão do responsável em 08/11/2026: todos os valores do MVP são BRL; aceitam até duas casas decimais, zero é válido, valores negativos e casas excedentes são rejeitados e não há arredondamento implícito. Nenhum limite de produto foi definido. O responsável validou em 09/11/2026 a representação PostgreSQL `BIGINT` e a estratégia exata local/Web (`BigInt`, texto decimal e protocolo em string). A gravação exata Drift no SQLite nativo foi testada; a validação Flutter Web permanece pendente.
