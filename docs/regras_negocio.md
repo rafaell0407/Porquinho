@@ -2,7 +2,7 @@
 
 **Versão:** 0.5  
 **Data:** 08/11/2026  
-**Status:** Baseline funcional v0.5 consolidada; detalhamentos técnicos remanescentes identificados na seção 14
+**Status:** Baseline funcional v0.5 consolidada; detalhamentos técnicos remanescentes identificados na seção 13
 
 ## 1. Princípios gerais
 
@@ -37,7 +37,7 @@ Alteração de modalidade ou dia inicial passa a valer somente a partir do próx
 
 ### RN003 — Dias inexistentes em meses curtos
 
-Esta regra foi resolvida na baseline v0.5: preservar o dia original configurado e, quando ele não existir no mês, usar o último dia disponível. No mês seguinte, retornar ao dia original quando possível. Ver RN037.
+Preservar o dia original configurado e, quando ele não existir no mês, usar o último dia disponível. No mês seguinte, retornar ao dia original quando possível. Ver RN037.
 
 **Status:** APROVADO; regra detalhada na RN037.
 
@@ -145,7 +145,7 @@ As únicas frequências permitidas no MVP são mensal e por período. O usuário
 
 ### RN015 — Status e pagamento
 
-Despesas começam como Pendente. Ao confirmar pagamento, o usuário informa a data efetiva e o status muda para Pago. O pagamento não cria uma segunda dedução na sobra. O MVP considera apenas pagamento integral. Pagamentos parciais estão FORA DO MVP e não possuem saldo parcial.
+Despesas começam como Pendente. Ao confirmar pagamento, o usuário informa a data efetiva e o status muda para Pago. Pagamento integral, sem segunda dedução e sem pagamento parcial: RN039.
 
 **Status:** APROVADO. Pagamentos parciais: FORA DO MVP.
 
@@ -171,7 +171,7 @@ Alertas móveis previstos:
 - No dia do vencimento.
 - Diariamente após o vencimento enquanto a despesa estiver pendente.
 
-Os alertas continuam após o fim do período enquanto a despesa estiver pendente e cessam quando paga ou cancelada.
+Os alertas continuam após o fim do período enquanto a despesa estiver pendente e cessam quando paga ou cancelada, respeitadas as permissões do dispositivo. Regra consolidada também na RN041.
 
 **Status:** APROVADO.
 
@@ -225,7 +225,7 @@ O usuário poderá criar subcategorias vinculadas a categorias, sem obrigatoried
 
 ### RN026 — Desativação de categorias
 
-Categorias usadas ou não podem ser desativadas, mas nunca excluídas fisicamente. A desativação preserva a classificação histórica e impede o uso em novos lançamentos, conforme RN040.
+Categorias usadas ou não podem ser desativadas, mas nunca excluídas fisicamente. Regras de desativação e renomeação: RN040.
 
 **Status:** APROVADO; exclusão física de categorias: FORA DO MVP.
 
@@ -285,7 +285,7 @@ Cada usuário acessa somente os próprios dados. A autorização deve ser verifi
 
 ### RN035 — Canal de notificação
 
-Alertas do MVP serão enviados a dispositivos móveis Android e iOS, mediante permissão. Não haverá notificações por e-mail ou navegador.
+Alertas do MVP serão enviados a dispositivos móveis Android (iOS fora do MVP — decisão de 10/11/2026), mediante permissão. Não haverá notificações por e-mail ou navegador.
 
 **Status:** APROVADO.
 
@@ -303,13 +303,13 @@ Alertas do MVP serão enviados a dispositivos móveis Android e iOS, mediante pe
 | RN028–RN030 | Edição, cancelamento, auditoria e recálculo | APROVADO |
 | RN031–RN033 | Offline, paridade, idempotência e conflitos | APROVADO; detalhes de protocolo e retentativa são técnicos |
 | RN034–RN035 | Segurança e notificações | APROVADO |
+| RN036–RN039, RN041–RN043, RN045 | Intervalos semiabertos, meses curtos, recorrências idempotentes, pagamento integral, alertas, períodos sem encerramento manual, metas e moeda | APROVADO; pagamento parcial e encerramento manual: FORA DO MVP |
 
 ## 13. Detalhamentos pendentes
 
-As regras funcionais consolidadas não estão pendentes. A zona IANA `America/Sao_Paulo` por usuário foi definida em 08/11/2026. Permanecem detalhamentos técnicos: protocolo e retentativas de sincronização; mecanismo de backup, restauração, retenção, exportação e exclusão; e método/dispositivos representativos para validar as metas iniciais de desempenho. A continuidade dos alertas, os relatórios básicos e a regra de meses curtos estão aprovados.
+As regras funcionais consolidadas não estão pendentes. Permanecem detalhamentos técnicos (`docs/arquitetura.md` §15) e o método/dispositivos representativos para validar as metas iniciais de desempenho (RN043). A zona IANA `America/Sao_Paulo` por usuário foi definida em 08/11/2026; a continuidade dos alertas, os relatórios básicos e a regra de meses curtos estão aprovados.
 
-
-## 14. Consolidação das regras — baseline v0.5
+## 14. Regras complementares (RN036–RN045)
 
 **Data:** 08/11/2026. As regras abaixo resolvem as pendências da auditoria v0.4 e prevalecem sobre status anteriores incompatíveis.
 
@@ -321,7 +321,7 @@ Todo período utiliza intervalo semiaberto `[data_inicio, data_fim)`: início in
 
 ### RN037 — Ciclos personalizados em meses curtos
 
-O dia originalmente configurado deve ser preservado. Quando não existir no mês, usar o último dia disponível; no mês seguinte, retornar ao dia originalmente configurado quando existir. Exemplo para dia 31: `[31/01,28/02)`, `[28/02,31/03)`, `[31/03,30/04)`. Em ano bissexto, fevereiro usa 29 dias. As datas finais são exclusivas. Alteração da configuração só vale no próximo período; períodos históricos preservam sua configuração.
+O dia originalmente configurado deve ser preservado. Quando não existir no mês, usar o último dia disponível; no mês seguinte, retornar ao dia originalmente configurado quando existir. Exemplo para dia 31: `[31/01,28/02)`, `[28/02,31/03)`, `[31/03,30/04)`. Em ano bissexto, fevereiro usa 29 dias. As datas finais são exclusivas. Alteração de configuração: RN002.
 
 **Status:** APROVADO.
 
@@ -347,7 +347,7 @@ Categorias nunca são excluídas fisicamente. Categorias usadas ou não podem se
 
 ### RN041 — Continuidade de alertas
 
-Emitir alerta três dias antes do vencimento, no dia do vencimento e diariamente após o vencimento enquanto a despesa estiver pendente. A regra continua válida mesmo após o fim do período de competência. Cessa quando a despesa é paga ou cancelada e respeita permissões do dispositivo.
+Consolidada na RN018: os alertas continuam válidos mesmo após o fim do período de competência, cessam quando a despesa é paga ou cancelada e respeitam as permissões do dispositivo.
 
 **Status:** APROVADO.
 
@@ -375,21 +375,14 @@ Todos os valores financeiros do MVP são denominados em BRL e representados em c
 
 **Status:** APROVADO — decisão do responsável pelo produto em 08/11/2026.
 
-### 14.1 Resumo de status após v0.5
+### 14.1 Outros temas (sem RN própria)
 
 | Tema | Status |
 |---|---|
-| Limites de período | APROVADO |
-| Meses curtos e anos bissextos | APROVADO |
-| Geração e idempotência de recorrências | APROVADO funcionalmente |
 | Zona IANA por usuário | APROVADO: `America/Sao_Paulo` |
 | Geração ao abrir e sincronizar, usando a zona IANA | APROVADO; implementado localmente |
 | Pagamentos parciais | FORA DO MVP |
-| Categorias | APROVADO |
-| Alertas após fim do período | APROVADO |
 | Encerramento manual de período | FORA DO MVP |
-| Moeda BRL, escala em centavos, zero permitido e negativos/mais de duas casas rejeitados | APROVADO |
-| Representação física PostgreSQL `BIGINT` e estratégia exata local/Web | APROVADO pelo responsável em 09/11/2026; round-trip Drift nativo testado; Web pendente |
-| Conflitos de sincronização | APROVADO: preservar versões, informar usuário e consolidar em nova versão |
 | Segurança, backup, recuperação e CSV | APROVADO como requisito; desenho técnico detalhado |
-| Obrigatoriedade de categoria | APROVADO: categoria opcional; sem classificação aparece em “Sem categoria” nos relatórios |
+
+O quadro-resumo anterior, que repetia os status das RN036–RN045, está em `docs/historico/decisoes.md`.

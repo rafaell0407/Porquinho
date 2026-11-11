@@ -1,0 +1,19 @@
+name: crypto_check
+description: Prova técnica de criptografia local (SQLite3MultipleCiphers) nativa e Web.
+publish_to: none
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  drift: ^2.35.4
+  sqlite3: ^3.9.1
+  web: ^1.1.0
+
+dev_dependencies:
+  test: ^1.25.0
+
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlite3mc

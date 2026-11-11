@@ -1,0 +1,15 @@
+name: web_check
+description: Validação do schema Drift em SQLite/WASM (navegador) via dart test.
+publish_to: none
+
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+
+dependencies:
+  drift: ^2.35.4
+  sqlite3: ^3.9.1
+
+dev_dependencies:
+  test: ^1.25.0
+  test_api: any
+  matcher: any

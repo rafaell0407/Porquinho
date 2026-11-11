@@ -20,14 +20,14 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 - Calcular a sobra por mês-calendário ou ciclo personalizado.
 - Permitir categorias de receitas e despesas personalizadas pelo usuário.
 - Disponibilizar Dashboard, Lançamentos e Mais.
-- Operar offline nas funcionalidades financeiras do MVP e sincronizar com segurança.
+- Operar offline nas funcionalidades financeiras do MVP e sincronizar com segurança (offline somente no aplicativo de celular; a Web exige conexão — decisão de 10/11/2026).
 - Oferecer relatórios básicos, autenticação e configurações.
 
 ## 3. Escopo
 
 ### 3.1 Incluído no MVP — APROVADO
 
-1. Aplicativo Flutter para Android, iOS e Web.
+1. Aplicativo Flutter para Android e Web (iOS fora do MVP — decisão de 10/11/2026).
 2. Uso individual, com dados isolados por usuário.
 3. Autenticação por Google e por e-mail/senha.
 4. Confirmação de e-mail para cadastro tradicional e recuperação de senha.
@@ -45,7 +45,7 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 16. Cálculo e apresentação da sobra do período.
 17. Edição e cancelamento de qualquer lançamento, independentemente do status, com histórico de auditoria.
 18. Alertas móveis de vencimentos: três dias antes, no dia e diariamente após o vencimento enquanto a despesa estiver pendente, respeitadas as permissões do dispositivo.
-19. Operação offline das funcionalidades financeiras do MVP.
+19. Operação offline das funcionalidades financeiras do MVP, no aplicativo de celular (Android). A Web funciona somente online, sem banco local nem fila de envio (decisão de 10/11/2026).
 20. Sincronização de operações pendentes, com idempotência e detecção de conflitos.
 21. Assistente de configuração inicial, com etapas que podem ser puladas e concluídas posteriormente.
 22. Tema claro ou escuro selecionável manualmente.
@@ -53,6 +53,7 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 
 ### 3.2 Fora do escopo do MVP — APROVADO
 
+- Aplicativo iOS (decisão de 10/11/2026; pode voltar em versão futura).
 - Cadastro ou manutenção de contas bancárias.
 - Saldos individuais por conta, saldo bancário consolidado automático, conciliação ou integração bancária.
 - Campo ou entidade especial de saldo inicial por período.
@@ -175,7 +176,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 - Não há indicador de saldo atual, saldo disponível ou dinheiro livre.
 - Para ciclos personalizados, preservar o dia original e usar o último dia disponível em meses curtos; retornar ao dia original quando possível no mês seguinte.
 
-**RF021–RF022–RF027 — Offline e sincronização**
+**RF021–RF022–RF027 — Offline e sincronização** (offline somente no celular; Web somente online — decisão de 10/11/2026)
 - O usuário consegue consultar dados sincronizados localmente e registrar/editar/cancelar operações sem conexão.
 - As operações são persistidas localmente antes de serem apresentadas como salvas no dispositivo.
 - Cada operação possui identificador idempotente.
@@ -189,11 +190,11 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 
 ## 7. Requisitos não funcionais
 
-- Interface responsiva para Android, iOS e Web.
-- Operações financeiras locais disponíveis sem conexão, conforme escopo offline.
+- Interface responsiva para Android e Web.
+- Operações financeiras locais disponíveis sem conexão no celular, conforme escopo offline; a Web não oferece uso offline (decisão de 10/11/2026).
 - Valores monetários em BRL, com escala de até duas casas decimais; rejeitar valores negativos e entradas com casas excedentes, sem arredondamento. Zero é permitido. Persistir sem ponto flutuante binário.
 - Cálculos determinísticos, testáveis e equivalentes entre cliente e backend.
-- Metas iniciais de desempenho aprovadas constam na seção 13.6; são objetivos a medir e validar, não garantias.
+- Metas iniciais de desempenho aprovadas constam na RN043 (`docs/regras_negocio.md`); são objetivos a medir e validar, não garantias.
 - Logs sem exposição desnecessária de dados financeiros ou pessoais.
 - Ações de sincronização idempotentes e recuperáveis após falhas transitórias.
 
@@ -216,7 +217,7 @@ Os cinco relatórios aprovados estão especificados na seção 13.7. Esta seçã
 
 ## 11. Detalhamentos pendentes
 
-As regras funcionais desta baseline estão aprovadas. A zona IANA `America/Sao_Paulo` por usuário foi definida em 08/11/2026. Permanecem detalhamentos técnicos antes das implementações correspondentes: protocolo e retentativas de sincronização; implementação de alertas móveis; critérios de medição das metas de desempenho; e desenho de backup, restauração, retenção, exportação e exclusão. Não há decisão pendente sobre meses curtos, conflitos, relatórios aprovados ou encerramento manual de períodos.
+As regras funcionais desta baseline estão aprovadas. Não há decisão pendente sobre meses curtos, conflitos, relatórios aprovados ou encerramento manual de períodos. Detalhamentos técnicos pendentes: `docs/arquitetura.md` §15; critérios de medição das metas de desempenho: RN043.
 
 ## 12. Funcionalidades para versões futuras
 
@@ -229,62 +230,20 @@ As regras funcionais desta baseline estão aprovadas. A zona IANA `America/Sao_P
 - Importação de planilhas, exportação avançada e relatórios avançados.
 
 
-## 13. Baseline v0.5 — complementos aprovados
+## 13. Complementos aprovados (v0.5)
 
-**Versão:** 0.5 — 08/11/2026. Esta seção consolida e prevalece sobre qualquer indicação anterior de pendência incompatível com as decisões abaixo.
+**Versão:** 0.5 — 08/11/2026. As regras financeiras complementares estão em `docs/regras_negocio.md`; esta seção apenas as localiza.
 
-### 13.1 Períodos e competência
-
-- Todo período é representado por `[data_inicio, data_fim)`, com início inclusivo e fim exclusivo. A data do limite final pertence ao próximo período.
-- Períodos consecutivos não podem ter lacunas ou sobreposições.
-- No ciclo personalizado, preservar o dia inicial configurado. Se não existir no mês, usar o último dia disponível; no mês seguinte, retornar ao dia originalmente configurado quando possível. Exemplo para dia 31: `[31/01, 28/02)`, `[28/02, 31/03)`, `[31/03, 30/04)`. Em ano bissexto, fevereiro pode terminar em 29/02.
-- Mudanças de configuração valem a partir do próximo período; períodos históricos mantêm a configuração original.
-
-### 13.2 Recorrências
-
-- Frequências do MVP: mensal e por período de apuração.
-- Recorrência mensal mantém dia de referência; se inexistente, usa o último dia do mês sem alterar a referência original para os meses seguintes.
-- A primeira ocorrência mensal usa a primeira data de referência igual ou posterior ao início do modelo; exemplo: modelo iniciado em 10 de maio com dia 31 começa em 31 de maio.
-- Recorrência por período gera uma ocorrência no início de cada período.
-- Se um modelo por período for criado durante o período atual, gera também a ocorrência desse período, mesmo que a data da ocorrência anteceda a criação.
-- Geração idempotente, com unicidade por modelo + referência programada/competência.
-- Na abertura do app e na sincronização, verificar e gerar ocorrências faltantes, inclusive atrasadas, sem duplicidade.
-- Edição individual não altera modelo ou outras ocorrências; desativação impede futuras e preserva anteriores.
-- Receitas recorrentes começam pendentes e só são contabilizadas após confirmação do recebimento. Despesas recorrentes são contabilizadas quando geradas e com valor definido.
-- A zona de calendário é `America/Sao_Paulo` por usuário, conforme decisão de 08/11/2026. Na abertura do aplicativo e durante a sincronização, recuperar ocorrências faltantes até a data corrente nessa zona; não há dependência de agendador em segundo plano.
-
-### 13.3 Pagamentos e categorias
-
-- Pagamento parcial está **FORA DO MVP**. O pagamento de despesa é integral; não há saldo parcial.
-- Categorias não são excluídas fisicamente. Podem ser desativadas mesmo sem uso; as desativadas não aparecem em novos lançamentos, mas permanecem no histórico. Renomear categoria não altera o histórico dos lançamentos.
-- Categoria é opcional em receitas e despesas. Nos relatórios por categoria, lançamentos sem categoria aparecem agrupados em **Sem categoria** e permanecem nos totais gerais. Investimentos não usam categoria.
-
-### 13.4 Alertas e períodos históricos
-
-Alertas de despesas pendentes ocorrem três dias antes do vencimento, no dia e diariamente após o vencimento. Continuam após o fim do período original até a despesa ser paga ou cancelada, respeitadas as permissões do dispositivo.
-
-Não existe encerramento ou arquivamento manual de período no MVP. Períodos anteriores permanecem consultáveis; despesas pendentes continuam no período original, não são transportadas nem bloqueiam edição.
-
-### 13.5 Segurança, sincronização e portabilidade
-
-- Criptografia do banco local e armazenamento seguro de chaves e tokens conforme a plataforma; senhas nunca são armazenadas em texto puro.
-- Bloqueio opcional por PIN/biometria em dispositivos móveis.
-- Isolamento dos dados por usuário e autorização validada no backend.
-- Sincronização versionada: detectar concorrência, preservar versões conflitantes, apresentar conflito ao usuário e registrar resolução como nova versão; não usar sobrescrita silenciosa por última gravação. Operações idempotentes.
-- Não descartar operações pendentes no logout.
-- Backup remoto diário com retenção de 30 dias, procedimento de recuperação, exclusão definitiva e exportação CSV. A política de restauração deve impedir reaparecimento de dados definitivamente excluídos.
-
-### 13.6 Metas iniciais de desempenho
-
-| Operação | Meta |
-|---|---:|
-| Dashboard com dados locais | até 1 s |
-| Lista de lançamentos | até 1 s |
-| Salvamento local | até 500 ms |
-| Cálculo/atualização da sobra | até 300 ms |
-| Sincronização de lote pequeno em conexão normal | até 5 s |
-
-Metas de engenharia sujeitas a medição e validação; não são garantias.
+| Tema | Regra vigente |
+|---|---|
+| Períodos `[início, fim)`, ciclo personalizado, meses curtos e mudança de configuração | RN001–RN004, RN036–RN037 |
+| Recorrências: frequências, primeira ocorrência, idempotência, zona `America/Sao_Paulo`, geração ao abrir e sincronizar | RN010–RN011, RN014, RN038 |
+| Pagamento integral (pagamento parcial FORA DO MVP) | RN015, RN039 |
+| Categorias: desativação, categoria opcional e grupo "Sem categoria" | RN024–RN027, RN040, RN044 |
+| Alertas e períodos históricos (sem encerramento manual) | RN016, RN018, RN041, RN042 |
+| Segurança, sincronização, backup e portabilidade | `docs/arquitetura.md` §16 |
+| Metas iniciais de desempenho | RN043 |
+| Moeda e precisão monetária | RN045 |
 
 ### 13.7 Relatórios básicos do MVP
 
@@ -295,7 +254,3 @@ Metas de engenharia sujeitas a medição e validação; não são garantias.
 5. Comparativo de receitas, despesas e investimentos por período.
 
 Todos respeitam a configuração de período do usuário. Nos relatórios de receitas e despesas por categoria, lançamentos sem categoria aparecem agrupados em **Sem categoria** e também permanecem nos totais gerais. Não incluem rentabilidade, projeções, saldos bancários, dinheiro livre ou gestão de carteira.
-
-### 13.8 Moeda e precisão monetária
-
-Decisão do responsável em 08/11/2026: todos os valores do MVP são BRL; aceitam até duas casas decimais, zero é válido, valores negativos e casas excedentes são rejeitados e não há arredondamento implícito. Nenhum limite de produto foi definido. O responsável validou em 09/11/2026 a representação PostgreSQL `BIGINT` e a estratégia exata local/Web (`BigInt`, texto decimal e protocolo em string). A gravação exata Drift no SQLite nativo foi testada; a validação Flutter Web permanece pendente.

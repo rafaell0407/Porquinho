@@ -41,6 +41,32 @@ Suas responsabilidades incluem:
 
 O agente não tem autoridade para decidir regras financeiras em nome do responsável pelo produto.
 
+## 1.1 Comunicação das entregas
+
+As comunicações devem utilizar português brasileiro, linguagem simples e foco no comportamento do aplicativo, permitindo que o responsável pelo produto compreenda e valide as implementações sem precisar conhecer programação.
+
+Regras:
+
+1. Explique o que mudou e como isso afeta o usuário, evitando detalhes técnicos desnecessários.
+2. Utilize `docs/requisitos.md` e `docs/regras_negocio.md` como referência para descrever os resultados.
+3. Identifique os RFs e RNs atendidos quando aplicável.
+4. Diferencie claramente o que foi implementado, testado e o que ainda está pendente.
+5. Apresente problemas indicando seu impacto e se exigem alguma decisão do responsável.
+6. Só apresente detalhes de código, arquitetura, comandos ou logs quando forem necessários ou solicitados.
+7. Não repita informações já registradas na documentação ou em mensagens anteriores, salvo quando necessário para compreensão.
+8. Seja objetivo: prefira frases curtas e informações essenciais. Não gere relatórios extensos ou explicações repetitivas.
+
+### Formato de conclusão
+
+Apresente somente os itens pertinentes à entrega:
+
+- **Implementado:** o que foi feito e seu resultado no aplicativo.
+- **Requisitos:** RFs/RNs atendidos.
+- **Testes:** resultado das verificações executadas.
+- **Pendências:** o que falta ou precisa de validação.
+
+Não inclua itens sem informação relevante. A comunicação deve ser suficiente para permitir a validação da entrega com o menor consumo possível de tokens.
+
 ## 2. Documentação obrigatória
 
 | Documento | Responsabilidade | Pergunta que responde |
@@ -51,6 +77,8 @@ O agente não tem autoridade para decidir regras financeiras em nome do respons�
 | `docs/banco_de_dados.md` | Entidades, persistência e integridade | Como os dados serão organizados? |
 | `docs/regras_negocio.md` | Regras financeiras | Como cada operação afeta a sobra do período? |
 | `docs/roadmap.md` | Fases, prioridades e dependências | Em qual ordem desenvolver? |
+| `docs/estado_atual.md` | Fase, última entrega, pendências e decisões abertas | Onde o projeto está agora? |
+| `docs/historico/decisoes.md` | Arquivo de entregas, revisões e textos superados (somente consulta) | O que já foi feito ou substituído? |
 
 ### 2.1 Fonte de verdade e conflitos
 
@@ -189,8 +217,8 @@ O usuário pode editar ou cancelar qualquer lançamento, mesmo pago ou recebido.
 
 ## 6. Arquitetura, segurança e dependências
 
-- Flutter, Dart, Git, Supabase, PostgreSQL, SQLite com Drift, Riverpod, GoRouter, Supabase Auth e serviço próprio de sincronização em Dart estão aprovados conforme a baseline v0.5 da seção 10.4.
-- Plataformas do MVP: Android, iOS e Web.
+- Flutter, Dart, Git, Supabase, PostgreSQL, SQLite com Drift, Riverpod, GoRouter, Supabase Auth e serviço próprio de sincronização em Dart estão aprovados conforme a baseline v0.5 (`docs/arquitetura.md` §2.1).
+- Plataformas do MVP: Android e Web (iOS fora do MVP — decisão de 10/11/2026).
 - Ambientes, RLS, armazenamento seguro, observabilidade e compatibilidade multiplataforma são detalhamentos técnicos pendentes; organização dos módulos e zona IANA por usuário estão definidas na Fase 2.
 - Dados financeiros devem ser isolados por usuário e protegidos local e remotamente.
 - Não armazene senhas, tokens ou segredos no repositório.
@@ -221,94 +249,27 @@ Antes de considerar uma tarefa concluída, execute conforme aplicável:
 
 Não declarar testes executados se não foram executados. Informe limitações e pendências.
 
-## 9. Histórico de decisões incorporadas na versão 0.4
+## 9. Histórico de decisões
 
-- Removidos do MVP o módulo de contas bancárias e o Porquinho virtual, incluindo reservas e dinheiro livre.
-- Removido o campo especial de saldo inicial. O usuário pode criar uma categoria de receita com esse nome; ela é tratada como receita comum.
-- Mantida somente a sobra do período como indicador de resultado.
-- Mantidas receitas, despesas, recorrências e investimento simples por valor total.
-- Investimentos não possuem categorias por ativo; cada lançamento deduz a sobra imediatamente.
-- Rendimentos recebidos manualmente são receitas comuns; estimativas automáticas por taxa fixa/CDI foram removidas.
-- Cartão representado por despesa recorrente variável.
-- Navegação reduzida a Dashboard, Lançamentos e Mais.
-- Usuário pode editar ou cancelar qualquer lançamento em qualquer status, preservando auditoria.
-- Recorrências somente mensais ou por período; renda recorrente só contabiliza após confirmação de recebimento.
-- Offline permanece essencial, com implementação incremental.
+O histórico de decisões e revisões (incluindo a versão 0.4) está em `docs/historico/decisoes.md`. O estado de execução está em `docs/estado_atual.md`.
 
+## 10. Baseline documental 0.5 — onde está cada decisão
 
-## 10. Baseline documental 0.5 — decisões consolidadas
-
-**Versão:** 0.5  
-**Data:** 08/11/2026  
+**Versão:** 0.5
+**Data:** 08/11/2026
 **Status:** decisões funcionais e stack principal aprovadas.
 
-Esta seção prevalece sobre qualquer trecho anterior deste arquivo que ainda classifique as decisões abaixo como pendentes ou propostas. Os seis documentos devem ser interpretados em conjunto; em caso de divergência residual, prevalece a regra mais específica de `regras_negocio.md` para comportamento financeiro e `requisitos.md` para escopo.
+Esta seção prevalece sobre qualquer trecho anterior deste arquivo que ainda classifique as decisões abaixo como pendentes ou propostas. Os documentos devem ser interpretados em conjunto; em caso de divergência residual, prevalece a regra mais específica de `regras_negocio.md` para comportamento financeiro e `requisitos.md` para escopo. Cada decisão tem um único local canônico:
 
-### 10.1 Períodos e datas
-
-- Todos os períodos usam intervalo semiaberto `[data_inicio, data_fim)`: início inclusivo e fim exclusivo.
-- A data exatamente igual ao fim exclusivo pertence ao período seguinte. Períodos consecutivos não podem ter lacunas nem sobreposições.
-- Para ciclo personalizado, preservar o dia inicial originalmente configurado. Se esse dia não existir no mês, usar o último dia daquele mês; no mês seguinte, voltar ao dia originalmente configurado quando existir.
-- Exemplo de ciclo iniciado no dia 31: `[31/01, 28/02)`, `[28/02, 31/03)`, `[31/03, 30/04)`. As datas finais são exclusivas. Em ano bissexto, fevereiro termina em 29/02; a mesma regra se aplica.
-- Mudanças na configuração passam a valer no próximo período. Períodos históricos preservam a configuração que os originou.
-- Quando a configuração muda, o primeiro período da nova agenda começa no fim do período anterior e termina na próxima fronteira da modalidade/dia novo que seja posterior ao seu início; períodos seguintes seguem a agenda regular. Aprovado em 09/11/2026.
-
-### 10.2 Recorrências
-
-- Frequências do MVP: mensal e por período de apuração.
-- Recorrência mensal preserva o dia de referência original; quando inexistente, agenda no último dia do mês, sem alterar a referência dos meses seguintes.
-- Recorrência por período gera uma ocorrência por período, no início desse período.
-- A geração deve ser idempotente. A chave lógica única é modelo de recorrência + referência programada/competência; a unicidade também deve ser garantida no armazenamento.
-- A primeira ocorrência mensal é a primeira data de referência igual ou posterior ao início do modelo; por exemplo, modelo criado em 10 de maio com referência dia 31 começa em 31 de maio.
-- Recorrência por período criada durante o período atual gera também a ocorrência desse período, mesmo que a data seja anterior à criação.
-- Ao abrir o aplicativo e ao sincronizar, recuperar ocorrências vencidas até a data corrente na zona do usuário, sem duplicá-las nem depender de agendador em segundo plano.
-- Edição de ocorrência não altera modelo nem outras ocorrências. Desativação impede ocorrências futuras e preserva o histórico.
-- Receitas recorrentes nascem pendentes e só entram na sobra após confirmação do recebimento. Despesas recorrentes entram na sobra quando geradas e com valor definido; pagamento posterior não deduz novamente.
-- A zona operacional por usuário é `America/Sao_Paulo` (08/11/2026); a geração ocorre na abertura do aplicativo e durante a sincronização.
-
-### 10.3 Outras regras aprovadas
-
-- Pagamentos parciais estão **FORA DO MVP**. Despesas são pagas integralmente ou permanecem pendentes; não há saldo parcial.
-- Categorias não são excluídas fisicamente. Categorias usadas ou não podem ser desativadas; categorias inativas não aparecem em novos lançamentos e permanecem nos históricos. Renomear não reclassifica retroativamente os lançamentos.
-- Categorias são opcionais em receitas e despesas. Nos relatórios por categoria, lançamentos sem classificação aparecem agrupados em **Sem categoria** e continuam incluídos nos totais gerais. Investimentos permanecem sem categoria.
-- Valores monetários do MVP são BRL em centavos: zero é permitido, valores negativos e mais de duas casas decimais são rejeitados, sem arredondamento implícito. Decisão do responsável em 08/11/2026.
-- Alertas de despesa: três dias antes, no vencimento e diariamente após o vencimento enquanto pendente, inclusive depois do fim do período. Cessam ao pagar ou cancelar, respeitadas as permissões do dispositivo.
-- Não existe encerramento ou arquivamento manual de período no MVP. Períodos históricos permanecem consultáveis; despesas pendentes ficam no período de origem; não há transporte financeiro nem bloqueio de edição.
-
-### 10.4 Stack aprovada
-
-- Flutter/Dart; Supabase; PostgreSQL; SQLite com Drift; Riverpod; GoRouter; Supabase Auth; serviço próprio de sincronização em Dart; Git.
-- A aprovação da stack não substitui o detalhamento de ambientes, RLS, migrations, armazenamento seguro, observabilidade e compatibilidade de cada mecanismo entre Android, iOS e Web. A organização dos módulos está registrada na arquitetura; a zona `America/Sao_Paulo` foi aprovada para cada usuário.
-
-### 10.5 Sincronização, proteção e portabilidade
-
-- Cada registro/alteração sincronizável deve possuir versão. O servidor detecta escrita concorrente com base na versão esperada.
-- Não usar “última gravação vence” silencioso. Preservar as versões conflitantes, informar o usuário e registrar a resolução como nova versão consolidada. Operações independentes continuam sincronizando. Reenvios são idempotentes.
-- Proteger banco local com criptografia; armazenar chaves e tokens em armazenamento seguro apropriado à plataforma; nunca persistir senha em texto puro. Bloqueio por PIN/biometria é opcional em dispositivos móveis.
-- Logout não pode descartar operações ainda não sincronizadas. Definir fluxo explícito para sincronização, exportação ou decisão do usuário antes de limpar dados locais.
-- Backup remoto diário, retenção de 30 dias e procedimento documentado de recuperação. Prever exclusão definitiva e exportação CSV. Backups antigos devem respeitar a política de retenção e não podem reintroduzir dados após exclusão definitiva.
-
-### 10.6 Metas iniciais de desempenho
-
-| Operação | Meta inicial |
-|---|---:|
-| Dashboard com dados locais | até 1 s |
-| Lista de lançamentos | até 1 s |
-| Salvar lançamento local | até 500 ms |
-| Atualizar cálculo da sobra | até 300 ms |
-| Sincronizar lote pequeno em conexão normal | até 5 s |
-
-São metas mensuráveis, não garantias; devem ser validadas em dispositivos e condições representativos.
-
-### 10.7 Relatórios básicos aprovados
-
-1. Receitas por categoria e período.
-2. Despesas por categoria e período.
-3. Total destinado a investimentos por período.
-4. Evolução da sobra entre períodos.
-5. Comparativo de receitas, despesas e investimentos por período.
-
-Não incluir rentabilidade, projeções, saldos bancários, dinheiro livre ou gestão de carteira.
+| Tema | Local canônico |
+|---|---|
+| Períodos, datas, ciclo personalizado e mudança de configuração (aprovada em 09/11/2026) | `regras_negocio.md` RN001–RN004, RN036–RN037, RN042 |
+| Recorrências, zona `America/Sao_Paulo` (08/11/2026) e geração ao abrir/sincronizar | RN010–RN011, RN014, RN038 |
+| Pagamento integral, alertas, categorias, moeda BRL em centavos (08/11/2026) | RN015/RN039, RN018/RN041, RN040/RN044, RN045 |
+| Metas iniciais de desempenho | RN043 |
+| Relatórios básicos | `requisitos.md` §13.7 |
+| Stack aprovada | `arquitetura.md` §2.1 |
+| Sincronização, proteção local, logout, backup, CSV e portabilidade | `arquitetura.md` §16 |
 
 ### 10.8 Critério de atualização
 

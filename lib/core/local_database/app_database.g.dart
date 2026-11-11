@@ -9149,9 +9149,25 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
     'unique_income_occurrence_schedule',
     'CREATE UNIQUE INDEX unique_income_occurrence_schedule ON income_entries (owner_id, recurrence_template_id, scheduled_for_date) WHERE recurrence_template_id IS NOT NULL',
   );
+  late final Index incomeEntriesPeriodIdx = Index(
+    'income_entries_period_idx',
+    'CREATE INDEX income_entries_period_idx ON income_entries (owner_id, accounting_period_id)',
+  );
   late final Index uniqueExpenseOccurrenceSchedule = Index(
     'unique_expense_occurrence_schedule',
     'CREATE UNIQUE INDEX unique_expense_occurrence_schedule ON expense_entries (owner_id, recurrence_template_id, scheduled_for_date) WHERE recurrence_template_id IS NOT NULL',
+  );
+  late final Index expenseEntriesPeriodIdx = Index(
+    'expense_entries_period_idx',
+    'CREATE INDEX expense_entries_period_idx ON expense_entries (owner_id, accounting_period_id)',
+  );
+  late final Index investmentAllocationsPeriodIdx = Index(
+    'investment_allocations_period_idx',
+    'CREATE INDEX investment_allocations_period_idx ON investment_allocations (owner_id, accounting_period_id)',
+  );
+  late final Index syncOutboxStateIdx = Index(
+    'sync_outbox_state_idx',
+    'CREATE INDEX sync_outbox_state_idx ON sync_outbox (owner_id, state)',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -9173,7 +9189,11 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
     syncConflicts,
     syncOutbox,
     uniqueIncomeOccurrenceSchedule,
+    incomeEntriesPeriodIdx,
     uniqueExpenseOccurrenceSchedule,
+    expenseEntriesPeriodIdx,
+    investmentAllocationsPeriodIdx,
+    syncOutboxStateIdx,
   ];
 }
 

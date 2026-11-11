@@ -2,11 +2,11 @@
 
 **Versão:** 0.5  
 **Data:** 08/11/2026  
-**Status:** Baseline arquitetural v0.5; stack principal aprovada; detalhamentos técnicos remanescentes
+**Status:** Baseline arquitetural v0.5; stack principal aprovada; detalhamentos técnicos remanescentes (seção 15). Estado de execução: `docs/estado_atual.md`.
 
 ## 1. Visão geral
 
-O Porquinho será um aplicativo Flutter/Dart para Android, iOS e Web. O MVP é um sistema individual de lançamentos financeiros por períodos, com receitas, despesas, destinações simples para investimentos e cálculo da sobra do período.
+O Porquinho será um aplicativo Flutter/Dart para Android e Web (iOS fora do MVP — decisão de 10/11/2026). O MVP é um sistema individual de lançamentos financeiros por períodos, com receitas, despesas, destinações simples para investimentos e cálculo da sobra do período.
 
 A arquitetura não deve incluir módulos de contas bancárias, saldos bancários, Porquinho virtual, reservas, dinheiro livre, compras/parcelas de cartão ou carteira de investimentos.
 
@@ -38,21 +38,11 @@ Regras financeiras independem da interface e devem ser testáveis sem widgets.
 | Serviço próprio em Dart | Sincronização | APROVADO como abordagem |
 | Git | Versionamento | APROVADO |
 
-Plataformas do MVP: Android, iOS e Web.
+Plataformas do MVP: Android e Web. iOS fora do MVP (decisão de 10/11/2026); trechos que citam iOS ficam como registro para versão futura.
 
-### 2.2 Tecnologias aprovadas e detalhamento pendente
+### 2.2 Detalhamentos técnicos
 
-A stack foi aprovada conforme a tabela da seção 2.1. A organização concreta dos módulos foi aprovada tecnicamente na Entrega 1 da Fase 2 e está registrada na seção 17.1. A zona `America/Sao_Paulo` por usuário foi definida na Entrega 2. Permanecem pendentes configurações e decisões de implementação: ambientes, políticas RLS, observabilidade, chaves e compatibilidade multiplataforma.
-
-### 2.3 Detalhamentos técnicos pendentes
-
-- Protocolo de sincronização, retentativas e implementação técnica da política de conflitos aprovada.
-- Configuração de OAuth, sessão e armazenamento de credenciais.
-- Estratégia multiplataforma para notificações móveis.
-- Ambientes de desenvolvimento, teste e produção.
-- Implementação de backup, recuperação, retenção, exportação e exclusão de dados.
-
-Backend, banco, estado, roteamento, persistência local e política funcional de conflitos estão aprovados; organização concreta de módulos está definida na seção 17.1. Os demais detalhes de implementação não alteram essas decisões.
+A stack está aprovada (tabela 2.1). Os detalhamentos de implementação pendentes constam na seção 15 e não alteram essas decisões. A organização dos módulos está na seção 17.1 e a zona `America/Sao_Paulo` por usuário na seção 17.3.
 
 ## 3. Princípios arquiteturais
 
@@ -83,7 +73,7 @@ Backend, banco, estado, roteamento, persistência local e política funcional de
 
 ```mermaid
 flowchart TD
-    U[Usuário] --> APP[Aplicativo Flutter<br/>Android, iOS e Web]
+    U[Usuário] --> APP[Aplicativo Flutter<br/>Android e Web]
     APP --> UI[Dashboard, Lançamentos e Mais]
     UI --> UC[Casos de uso]
     UC --> DOM[Domínio e cálculo da sobra]
@@ -94,33 +84,16 @@ flowchart TD
     API --> AUTH[Autenticação e autorização]
     API --> DB[(Banco remoto)]
     UC --> NOTIF[Agendamento de alertas]
-    NOTIF --> MOBILE[Android e iOS]
+    NOTIF --> MOBILE[Android]
 ```
 
 O diagrama representa separação lógica, não escolha de tecnologias específicas para cada componente.
 
 ## 5. Organização do Flutter
 
-### 5.1 Organização conceitual por funcionalidades
+### 5.1 Estrutura de diretórios
 
-```text
-lib/
-  app/                 # Inicialização, configuração global e rotas
-  core/                # Erros, segurança, utilitários e serviços transversais
-  shared/              # Componentes visuais reutilizáveis
-  features/
-    auth/              # Autenticação
-    dashboard/         # Sobra e resumo do período
-    entries/           # Receitas, despesas e investimentos
-    recurrence/        # Modelos e ocorrências recorrentes
-    categories/        # Categorias e subcategorias de receita/despesa
-    periods/           # Mês-calendário e ciclo personalizado
-    reports/           # Relatórios básicos
-    settings/          # Preferências, tema e segurança
-    sync/              # Persistência local e sincronização
-```
-
-A estrutura física final depende da aprovação da arquitetura detalhada.
+A estrutura aprovada está na seção 17.1.
 
 ### 5.2 Camadas
 
@@ -137,16 +110,7 @@ A regra central é:
 
 `Sobra do período = receitas contabilizadas - despesas contabilizadas - investimentos lançados`.
 
-Competência:
-
-- Receita: data efetiva de recebimento.
-- Despesa avulsa: data de cadastro/lançamento.
-- Despesa recorrente: data de geração da ocorrência.
-- Investimento: data do lançamento.
-
-A data de pagamento de uma despesa não gera dedução nem altera seu período de competência. Edição ou cancelamento recalcula o período correspondente. Alteração de data pode mover o lançamento entre períodos.
-
-O sistema não calcula saldo atual, saldo bancário, saldo disponível ou dinheiro livre. Não há campo especial de saldo inicial; categoria criada pelo usuário com esse nome é tratada como receita comum.
+Competência por tipo de lançamento, efeito do pagamento, edição e cancelamento, ausência de saldo inicial especial e de indicadores de saldo: `docs/regras_negocio.md` (RN004–RN006, RN028–RN030).
 
 ## 7. Comunicação com backend
 
@@ -158,7 +122,7 @@ O sistema não calcula saldo atual, saldo bancário, saldo disponível ou dinhei
 - Não sobrescrever alterações concorrentes sem política explícita.
 - Validar no backend as mesmas regras e casos de referência usados no cálculo local.
 
-O protocolo da API e a política de retentativas ainda serão detalhados. A abordagem de conflitos está aprovada: controle de versão, preservação das versões concorrentes, apresentação ao usuário e consolidação em nova versão, conforme seção 16.3.
+O protocolo da API e a política de retentativas ainda serão detalhados. A abordagem de conflitos está aprovada: controle de versão, preservação das versões concorrentes, apresentação ao usuário e consolidação em nova versão, conforme seção 16.1.
 
 ## 8. Autenticação e autorização
 
@@ -196,6 +160,8 @@ Autenticação comprova identidade; autorização define quais dados e operaçõ
 
 ### 10.1 Escopo offline
 
+**Decisão de 10/11/2026 (APROVADA):** o uso offline vale somente para o aplicativo de celular (Android e iOS). A Web funciona apenas online: não tem banco local, fila de envio nem bloqueio por PIN, e lê e grava direto no servidor com a sessão autenticada (a sessão não é persistida; novo login a cada sessão do navegador). Isso substitui a proposta de KEK/reautenticação para a Web (§17.5) e a pendência de múltiplas abas na Web. A prova técnica da Entrega 11/12 (SQLite3MC em IndexedDB) fica apenas como registro.
+
 O uso offline é essencial. Deve ser implementado incrementalmente desde os primeiros módulos financeiros. O usuário poderá consultar dados sincronizados localmente e criar, editar, cancelar e consultar receitas, despesas, ocorrências recorrentes, destinações para investimentos e categorias, conforme os dados disponíveis no dispositivo.
 
 ### 10.2 Requisitos de sincronização
@@ -209,13 +175,14 @@ O uso offline é essencial. Deve ser implementado incrementalmente desde os prim
 - Não corrigir ou sobrescrever valores silenciosamente.
 - Informar ao usuário quando um conflito exigir decisão.
 
-A estratégia aprovada usa controle de versão, detecção de concorrência, preservação das versões conflitantes, apresentação ao usuário e resolução por nova versão consolidada. Não usar última gravação vence silencioso.
+A política de conflitos aprovada está na seção 16.1.
 
 ## 11. Ambientes e dependências
 
 Desenvolvimento, teste e produção devem ser separados. Dados financeiros reais não devem ser usados em desenvolvimento sem política aprovada.
 
 Antes de adicionar pacotes, avaliar compatibilidade com Flutter/Dart, manutenção, licença, segurança, custo e necessidade real no MVP.
+Configuração concreta dos ambientes: seção 17.2.
 
 ## 12. Estratégia de testes
 
@@ -223,20 +190,20 @@ Antes de adicionar pacotes, avaliar compatibilidade com Flutter/Dart, manutenç�
 - **Paridade cliente/backend:** mesmos cenários de referência executados localmente e na validação remota.
 - **Integração:** persistência, autenticação, sincronização, auditoria e categorias.
 - **Interface:** Dashboard, Lançamentos, Mais, formulários e estados de conexão.
-- **Regressão multiplataforma:** Android, iOS e Web.
+- **Regressão multiplataforma:** Android e Web.
 
 Casos de referência devem cobrir recebimento confirmado, despesa avulsa, despesa recorrente fixa/variável, pagamento sem segunda dedução, investimento simples, cancelamento/edição de lançamento, mês-calendário e ciclo personalizado.
 
 ## 13. Distribuição
 
-O MVP será distribuído para Android, iOS e Web. Lojas, hospedagem web, assinatura de builds, pipeline e procedimentos operacionais permanecem pendentes.
+O MVP será distribuído para Android e Web. Lojas, hospedagem web, assinatura de builds, pipeline e procedimentos operacionais permanecem pendentes.
 
 ## 14. Decisões arquiteturais
 
 | ID | Decisão | Status |
 |---|---|---|
 | DA001 | Flutter e Dart | APROVADO |
-| DA002 | Android, iOS e Web no MVP | APROVADO |
+| DA002 | Android e Web no MVP; iOS fora do MVP (alterada em 10/11/2026) | APROVADO |
 | DA003 | Uso individual e isolamento por usuário | APROVADO |
 | DA004 | Offline essencial, implementado incrementalmente | APROVADO |
 | DA005 | Regras no domínio, independentes da UI | APROVADO como princípio |
@@ -249,44 +216,24 @@ O MVP será distribuído para Android, iOS e Web. Lojas, hospedagem web, assinat
 
 ## 15. Detalhamentos técnicos pendentes
 
-1. Ambientes e configuração operacional.
-2. Migrations, políticas e testes RLS, constraints e modelo físico.
-3. Configuração OAuth, gestão de sessão e armazenamento seguro por plataforma.
-5. Protocolo de sincronização, retentativas e mecanismo técnico para preservar/resolver conflitos segundo a política aprovada.
-6. Estratégia de notificações móveis e validação multiplataforma.
-7. Mecanismo e procedimento de backup, restauração, retenção, exportação CSV e exclusão definitiva.
-8. Observabilidade, publicação e compatibilidade dos mecanismos em Android, iOS e Web.
+Não são decisões de produto pendentes; são detalhamentos necessários antes da implementação correspondente. Backend, banco, autenticação, estado, roteamento, persistência local e política funcional de conflitos estão aprovados e não são pendências. Estado de execução: `docs/estado_atual.md`.
 
-Backend, banco, autenticação, estado, roteamento, persistência local e política funcional de conflitos estão aprovados na seção 16; não são decisões pendentes.
+1. Ambientes e configuração operacional (hospedados dev/teste/produção e processo de promoção).
+2. Migrations, políticas e testes RLS, constraints e modelo físico; validação no Supabase gerenciado (grants, ownership de funções, RLS).
+3. Configuração OAuth, gestão de sessão, autorização e armazenamento seguro por plataforma.
+4. Protocolo de sincronização, retentativas e mecanismo técnico para preservar e resolver conflitos segundo a política aprovada. Envio e conflitos feitos (Entrega 21); faltam a versão local após o envio (Entrega 26), o download dos dados do servidor (Entrega 27) e a tela de conflitos (Entrega 22, Fase 4).
+5. Estratégia de notificações móveis e validação multiplataforma.
+6. Mecanismo e procedimento de backup, restauração, retenção, exportação CSV e exclusão definitiva.
+7. Observabilidade, publicação e compatibilidade dos mecanismos em Android e Web.
+8. ~~Estratégia de chaves, criptografia e logout com fila offline~~ — Android validado (Entregas 13–21); Web sem banco local; iOS fora do MVP.
+9. Validação de BRL e datas no Flutter Web e paridade Drift/PostgreSQL.
+10. Implementar e testar no app os ciclos de dias 29–31 e anos bissextos, os alertas após o fim do período e as consultas dos cinco relatórios.
 
+## 16. Sincronização, segurança e portabilidade
 
-## 16. Baseline arquitetural v0.5 — decisões aprovadas
+**Data:** 08/11/2026. Stack: seção 2.1. Períodos e recorrências: `docs/regras_negocio.md` (RN036–RN038). Metas de desempenho e alertas: RN043 e RN018.
 
-**Data:** 08/11/2026. Esta seção substitui classificações anteriores de proposta/pendência para as tecnologias e políticas aqui explicitamente aprovadas.
-
-### 16.1 Stack
-
-| Componente | Tecnologia | Status |
-|---|---|---|
-| Aplicativo | Flutter/Dart | APROVADO |
-| Backend e autenticação | Supabase / Supabase Auth | APROVADO |
-| Banco remoto | PostgreSQL | APROVADO |
-| Banco local | SQLite com Drift | APROVADO |
-| Estado | Riverpod | APROVADO |
-| Navegação | GoRouter | APROVADO |
-| Sincronização | Serviço próprio em Dart | APROVADO como abordagem |
-| Versionamento | Git | APROVADO |
-
-A stack está aprovada; organização concreta de módulos está registrada na seção 17.1. Configuração de ambientes, migrations, RLS, observabilidade, configuração OAuth e compatibilidade de mecanismos por plataforma permanecem detalhamentos técnicos.
-
-### 16.2 Períodos e recorrências
-
-Todos os períodos usam `[início, fim)`. O início é inclusivo e o fim exclusivo. Ciclo personalizado preserva o dia original e, em mês curto, utiliza o último dia disponível; retorna ao dia original no mês seguinte quando possível. Exemplo para dia 31: `[31/01,28/02)`, `[28/02,31/03)`, `[31/03,30/04)`. Mudança de configuração entra em vigor no próximo período.
-
-Recorrências mensais preservam o dia de referência e usam o último dia do mês quando a data não existir. A primeira ocorrência mensal é a primeira data de referência igual ou posterior ao início do modelo. Recorrências por período geram ocorrência no início de cada período, inclusive no período atual quando o modelo é criado durante esse período. Na abertura do app e na sincronização, recuperar ocorrências ausentes até a data corrente na zona do usuário, sem agendador em segundo plano. A unicidade lógica e física impede mais de uma ocorrência por modelo e referência programada. Edição individual não altera o modelo nem outras ocorrências; desativação impede ocorrências futuras. A zona é `America/Sao_Paulo`.
-
-### 16.3 Sincronização e conflitos
-
+### 16.1 Sincronização e conflitos
 - Registros sincronizáveis possuem controle de versão e cada alteração informa a versão esperada.
 - O backend detecta atualizações concorrentes.
 - Não adotar “última gravação vence” silencioso. Preservar versões conflitantes e apresentar conflito ao usuário.
@@ -294,28 +241,34 @@ Recorrências mensais preservam o dia de referência e usam o último dia do mê
 - Operações independentes continuam sincronizando; reenvios são idempotentes.
 - Operações locais não sincronizadas não podem ser descartadas automaticamente no logout.
 
-### 16.4 Segurança, backup e portabilidade
+#### 16.1.1 Estados da fila de envio e dos conflitos (Entrega 21A — PROPOSTA, aprovada para implementação em 10/11/2026)
+**Fila local (`sync_outbox.state`):**
+| Estado | Significado |
+|---|---|
+| `pending` | Gravada localmente, ainda não enviada. |
+| `sending` | Envio em andamento. Ao reabrir o app, volta a `pending` (o reenvio é seguro pela chave idempotente). |
+| `failed` | Falha transitória (rede, servidor). Reenvio automático em `next_retry_at`, com espera crescente; `attempts` e `last_error` registrados. |
+| `conflict` | O servidor detectou versão divergente. A operação fica parada até a resolução; operações independentes seguem. |
+| `rejected` | O servidor recusou por regra de domínio ou validação (erro permanente). Exige decisão do usuário; nunca é descartada em silêncio. |
 
+Operação aplicada com sucesso (ou resposta idempotente de reenvio) é **removida** da fila; o registro de que foi aplicada fica em `applied_sync_operations` no servidor. Logo, toda linha existente na fila do usuário é pendência (a contagem do logout continua válida).
+
+**Conflitos (`sync_conflicts.state`, local e servidor):** `open` (aguarda decisão) e `resolved` (decidido, com `resolution` e nova versão consolidada).
+
+**Resolução (aprovada em 10/11/2026):** o usuário escolhe (a) manter a versão do aparelho, (b) manter a do servidor ou (c) editar e salvar uma versão nova. Em (a) e (c) é criada uma nova versão consolidada do registro; em (b) os dados não mudam e o aparelho adota a versão do servidor. Em todos os casos há evento de auditoria (`conflict_resolved`) e as duas versões originais permanecem preservadas no conflito. Conflitos de criação (mesmo identificador já existente) e de período só aceitam (b).
+
+**Cancelamento x edição concorrentes (aprovado em 10/11/2026):** se um lado cancelou e o outro editou o mesmo lançamento, é conflito e o usuário decide; não há regra automática.
+
+### 16.2 Segurança, backup e portabilidade
 - Banco local criptografado; chaves e tokens armazenados em mecanismos seguros adequados a cada plataforma; senhas nunca persistidas em texto puro.
 - Bloqueio por PIN/biometria opcional em dispositivos móveis.
 - Isolamento por usuário e autorização no backend.
 - Backup remoto diário, retenção de 30 dias, procedimento de recuperação, exclusão definitiva e exportação CSV. A restauração deve respeitar exclusões definitivas, evitando ressurreição de dados.
 - O fluxo de logout deve resolver operações pendentes antes da limpeza local, com opção/decisão explícita quando não for possível sincronizar.
 
-### 16.5 Desempenho e notificações
-
-Metas iniciais: Dashboard local até 1 s; lista de lançamentos até 1 s; salvamento local até 500 ms; atualização da sobra até 300 ms; lote pequeno de sincronização em conexão normal até 5 s. Medir em dispositivos representativos; metas não são garantias.
-
-Alertas de despesa: três dias antes, no vencimento e diariamente após vencimento enquanto pendente, inclusive após o fim do período. Cessar quando paga ou cancelada e respeitar permissões do dispositivo.
-
-### 16.6 Pendências técnicas remanescentes
-
-Não são decisões de produto pendentes; são detalhamentos necessários antes da implementação correspondente: ambientes; migrations; políticas e testes RLS; estratégia de chaves; sessão e autorização; estratégia de observabilidade; mecanismo de backup e restauração; validação de armazenamento seguro e criptografia em Android, iOS e Web; política de logout com fila offline. A organização de módulos está definida na seção 17.1 e a zona IANA por usuário foi aprovada na seção 17.8.
-
-
 ## 17. Detalhamento arquitetural da Fase 2 — decisões e propostas
 
-**Status:** Entrega 1 registrada em 08/11/2026. Organização de módulos e estratégia de testes aprovadas tecnicamente para orientar a implementação. O esquema físico, a configuração operacional de produção, as dependências Flutter e as migrations continuam sem aprovação nesta seção.
+**Status:** Organização de módulos e estratégia de testes aprovadas tecnicamente na Entrega 1 (08/11/2026). A configuração operacional de produção e as dependências Flutter continuam sem aprovação nesta seção. Registro histórico das entregas: `docs/historico/decisoes.md`.
 
 ### 17.1 Organização dos módulos
 
@@ -340,11 +293,9 @@ lib/
     settings/
     sync/
 
-test/
-  unit/
-  integration/
-  contracts/
-  widget/
+test/                  # espelha lib/ (ex.: test/features/auth/, test/core/local_database/);
+                       # unidade, widget e integração convivem por funcionalidade
+  generated_migrations/ # gerado pelo Drift para testes de migração
 
 supabase/
   migrations/          # PostgreSQL; somente após aprovação explícita do schema
@@ -367,35 +318,50 @@ Para os ambientes hospedados, propõe-se separar projetos Supabase de desenvolvi
 
 Datas de competência, vencimento e pagamento serão datas de calendário, sem conversão em instantes. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC. A zona IANA armazenada por usuário é `America/Sao_Paulo`, aprovada pelo responsável em 08/11/2026. A data corrente é calculada nessa zona e a geração de ocorrências ocorre ao abrir o aplicativo e durante a sincronização; não há execução em segundo plano.
 
-A geração recupera ocorrências vencidas ao abrir o aplicativo e ao sincronizar; não depende de um agendador em segundo plano. A primeira ocorrência mensal é a primeira data de referência igual ou posterior ao início do modelo. Um modelo por período criado no meio do período inclui a ocorrência do período atual, mesmo com data anterior à criação.
-
 ### 17.4 Persistência local, fila e conflitos
 
 **Status:** Contrato APROVADO na Entrega 1; schema Drift v1 e testes do SQLite nativo implementados na Entrega 9. Conexão persistente criptografada, operação offline transacional e integração do app permanecem pendentes.
 
 O Drift será a fonte de leitura da interface. Uma operação financeira local grava, na mesma transação, o registro, o evento local de auditoria e a operação de saída. A interface só confirma que foi salva após o commit local.
 
-Para preservar centavos exatos no Flutter Web, a modelagem física aprovada na Entrega 2 usa `BigInt` no domínio, texto decimal no SQLite/Drift e string decimal no protocolo de sincronização; o PostgreSQL armazena o valor individual como `BIGINT`. A migration da Entrega 3 preserva inteiros acima de `2^53 - 1` no PostgreSQL. O schema Drift v1 e o round-trip SQLite nativo passaram; round-trip Drift/Web e cálculo multiplataforma ainda precisam de testes.
+Para preservar centavos exatos no Flutter Web, a modelagem física aprovada na Entrega 2 usa `BigInt` no domínio, texto decimal no SQLite/Drift e string decimal no protocolo de sincronização; o PostgreSQL armazena o valor individual como `BIGINT`. A migration da Entrega 3 preserva inteiros acima de `2^53 - 1` no PostgreSQL. O schema Drift v1 e o round-trip SQLite nativo passaram; o round-trip Drift/Web (SQLite/WASM, valores até 2^63−1, datas e reabertura da conexão) passou na Entrega 10 (`tooling/web_check`); cálculo multiplataforma e persistência Web em IndexedDB ainda precisam de testes.
 
 Cada operação enviada inclui identificador idempotente, usuário autenticado, entidade, versão esperada e conteúdo da alteração. A aplicação remota é transacional: registra o identificador idempotente, valida o proprietário e compara a versão esperada antes de consolidar a nova versão. A repetição do identificador retorna o resultado anterior sem reaplicar efeitos.
 
 Quando a versão esperada não corresponder, o servidor preserva os estados conflitantes e devolve um conflito explícito. O cliente mantém a versão local, apresenta o conflito e suspende operações dependentes daquela entidade; operações independentes continuam. A resolução é uma nova alteração versionada e auditável. Não se usa sobrescrita silenciosa por última gravação.
 
-Escritas remotas são restringidas a funções autenticadas que façam validações e mantenham auditoria na mesma transação. RLS protege leitura própria e grants SQL bloqueiam DML direto. As Entregas 4 a 6 implementam RPCs de categoria, período e subcategoria; as Entregas 7A e 7B adicionam destinações a investimentos e lançamentos avulsos de receitas/despesas; a Entrega 7C adiciona modelos recorrentes; a Entrega 8 adiciona geração e ciclo de vida de ocorrências. Essas funções usam `SECURITY DEFINER`, proprietária `postgres`, `search_path` vazio, referências qualificadas, execução concedida somente a `authenticated` e proprietário derivado de `auth.uid()`. Como `postgres` ignora RLS, toda consulta e escrita das funções filtra explicitamente por esse usuário. A RPC de período serializa chamadas do mesmo proprietário com trava advisory e valida as fronteiras; os testes locais cobrem isolamento e duas chamadas simultâneas. A validação no Supabase gerenciado permanece pendente. A Entrega 5 e a regra de transição foram validadas pelo responsável em 09/11/2026.
+Escritas remotas são restringidas a funções autenticadas que façam validações e mantenham auditoria na mesma transação. RLS protege leitura própria e grants SQL bloqueiam DML direto. Propriedades das RPCs (`SECURITY DEFINER`, proprietária `postgres`, `search_path` vazio, grants, trava advisory de períodos) e sua cobertura de testes: `docs/banco_de_dados.md` §16.8.4 e §16.9. A validação no Supabase gerenciado permanece pendente.
 
 ### 17.5 Proteção local multiplataforma
 
-**Status:** PENDENTE de prova técnica multiplataforma.
+**Status (atualizado em 10/11/2026):** Android validado no emulador (Entregas 12–21). Web somente online, sem banco local (§10.1). iOS fora do MVP. O texto abaixo preserva o registro da prova técnica.
 
-O banco local deve ser criptografado. Avaliar SQLCipher para Android e iOS e fazer uma prova técnica específica para Web antes de selecionar a implementação local final. A prova deve verificar suporte a Drift, persistência, consultas, recuperação de chave e comportamento com múltiplas abas. Não considerar a proteção Web resolvida até documentar o mecanismo e suas limitações. Chaves e tokens ficam em armazenamento seguro apropriado à plataforma; senhas não são persistidas.
+O banco local deve ser criptografado. Chaves e tokens ficam em armazenamento seguro apropriado à plataforma; senhas não são persistidas.
+
+**Mecanismo proposto:** SQLite3 Multiple Ciphers (pacote `sqlite3` 3.9.1, SQLite 3.54.0, cifra padrão `chacha20`) nas duas famílias de plataforma, nativa via hook `source: sqlite3mc` e Web via `sqlite3mc.wasm`. Chave bruta de 256 bits por `PRAGMA key = "x'<hex>'"`, sem derivação por senha. SQLCipher segue como alternativa nativa; não foi comparado.
+
+**Provado em `tooling/crypto_check` (`dart test`, 10 testes):**
+- Nativo (VM, Windows): biblioteca carregada é SQLite3MC; o arquivo não contém texto puro nem o cabeçalho `SQLite format 3`; chave correta lê, chave errada e ausência de chave falham; `PRAGMA rekey` rotaciona a chave e invalida a antiga; Drift (`NativeDatabase` com `setup`) persiste e lê centavos 2^63−1 com a chave.
+- Web (Chrome, dart2js): `sqlite3mc.wasm` sobre `IndexedDbFileSystem`; os bytes no IndexedDB não contêm texto puro nem o cabeçalho SQLite; sobrevive a reabrir; chave errada/ausente falha; `rekey` funciona. O banco deve ser aberto com `vfs: 'multipleciphers-<nome do VFS>'`; abrir pelo VFS padrão falha com "Encryption is not supported by the VFS".
+- Recuperação de chave na Web: `CryptoKey` AES-GCM não extraível (KEK) guardada em IndexedDB sobrevive a reabrir; `exportKey` é recusado; ela decifra a chave do banco.
+
+**Limitações e pendências:**
+1. Android e iOS não foram executados (o repositório não tem projetos `android/` nem `ios/`). A prova nativa foi no Windows; o armazenamento seguro móvel (Keystore/Keychain, p.ex. `flutter_secure_storage`) não foi avaliado.
+2. Múltiplas abas não foram testadas; o IndexedDB VFS não coordena escrita concorrente entre abas. Exige teste com travas/worker antes de adotar.
+3. Na Web não há armazenamento seguro: a KEK não extraível protege contra exportação da chave, não contra script malicioso no mesmo origin (XSS) nem contra quem usa a sessão do navegador. O ponto de partida da KEK (reautenticação, passphrase) e a política de logout ficam PENDENTES.
+4. ~~Drift sobre `sqlite3mc.wasm`/IndexedDB e migração cifrada~~ — provados na Entrega 12 (10/11/2026) com o schema real: `openEncryptedExecutor` (`lib/core/local_database/encrypted_connection*.dart`); na Web a conexão é aberta com `sqlite3.open(vfs: 'multipleciphers-…')` + `WasmDatabase.opened` porque `WasmDatabase()` do Drift não aceita escolher o VFS, e o IndexedDB é gravado após cada escrita/commit. Migração v1→v2 (`stepByStep`) testada em arquivo cifrado nativo e em IndexedDB cifrado, com centavos 2^63−1 preservados. Rodados por `dart test -p chrome` (`tooling/web_check`); o app Flutter Web real não foi executado.
+5. Licença do SQLite3 Multiple Ciphers confirmada pelo responsável em 10/11/2026. Custo/exportação de criptografia nas lojas ficam com o responsável. `flutter test --platform chrome` continua indisponível nesta máquina (`dart test` é o runner).
+6. O `pubspec.yaml` raiz fixa `hooks.user_defines.sqlite3.source: sqlite3mc`, o que troca o SQLite nativo de todos os builds. A origem da chave (Keystore/Keychain/KEK) segue atrás de `DatabaseKeyProvider` e é PENDENTE. Entrega 13: `StoredDatabaseKeyProvider` e `FlutterSecureValueStore` (Android Keystore) prontos; testados só com armazenamento em memória, nada em dispositivo. **Decisões APROVADAS em 10/11/2026:** celular usa `flutter_secure_storage`; Web exige reautenticação a cada nova sessão para liberar a KEK (opção B), aceitando proteção inferior à do celular; logout com operações não sincronizadas é bloqueado com aviso (sem descarte automático).
+
+**Bloqueio por PIN/biometria (RF003) — APROVADO em 10/11/2026 (`lib/features/app_lock/`):** só no aplicativo móvel; PIN de 6 dígitos (PBKDF2-HMAC-SHA256 com sal, guardado no armazenamento seguro) e biometria opcional como atalho (`local_auth`, BSD-3, oficial do Flutter), com o PIN sempre disponível; pedido apenas ao abrir o app do zero e com sessão ativa. Após 5 erros seguidos há espera crescente (30 s, 1 min, 5 min, 15 min, 1 h), sem apagar dados. O PIN é removido no logout. Ativação em tela provisória "Segurança", a ser movida para "Mais" na Fase 3. Validado no emulador Android (PIN, erros e espera); biometria só coberta por testes automatizados (o emulador não tem digital cadastrada).
 
 ### 17.6 Migrations e testes
 
-**Status:** Migrations PostgreSQL/RPCs passaram localmente nas Entregas 3 a 8; schema Drift v1 e testes nativos passaram na Entrega 9. Adapter persistente criptografado, validação Web e integração Supabase gerenciada permanecem pendentes.
+**Status:** Migrations PostgreSQL/RPCs passaram localmente. Schema Drift v2 (v1 + 4 índices) com migração `stepByStep`, snapshots v1/v2 em `drift_schemas/porquinho/` e `SchemaVerifier` passaram; conexão cifrada validada em Windows e Web (Entrega 12). Android/iOS e integração Supabase gerenciada permanecem pendentes.
 
 Manter migrations PostgreSQL versionadas em `supabase/migrations/`, revisadas e aplicadas primeiro em ambiente local/teste. Drift mantém versão e migrações locais próprias, com snapshots do esquema. Nenhuma migração de produção deve ser aplicada sem revisão e estratégia de evolução/recuperação.
 
-**Status:** A estratégia de testes foi aprovada na Entrega 1. Na Entrega 3 passou a suíte da migration PostgreSQL com autenticação simulada; nenhum teste de aplicação Flutter foi executado ainda.
+A estratégia de testes foi aprovada na Entrega 1 (08/11/2026).
 
 A estratégia inclui testes unitários de domínio; integração de transações e migrações Drift; testes de migrations, constraints e RLS com pelo menos dois usuários; idempotência, concorrência e conflitos no protocolo; paridade dos casos financeiros locais/remotos; e regressão Android, Web e iOS em ambiente compatível. Casos sintéticos de teste devem ser identificados como fixtures e nunca apresentados como dados reais. A matriz cobre limites `[início, fim)`, meses curtos e anos bissextos, recorrências, edição/cancelamento e pagamento sem segunda dedução.
 
@@ -418,12 +384,10 @@ O schema físico base e as RPCs de categoria, período, subcategoria e ocorrênc
 | Esquema físico base, nullability e constraints | APROVADO | Validado pelo responsável em 09/11/2026; migration inicial aplicada e testada em PostgreSQL local. |
 | FKs `ON DELETE` | APROVADO tecnicamente | `RESTRICT` para impedir remoção acidental; exclusão da conta será operação transacional explícita em entrega futura. |
 | RLS de leitura e grants sem DML direto | APROVADO tecnicamente | Migration inicial e testes locais com duas identidades simuladas; projeto Supabase gerenciado ainda pendente. |
-| Criptografia local na Web | PENDENTE | Requer prova técnica antes de escolher mecanismo. |
+| Criptografia local na Web | NÃO SERÁ USADA (Web somente online, decisão de 10/11/2026; prova técnica da Entrega 11 mantida como registro) | SQLite3MultipleCiphers (`sqlite3mc.wasm`) sobre IndexedDB, com chave do banco embrulhada por KEK WebCrypto não extraível. Limitações em §17.5. |
 | RPC autenticada de categorias | APROVADO tecnicamente na Entrega 4 | `SECURITY DEFINER`, proprietário `postgres`, identidade via `auth.uid()`, controle de versão, idempotência e auditoria; testada em PostgreSQL local. |
 | RPC de criação de períodos | VALIDADA pelo responsável em 09/11/2026 (Entrega 5) | Trava advisory por proprietário, fronteiras semiabertas, idempotência e auditoria; teste concorrente local passou. Regra da primeira fronteira após mudança de configuração também aprovada. |
-| RPC autenticada de subcategorias | IMPLEMENTADA E TESTADA LOCALMENTE na Entrega 6; aguarda validação do responsável | `SECURITY DEFINER`, proprietário `postgres`, identidade via `auth.uid()`, idempotência, versionamento, conflitos e auditoria. |
+| RPC autenticada de subcategorias | VALIDADA pelo responsável em 09/11/2026 (Entrega 6); implementada e testada em PostgreSQL local | `SECURITY DEFINER`, proprietário `postgres`, identidade via `auth.uid()`, idempotência, versionamento, conflitos e auditoria. |
 | RPCs de lançamentos, modelos e ocorrências recorrentes | IMPLEMENTADAS E TESTADAS LOCALMENTE | Deploy e validação no Supabase gerenciado permanecem pendentes. |
 
 O status distingue migrations e RPCs locais testadas do deploy remoto, ainda pendente.
-
-Na Entrega 7A foi implementada a RPC `public.apply_investment_allocation_change` com gravação autenticada, associação por data ao período, idempotência, versionamento, auditoria e conflitos. Na Entrega 7B foram implementadas as RPCs de receitas e despesas avulsas. Na Entrega 7C foram implementadas as RPCs de modelos; na Entrega 8, geração e ciclo de vida das ocorrências. Os testes PostgreSQL locais passaram. A validação remota continua pendente.

@@ -1,5 +1,7 @@
 import 'package:drift/drift.dart';
 
+import 'schema_versions.dart';
+
 part 'app_database.g.dart';
 
 /// Persiste centavos como texto decimal para manter a precisão no Flutter Web.
@@ -163,6 +165,10 @@ abstract class CashEntry extends OwnedRecord {
   ON income_entries (owner_id, recurrence_template_id, scheduled_for_date)
   WHERE recurrence_template_id IS NOT NULL
 ''')
+@TableIndex(
+  name: 'income_entries_period_idx',
+  columns: {#ownerId, #accountingPeriodId},
+)
 class IncomeEntries extends CashEntry {
   TextColumn get receivedOn => text().nullable()();
   TextColumn get accountingPeriodId => text().nullable()();
@@ -203,6 +209,10 @@ class IncomeEntries extends CashEntry {
   ON expense_entries (owner_id, recurrence_template_id, scheduled_for_date)
   WHERE recurrence_template_id IS NOT NULL
 ''')
+@TableIndex(
+  name: 'expense_entries_period_idx',
+  columns: {#ownerId, #accountingPeriodId},
+)
 class ExpenseEntries extends CashEntry {
   TextColumn get accountingPeriodId => text()();
   TextColumn get competenceOn => text()();
@@ -237,6 +247,10 @@ class ExpenseEntries extends CashEntry {
   ];
 }
 
+@TableIndex(
+  name: 'investment_allocations_period_idx',
+  columns: {#ownerId, #accountingPeriodId},
+)
 class InvestmentAllocations extends OwnedRecord {
   TextColumn get amountCentavos => text().map(const BigIntTextConverter())();
   TextColumn get allocatedOn => text()();
@@ -293,6 +307,7 @@ class SyncConflicts extends OwnedRecord {
   TextColumn get resolutionJson => text().nullable()();
 }
 
+@TableIndex(name: 'sync_outbox_state_idx', columns: {#ownerId, #state})
 class SyncOutbox extends Table {
   TextColumn get ownerId => text()();
   TextColumn get idempotencyKey => text()();
@@ -328,16 +343,25 @@ class SyncOutbox extends Table {
   ],
 )
 class PorquinhoDatabase extends _$PorquinhoDatabase {
-  /// A conexão é injetada para impedir que uma abertura persistente sem
-  /// proteção seja usada antes da prova de criptografia multiplataforma.
+  /// A conexão é injetada; a abertura persistente deve usar
+  /// `openEncryptedExecutor` (encrypted_connection.dart).
   PorquinhoDatabase(super.executor);
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (migrator) async => migrator.createAll(),
+    onUpgrade: stepByStep(
+      // v2: índices por período e por estado do outbox (sem mudar colunas).
+      from1To2: (migrator, schema) async {
+        await migrator.create(schema.incomeEntriesPeriodIdx);
+        await migrator.create(schema.expenseEntriesPeriodIdx);
+        await migrator.create(schema.investmentAllocationsPeriodIdx);
+        await migrator.create(schema.syncOutboxStateIdx);
+      },
+    ),
     beforeOpen: (_) async => customStatement('PRAGMA foreign_keys = ON'),
   );
 }

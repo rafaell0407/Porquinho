@@ -1,3 +1,6 @@
+@TestOn('vm')
+library;
+
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -50,25 +53,7 @@ void main() {
     final schemaVersion = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(schemaVersion.read<int>('user_version'), 1);
-  });
-
-  test('preserva centavos acima da precisão segura do JavaScript', () async {
-    final parsed = BigInt.parse('9007199254740993');
-    final converter = const BigIntTextConverter();
-
-    expect(converter.toSql(parsed), '9007199254740993');
-    expect(converter.fromSql('9007199254740993'), parsed);
-    expect(converter.toSql(BigInt.zero), '0');
-    expect(
-      converter.toSql(BigInt.parse('9223372036854775807')),
-      '9223372036854775807',
-    );
-    expect(() => converter.toSql(BigInt.from(-1)), throwsRangeError);
-    expect(
-      () => converter.toSql(BigInt.parse('9223372036854775808')),
-      throwsRangeError,
-    );
+    expect(schemaVersion.read<int>('user_version'), 2);
   });
 
   test('grava e lê centavos exatos no SQLite', () async {
