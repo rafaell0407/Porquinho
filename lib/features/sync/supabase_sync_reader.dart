@@ -48,7 +48,10 @@ class SupabaseSyncReader implements SyncRemoteReader {
                 'and($orderColumn.eq.$value,id.gt.$afterId)',
               );
       }
-      final rows = await query.order(orderColumn).order('id').limit(limit);
+      final rows = await query
+          .order(orderColumn, ascending: true)
+          .order('id', ascending: true)
+          .limit(limit);
       return rows.map((r) => Map<String, dynamic>.from(r)).toList();
     } on PostgrestException catch (e) {
       throw _classify(e);

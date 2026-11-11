@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../auth/logout_flow.dart';
 import '../sync/sync_indicator.dart';
+import '../sync/sync_providers.dart';
 
 /// Aba "Mais": Segurança (só no celular) e Sair. Demais itens (categorias,
 /// período, relatórios) entram nas fases seguintes.
@@ -18,6 +19,12 @@ class MoreScreen extends ConsumerWidget {
       body: ListView(
         children: [
           if (!kIsWeb) const SyncNowTile(),
+          const _AttentionTile(),
+          ListTile(
+            leading: const Icon(Icons.category_outlined),
+            title: const Text('Categorias'),
+            onTap: () => context.push('/categorias'),
+          ),
           if (!kIsWeb)
             ListTile(
               leading: const Icon(Icons.lock_outline),
@@ -31,6 +38,25 @@ class MoreScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Atalho para os itens que precisam de decisão, com a contagem atual.
+class _AttentionTile extends ConsumerWidget {
+  const _AttentionTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final count = ref.watch(syncStatusProvider).attentionCount;
+    return ListTile(
+      leading: Icon(
+        count > 0 ? Icons.error_outline : Icons.check_circle_outline,
+        color: count > 0 ? Theme.of(context).colorScheme.error : null,
+      ),
+      title: const Text('Itens que precisam de atenção'),
+      subtitle: Text(count > 0 ? '$count item(ns)' : 'Nada pendente'),
+      onTap: () => context.push('/atencao'),
     );
   }
 }

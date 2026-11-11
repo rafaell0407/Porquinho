@@ -36,6 +36,7 @@ class OutboxOperation {
     required this.expectedVersion,
     required this.rpc,
     required this.params,
+    this.dependsOn = const [],
     this.state = OutboxState.pending,
     this.attempts = 0,
     this.nextRetryAt,
@@ -51,12 +52,27 @@ class OutboxOperation {
 
   /// Parâmetros da RPC, exceto `p_operation_id` (= [idempotencyKey]).
   final Map<String, dynamic> params;
+
+  /// Ids de registros de que esta operação depende (categoria, subcategoria,
+  /// período). Enquanto a operação de criação de algum deles continuar na fila,
+  /// esta espera, sem ser recusada (Entrega 35).
+  final List<String> dependsOn;
   final String state;
   final int attempts;
   final DateTime? nextRetryAt;
   final String? lastError;
 
-  String get payloadJson => jsonEncode({'rpc': rpc, 'params': params});
+  String get payloadJson => jsonEncode({
+    'rpc': rpc,
+    'params': params,
+    if (dependsOn.isNotEmpty) 'depends_on': dependsOn,
+  });
+
+  /// Operação que cria o registro (as demais apenas o alteram).
+  bool get isCreate =>
+      rpc == 'create_accounting_period' ||
+      rpc == 'create_earlier_accounting_period' ||
+      params['p_action'] == 'create';
 
   static OutboxOperation fromRow(Map<String, Object?> row) {
     final payload = jsonDecode(row['payload_json']! as String) as Map;
@@ -69,6 +85,7 @@ class OutboxOperation {
       expectedVersion: row['expected_version']! as int,
       rpc: payload['rpc']! as String,
       params: Map<String, dynamic>.from(payload['params']! as Map),
+      dependsOn: [...?(payload['depends_on'] as List?)?.cast<String>()],
       state: row['state']! as String,
       attempts: row['attempts']! as int,
       nextRetryAt: retry == null ? null : DateTime.parse(retry),

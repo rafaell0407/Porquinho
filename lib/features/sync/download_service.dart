@@ -253,6 +253,60 @@ class DownloadService {
     return cursor.id == null || id.compareTo(cursor.id!) > 0;
   }
 
+  /// Grava o registro devolvido pelo servidor ao resolver um conflito, mesmo
+  /// que a versão local seja igual: a versão do aparelho que não foi escolhida
+  /// fica preservada no histórico do conflito, e o registro passa a refletir
+  /// a decisão do usuário.
+  Future<void> adoptResolvedRecord(
+    String ownerId,
+    String entityType,
+    String localEntityId,
+    Map<String, dynamic> row,
+  ) async {
+    final spec = _specs.firstWhere(
+      (s) => s.entityType == entityType,
+      orElse: () => throw ArgumentError('Tipo sem tabela: $entityType'),
+    );
+    await _db.transaction(() async {
+      final remoteId = row['id'] as String;
+      if (remoteId != localEntityId) {
+        // Conflito de criação (ex.: mesmo período criado em dois aparelhos):
+        // o registro do servidor substitui o local e quem o referenciava passa
+        // a apontar para ele.
+        await _remapReferences(ownerId, spec.table, localEntityId, remoteId);
+        await _db.customStatement(
+          'DELETE FROM ${spec.table} WHERE owner_id = ? AND id = ?',
+          [ownerId, localEntityId],
+        );
+      }
+      await _upsert(ownerId, spec, row, force: true);
+    });
+  }
+
+  Future<void> _remapReferences(
+    String ownerId,
+    String table,
+    String fromId,
+    String toId,
+  ) async {
+    const references = {
+      'accounting_periods': [
+        ('income_entries', 'accounting_period_id'),
+        ('income_entries', 'scheduled_period_id'),
+        ('expense_entries', 'accounting_period_id'),
+        ('expense_entries', 'scheduled_period_id'),
+        ('investment_allocations', 'accounting_period_id'),
+      ],
+      'period_configurations': [('accounting_periods', 'configuration_id')],
+    };
+    for (final (refTable, column) in references[table] ?? const []) {
+      await _db.customStatement(
+        'UPDATE $refTable SET $column = ? WHERE owner_id = ? AND $column = ?',
+        [toId, ownerId, fromId],
+      );
+    }
+  }
+
   // --- tabelas comuns ---------------------------------------------------
 
   Future<(int, int)> _downloadTable(String ownerId, _TableSpec spec) async {
@@ -332,8 +386,9 @@ class DownloadService {
   Future<bool> _upsert(
     String ownerId,
     _TableSpec spec,
-    Map<String, dynamic> row,
-  ) async {
+    Map<String, dynamic> row, {
+    bool force = false,
+  }) async {
     final names = ['id', 'owner_id', ...spec.columns.map((c) => c.name)];
     final values = <Object?>[
       row['id'],
@@ -349,7 +404,7 @@ class DownloadService {
       'INSERT INTO ${spec.table} (${names.join(', ')}) '
       'VALUES (${List.filled(names.length, '?').join(', ')}) '
       'ON CONFLICT (owner_id, id) DO UPDATE SET $updates '
-      'WHERE excluded.version > ${spec.table}.version',
+      '${force ? '' : 'WHERE excluded.version > ${spec.table}.version'}',
       values,
     );
     return await _changes() != before;

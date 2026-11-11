@@ -10,7 +10,7 @@
 2. O único indicador de resultado financeiro é a sobra do período.
 3. O sistema não controla saldos bancários nem contas financeiras.
 4. O sistema não possui o antigo Porquinho virtual, reservas ou cálculo de dinheiro livre.
-5. Receitas são contabilizadas após efetivo recebimento.
+5. Receitas são contabilizadas pela data de recebimento: a avulsa aceita data passada ou futura (RN008); a recorrente só após confirmação (RN011).
 6. Despesas são contabilizadas no cadastro ou geração da ocorrência, não no pagamento.
 7. O pagamento de despesa não cria uma segunda dedução.
 8. Investimentos são lançamentos simples de valor total destinado e reduzem a sobra no momento do lançamento.
@@ -35,6 +35,8 @@ Alteração de modalidade ou dia inicial passa a valer somente a partir do próx
 
 **Detalhamento de transição — APROVADO pelo responsável em 09/11/2026:** quando a configuração muda, o primeiro período com a nova configuração começa no fim do período anterior e termina na próxima fronteira da nova modalidade/dia inicial que seja posterior ao início. Os períodos seguintes seguem a agenda regular aprovada. Essa regra mantém a continuidade, inclusive quando a nova fronteira mensal não coincide com a fronteira anterior.
 
+**Períodos anteriores e futuros — APROVADO pelo responsável em 10/11/2026:** quando a data de um lançamento cair antes do primeiro período ou depois do último existente, o aplicativo pergunta se o usuário quer criar os períodos necessários (ex.: "Criar os períodos de julho a outubro?"). Períodos anteriores ao primeiro usam a mesma configuração do primeiro período; períodos futuros seguem a configuração vigente. A sequência continua sem lacunas nem sobreposição (RN036).
+
 ### RN003 — Dias inexistentes em meses curtos
 
 Preservar o dia original configurado e, quando ele não existir no mês, usar o último dia disponível. No mês seguinte, retornar ao dia original quando possível. Ver RN037.
@@ -46,11 +48,13 @@ Preservar o dia original configurado e, quando ele não existir no mês, usar o 
 A associação do lançamento ao período segue sua data de competência:
 
 - Receita: data efetiva de recebimento.
-- Despesa avulsa: data de cadastro/lançamento.
+- Despesa avulsa: data do lançamento, informada pelo usuário (padrão: hoje).
 - Despesa recorrente: data de geração da ocorrência.
 - Investimento: data do lançamento da destinação.
 
 A data de pagamento da despesa é armazenada como histórico e não altera o período em que foi contabilizada. Alertas são determinados pela data de vencimento conforme RN017–RN018.
+
+**Datas passadas e futuras — APROVADO pelo responsável em 10/11/2026:** receitas e despesas avulsas aceitam data diferente de hoje, inclusive passada ou futura. A data informada define o período, conforme acima. Períodos inexistentes: RN002.
 
 **Status:** APROVADO.
 
@@ -89,7 +93,7 @@ Qualquer valor efetivamente recebido que o usuário decida registrar pode ser la
 
 ### RN008 — Receita avulsa
 
-Receita avulsa é registrada depois de efetivamente recebida. Sua data de recebimento determina o período em que será somada à sobra.
+Receita avulsa é registrada com a data de recebimento informada pelo usuário, que pode ser passada ou futura (decisão de 10/11/2026). O aplicativo não verifica se o valor foi de fato recebido. A data de recebimento determina o período em que será somada à sobra.
 
 **Status:** APROVADO.
 
@@ -214,6 +218,8 @@ O aplicativo não acompanha carteira, ativos, posições, saldo acumulado, renta
 ### RN024 — Categorias personalizáveis
 
 O usuário pode criar e renomear categorias de Receita e Despesa. O tipo é definido na criação e não pode ser alterado posteriormente.
+
+**Sugestões no primeiro acesso — APROVADO pelo responsável em 10/11/2026:** o aplicativo sugere categorias, todas marcadas e desmarcáveis; as escolhidas viram categorias comuns, sem tratamento especial. Receitas: Salário, Renda extra, Rendimentos. Despesas: Moradia, Alimentação, Mercado, Transporte, Saúde, Educação, Lazer, Contas da casa, Assinaturas, Fatura do cartão. Sem subcategorias prontas. "Saldo inicial" não é sugerida (RN006).
 
 **Status:** APROVADO.
 
@@ -341,7 +347,7 @@ No MVP, despesa só pode ser paga integralmente. Não existe pagamento parcial, 
 
 ### RN040 — Desativação de categorias
 
-Categorias nunca são excluídas fisicamente. Categorias usadas ou não podem ser desativadas. Categorias desativadas não são oferecidas em novos lançamentos, mas continuam disponíveis para consulta histórica. Renomear uma categoria não altera retroativamente os lançamentos vinculados.
+Categorias nunca são excluídas fisicamente. Categorias usadas ou não podem ser desativadas. Categorias desativadas não são oferecidas em novos lançamentos, mas continuam disponíveis para consulta histórica. Renomear uma categoria não altera retroativamente os lançamentos vinculados: eles continuam ligados à mesma categoria e passam a exibir o nome atual (interpretação aprovada em 10/11/2026).
 
 **Status:** APROVADO.
 
@@ -383,6 +389,7 @@ Todos os valores financeiros do MVP são denominados em BRL e representados em c
 | Geração ao abrir e sincronizar, usando a zona IANA | APROVADO; implementado localmente |
 | Pagamentos parciais | FORA DO MVP |
 | Encerramento manual de período | FORA DO MVP |
+| Desfazer pagamento, reativar categoria e desfazer cancelamento | FORA DO MVP por ora (decisão de 10/11/2026); correção da data de pagamento é feita pagando novamente |
 | Segurança, backup, recuperação e CSV | APROVADO como requisito; desenho técnico detalhado |
 
 O quadro-resumo anterior, que repetia os status das RN036–RN045, está em `docs/historico/decisoes.md`.

@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../support/period_gate_fake.dart';
 import 'package:porquinho/app/app.dart';
 import 'package:porquinho/core/local_database/stored_database_key_provider.dart';
 import 'package:porquinho/features/app_lock/app_lock_controller.dart';
@@ -210,6 +211,7 @@ void main() {
           overrides: [
             authRepositoryProvider.overrideWithValue(auth),
             sessionControllerProvider.overrideWithValue(session),
+            ...readyFinanceOverrides(),
             appLockControllerProvider.overrideWithValue(lock),
           ],
           child: const PorquinhoApp(),
@@ -224,7 +226,7 @@ void main() {
     ) async {
       await pump(tester, enabled: true);
       expect(find.text('Digite seu PIN para continuar.'), findsOneWidget);
-      expect(find.text('Você está conectado.'), findsNothing);
+      expect(find.text('Sobra do período'), findsNothing);
 
       await tester.runAsync(() async {
         await tester.enterText(find.byType(TextField), '000000');
@@ -238,7 +240,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 200));
       });
       await tester.pumpAndSettle();
-      expect(find.text('Você está conectado.'), findsOneWidget);
+      expect(find.text('Sobra do período'), findsOneWidget);
     });
 
     testWidgets('Esqueci o PIN sai da conta e volta ao login', (tester) async {
@@ -249,12 +251,12 @@ void main() {
       await tester.tap(find.text('Sair da conta'));
       await tester.pumpAndSettle();
       expect(find.text('Digite seu PIN para continuar.'), findsNothing);
-      expect(find.text('Você está conectado.'), findsNothing);
+      expect(find.text('Sobra do período'), findsNothing);
     });
 
     testWidgets('sem bloqueio vai direto ao marcador', (tester) async {
       await pump(tester, enabled: false);
-      expect(find.text('Você está conectado.'), findsOneWidget);
+      expect(find.text('Sobra do período'), findsOneWidget);
     });
   });
 }

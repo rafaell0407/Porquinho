@@ -146,8 +146,8 @@ Não existe campo especial de saldo inicial. O usuário pode criar uma categoria
 
 ### 4.3 Receitas
 
-- Receitas avulsas são registradas depois de efetivamente recebidas.
-- A data efetiva de recebimento determina o período da receita.
+- Receitas avulsas aceitam data de recebimento passada ou futura, informada pelo usuário (RN008, decisão de 10/11/2026).
+- A data de recebimento determina o período da receita.
 - Receitas recorrentes geram ocorrências pendentes; só entram no cálculo após confirmação do recebimento.
 - O usuário pode editar o valor da ocorrência recorrente antes ou depois da confirmação, sem alterar o modelo da recorrência nem outras ocorrências.
 - Qualquer lançamento pode ser editado ou cancelado a qualquer momento, independentemente do status. Preservar histórico e recalcular períodos afetados.

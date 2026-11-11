@@ -7,7 +7,7 @@
 
 ## 1. Visão geral
 
-O Porquinho é um aplicativo de controle financeiro pessoal por períodos. O MVP registra receitas efetivamente recebidas, despesas cadastradas/geradas e valores totais destinados a investimentos. O principal e único indicador de resultado é a **sobra do período**.
+O Porquinho é um aplicativo de controle financeiro pessoal por períodos. O MVP registra receitas pela data de recebimento, despesas cadastradas/geradas e valores totais destinados a investimentos. O principal e único indicador de resultado é a **sobra do período**.
 
 O produto não fará controle de saldos bancários, não manterá módulo de contas e não terá o antigo Porquinho virtual de reservas e dinheiro livre. O nome do aplicativo permanece Porquinho.
 
@@ -33,7 +33,7 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 4. Confirmação de e-mail para cadastro tradicional e recuperação de senha.
 5. Bloqueio opcional por PIN ou biometria no aplicativo móvel, solicitado ao abrir o app quando ativado.
 6. Navegação principal com três áreas: Dashboard, Lançamentos e Mais.
-7. Cadastro de receitas avulsas, registradas após recebimento.
+7. Cadastro de receitas avulsas, com data de recebimento informada pelo usuário (passada ou futura — decisão de 10/11/2026).
 8. Cadastro de receitas recorrentes mensais ou por período, com valores fixos ou variáveis; ocorrência pendente até confirmação do recebimento.
 9. Cadastro de despesas avulsas e recorrentes mensais ou por período, com valores fixos ou variáveis.
 10. Status de despesa pendente/paga e registro da data de pagamento.
@@ -103,7 +103,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF002 | Verificação de e-mail e recuperação de senha | Essencial | APROVADO |
 | RF003 | Bloqueio móvel opcional por PIN ou biometria ao abrir o app | Alta | APROVADO |
 | RF004 | Navegação principal Dashboard, Lançamentos e Mais | Essencial | APROVADO |
-| RF005 | Registrar receitas avulsas somente após recebimento | Essencial | APROVADO |
+| RF005 | Registrar receitas avulsas com data de recebimento informada (passada ou futura) | Essencial | APROVADO (revisado em 10/11/2026) |
 | RF006 | Criar receitas recorrentes mensais ou por período, fixas ou variáveis | Alta | APROVADO |
 | RF007 | Gerar ocorrência pendente de receita recorrente e contabilizar somente após confirmação de recebimento | Essencial | APROVADO |
 | RF008 | Permitir editar o valor de uma ocorrência de receita sem alterar recorrência ou outras ocorrências | Alta | APROVADO |
@@ -130,8 +130,8 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 ### 6.1 Critérios de aceitação
 
 **RF005–RF008 — Receitas**
-- Receita avulsa somente é registrada quando efetivamente recebida.
-- A data efetiva de recebimento determina o período da receita.
+- Receita avulsa aceita data de recebimento passada ou futura; o aplicativo não verifica se foi de fato recebida (decisão de 10/11/2026).
+- A data de recebimento determina o período da receita.
 - Uma recorrência mensal ou por período gera uma ocorrência pendente.
 - Uma ocorrência recorrente só entra na sobra quando o usuário confirma o recebimento.
 - Se fixa, o valor padrão é preenchido automaticamente; se variável, o usuário informa o valor.
@@ -139,7 +139,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 - O valor confirmado é contabilizado uma única vez.
 
 **RF009–RF013 — Despesas**
-- Despesa avulsa entra no cálculo da sobra no momento do cadastro.
+- Despesa avulsa entra no cálculo da sobra no momento do cadastro, no período da data informada (passada ou futura; padrão hoje).
 - Despesa recorrente gera uma ocorrência no calendário escolhido (mensal ou por período).
 - Despesa fixa utiliza o valor padrão; despesa variável solicita o valor da ocorrência.
 - O valor da despesa recorrente é contabilizado quando a ocorrência é gerada e o valor está definido.
@@ -153,6 +153,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 - Subcategorias são opcionais e vinculadas a uma categoria.
 - Categoria já utilizada não é apagada fisicamente; pode ser desativada, preservando lançamentos históricos.
 - Categorias não são aplicadas ao lançamento simples de investimento.
+- No primeiro acesso, o aplicativo sugere categorias desmarcáveis (lista na RN024); o usuário pode criar as suas.
 
 **RF016–RF017 — Investimentos e rendimentos**
 - O usuário registra somente o valor destinado a investimentos; a data do lançamento é registrada pelo sistema. O Dashboard apresenta um único total de investimentos do período, sem discriminação por ativo ou categoria.

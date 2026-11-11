@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../support/period_gate_fake.dart';
 import 'package:porquinho/app/app.dart';
 import 'package:porquinho/features/auth/auth_models.dart';
 import 'package:porquinho/features/auth/auth_providers.dart';
@@ -49,6 +50,7 @@ void main() {
         overrides: [
           authRepositoryProvider.overrideWithValue(auth),
           sessionControllerProvider.overrideWithValue(session),
+          ...readyFinanceOverrides(),
         ],
         child: const PorquinhoApp(),
       ),
@@ -56,19 +58,21 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(NavigationDestination), findsNWidgets(3));
-    expect(find.text('Você está conectado.'), findsOneWidget);
+    expect(find.text('Sobra do período'), findsOneWidget);
 
     await tester.tap(find.text('Lançamentos'));
     await tester.pumpAndSettle();
-    expect(find.text('Nenhum lançamento ainda.'), findsOneWidget);
+    expect(find.text('Nenhum lançamento neste período.'), findsOneWidget);
 
     await tester.tap(find.text('Mais'));
     await tester.pumpAndSettle();
+    expect(find.text('Categorias'), findsOneWidget);
+    expect(find.text('Itens que precisam de atenção'), findsOneWidget);
     expect(find.text('Segurança'), findsOneWidget);
     expect(find.text('Sair'), findsOneWidget);
 
     await tester.tap(find.text('Dashboard'));
     await tester.pumpAndSettle();
-    expect(find.text('Você está conectado.'), findsOneWidget);
+    expect(find.text('Sobra do período'), findsOneWidget);
   });
 }

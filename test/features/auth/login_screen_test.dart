@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../../support/period_gate_fake.dart';
 import 'package:porquinho/app/app.dart';
 import 'package:porquinho/features/auth/auth_models.dart';
 import 'package:porquinho/features/auth/auth_providers.dart';
@@ -63,6 +64,7 @@ Future<_FakeAuth> _pump(
       overrides: [
         authRepositoryProvider.overrideWithValue(auth),
         sessionControllerProvider.overrideWithValue(session),
+        ...readyFinanceOverrides(),
       ],
       child: const PorquinhoApp(),
     ),
@@ -80,12 +82,12 @@ void main() {
   testWidgets('sem sessão mostra o login', (tester) async {
     await _pump(tester);
     expect(find.text('Entrar com Google'), findsOneWidget);
-    expect(find.text('Você está conectado.'), findsNothing);
+    expect(find.text('Sobra do período'), findsNothing);
   });
 
   testWidgets('com sessão restaurada vai direto ao marcador', (tester) async {
     await _pump(tester, restored: _user);
-    expect(find.text('Você está conectado.'), findsOneWidget);
+    expect(find.text('Sobra do período'), findsOneWidget);
   });
 
   testWidgets('valida e-mail e senha vazios', (tester) async {
@@ -101,7 +103,7 @@ void main() {
     await _fill(tester, 'a@b.com', 'qualquer');
     await tester.tap(find.widgetWithText(FilledButton, 'Entrar'));
     await tester.pumpAndSettle();
-    expect(find.text('Você está conectado.'), findsOneWidget);
+    expect(find.text('Sobra do período'), findsOneWidget);
   });
 
   testWidgets('senha incorreta mostra mensagem em português', (tester) async {
@@ -111,7 +113,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Entrar'));
     await tester.pumpAndSettle();
     expect(find.text('E-mail ou senha incorretos.'), findsOneWidget);
-    expect(find.text('Você está conectado.'), findsNothing);
+    expect(find.text('Sobra do período'), findsNothing);
   });
 
   testWidgets('criar conta pede confirmação de e-mail', (tester) async {
@@ -167,7 +169,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sair mesmo assim'));
     await tester.pumpAndSettle();
-    expect(find.text('Você está conectado.'), findsNothing);
+    expect(find.text('Sobra do período'), findsNothing);
   });
 
   testWidgets('link de recuperação abre a tela de nova senha', (tester) async {
@@ -194,7 +196,7 @@ void main() {
     );
     await tester.tap(find.text('Salvar nova senha'));
     await tester.pumpAndSettle();
-    expect(find.text('Você está conectado.'), findsOneWidget);
+    expect(find.text('Sobra do período'), findsOneWidget);
   });
 
   testWidgets('sair sem pendências volta ao login', (tester) async {

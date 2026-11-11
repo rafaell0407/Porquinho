@@ -74,15 +74,23 @@ class SyncService {
     await recoverInterrupted(ownerId);
     final now = _clock();
     final blocked = <String>{};
+    // Ids cuja criação ainda está na fila (não aplicada): quem depende deles
+    // espera, em vez de ser enviado e recusado pelo servidor.
+    final unresolvedCreations = <String>{};
     var applied = 0;
     for (final op in await operations(ownerId)) {
       final entity = '${op.entityType}/${op.entityId}';
+      if (op.isCreate) unresolvedCreations.add(op.entityId);
       if (op.state == OutboxState.conflict ||
           op.state == OutboxState.rejected) {
         blocked.add(entity);
         continue;
       }
       if (blocked.contains(entity)) continue;
+      if (op.dependsOn.any(unresolvedCreations.contains)) {
+        blocked.add(entity);
+        continue;
+      }
       if (op.state == OutboxState.failed &&
           op.nextRetryAt != null &&
           op.nextRetryAt!.isAfter(now)) {
@@ -92,6 +100,7 @@ class SyncService {
       switch (await _send(op)) {
         case _Outcome.applied:
           applied++;
+          if (op.isCreate) unresolvedCreations.remove(op.entityId);
         case _Outcome.blocked:
           blocked.add(entity);
         case _Outcome.offline:
@@ -219,7 +228,7 @@ class SyncService {
   /// antes do envio; se faltar rede, chamar de novo reutiliza a mesma chave.
   /// Operações posteriores do mesmo registro não são reescritas: se ficarem
   /// defasadas, geram novo conflito para você decidir.
-  Future<void> resolveConflict(
+  Future<Map<String, dynamic>> resolveConflict(
     String ownerId,
     String conflictId,
     ConflictResolution resolution, {
@@ -301,6 +310,53 @@ class SyncService {
           conflict.expectedVersion,
         ],
       );
+    });
+    return response;
+  }
+
+  /// Descarta uma alteração recusada, por decisão do usuário, e desfaz seu
+  /// efeito local: criação recusada remove o registro (e as demais operações
+  /// dele); edição recusada marca o registro para ser restaurado pelo servidor
+  /// no próximo download.
+  Future<void> discardAndRevert(String ownerId, String idempotencyKey) async {
+    final ops = await operations(ownerId);
+    final op = ops.where((o) => o.idempotencyKey == idempotencyKey).firstOrNull;
+    if (op == null || op.state != OutboxState.rejected) return;
+    final table = _tableByEntity[op.entityType];
+    await _db.transaction(() async {
+      if (table != null) {
+        if (op.isCreate) {
+          await _db.customStatement(
+            'DELETE FROM sync_outbox WHERE owner_id = ? AND entity_type = ? '
+            'AND entity_id = ?',
+            [ownerId, op.entityType, op.entityId],
+          );
+          await _db.customStatement(
+            'DELETE FROM $table WHERE owner_id = ? AND id = ?',
+            [ownerId, op.entityId],
+          );
+        } else {
+          await _db.customStatement(
+            "DELETE FROM sync_outbox WHERE owner_id = ? "
+            "AND idempotency_key = ? AND state = 'rejected'",
+            [ownerId, idempotencyKey],
+          );
+          // Versão 0: qualquer versão do servidor sobrescreve no download.
+          await _db.customStatement(
+            'UPDATE $table SET version = 0 WHERE owner_id = ? AND id = ?',
+            [ownerId, op.entityId],
+          );
+          await _db.customStatement(
+            'DELETE FROM sync_cursors WHERE owner_id = ? AND source_table = ?',
+            [ownerId, table],
+          );
+        }
+      } else {
+        await _db.customStatement(
+          'DELETE FROM sync_outbox WHERE owner_id = ? AND idempotency_key = ?',
+          [ownerId, idempotencyKey],
+        );
+      }
     });
   }
 

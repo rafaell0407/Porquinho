@@ -84,7 +84,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 **Testes:** autenticação, sessão, autorização, persistência local, download idempotente e isolamento entre usuários.
 
 **Prioridade:** Essencial.  
-**Status:** EM EXECUÇÃO — planejamento aprovado; Entregas 21–23 validadas; Entregas 24–29 e 31 implementadas, aguardando validação.
+**Status:** CONCLUÍDA em 10/11/2026 — Entregas 23–29 e 31 validadas pelo responsável.
 
 ### Fase 4 — Categorias e lançamentos avulsos
 
@@ -95,19 +95,34 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 - Categorias de receita e despesa personalizáveis.
 - Entrega 22 — tela de resolução de conflitos, logo após a sincronização de categorias (decisão de 10/11/2026).
 - Subcategorias opcionais.
-- Receita avulsa após recebimento.
+- Receita avulsa com data de recebimento passada ou futura (decisão de 10/11/2026).
 - Despesa avulsa com status pendente/paga.
 - Registro de data de recebimento e data de pagamento.
 - Edição e cancelamento de qualquer lançamento, preservando auditoria.
 - Cálculo local inicial da sobra.
 - Persistência offline para os fluxos implementados.
 
-**Dependências:** Fases 2 e 3; regras de competência e auditoria aprovadas na baseline v0.5.
+**Plano aprovado em 10/11/2026 (detalhe e decisões D1–D13 em `docs/entregas_fase4.md`):**
+32. Domínio: valores em reais (centavos exatos) e data corrente em `America/Sao_Paulo`.
+33. Domínio de períodos (mês-calendário, ciclo, dias 29–31, bissexto, para frente e para trás).
+35. Dependências na fila de envio (lançamento espera categoria/período).
+34A. Primeiro acesso: escolha do período e criação do período vigente.
+34B. Períodos anteriores e futuros sob demanda, com confirmação (nova migration).
+36. Categorias, com sugestões no primeiro acesso.
+37. Subcategorias.
+22. Itens que precisam de atenção (conflitos e recusas), celular e Web.
+38. Cálculo da sobra no domínio.
+39. Receita avulsa.
+40. Despesa avulsa (pendente/paga, vencimento, "já paga").
+41. Sobra no Dashboard, navegação entre períodos e filtros período/tipo.
+42. Fechamento e regressão.
+
+**Dependências:** Fases 2 e 3 (concluídas); regras de competência e auditoria aprovadas na baseline v0.5.
 
 **Testes:** inclusão, edição, cancelamento, alteração de data, categoria, pagamento sem segunda dedução e cálculo da sobra.
 
 **Prioridade:** Essencial.  
-**Status:** NÃO INICIADO.
+**Status:** IMPLEMENTADA em 11/11/2026 (Entregas 32–42) — aguardando validação do responsável. Regressão no emulador e no Chrome pendente (ver `docs/entregas_fase4.md`, "Situação da implementação").
 
 ### Fase 5 — Recorrências
 

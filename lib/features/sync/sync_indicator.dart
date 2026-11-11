@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'sync_scheduler_provider.dart';
 import 'sync_providers.dart';
@@ -35,11 +36,17 @@ class SyncIndicator extends ConsumerWidget {
     }
     if (status.attentionCount > 0) {
       messages.add(
-        _Strip(
-          color: theme.colorScheme.errorContainer,
-          textColor: theme.colorScheme.onErrorContainer,
-          icon: Icons.error_outline,
-          text: '${status.attentionCount} item(ns) precisam da sua atenção.',
+        InkWell(
+          key: const Key('faixa-atencao'),
+          onTap: () => context.push('/atencao'),
+          child: _Strip(
+            color: theme.colorScheme.errorContainer,
+            textColor: theme.colorScheme.onErrorContainer,
+            icon: Icons.error_outline,
+            text:
+                '${status.attentionCount} item(ns) precisam da sua atenção. '
+                'Toque para resolver.',
+          ),
         ),
       );
     }

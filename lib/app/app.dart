@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,8 +11,11 @@ import '../features/auth/auth_models.dart';
 import '../features/auth/auth_providers.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/new_password_screen.dart';
+import '../features/attention/attention_screen.dart';
+import '../features/categories/categories_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/more/more_screen.dart';
+import '../features/periods/period_gate.dart';
 import '../features/transactions/transactions_screen.dart';
 import '../features/sync/sync_indicator.dart';
 import '../shared/main_shell.dart';
@@ -49,14 +53,20 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/bloqueio', builder: (_, _) => const LockScreen()),
       GoRoute(path: '/seguranca', builder: (_, _) => const SecurityScreen()),
+      GoRoute(path: '/categorias', builder: (_, _) => const CategoriesScreen()),
+      GoRoute(path: '/atencao', builder: (_, _) => const AttentionScreen()),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(
         path: '/nova-senha',
         builder: (_, _) => const NewPasswordScreen(),
       ),
       StatefulShellRoute.indexedStack(
-        builder: (_, _, shell) =>
-            MainShell(navigationShell: shell, banner: const SyncIndicator()),
+        builder: (_, _, shell) => PeriodGate(
+          child: MainShell(
+            navigationShell: shell,
+            banner: const SyncIndicator(),
+          ),
+        ),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -90,6 +100,9 @@ class PorquinhoApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Porquinho',
       theme: ThemeData(colorSchemeSeed: Colors.pink, useMaterial3: true),
+      locale: const Locale('pt', 'BR'),
+      supportedLocales: const [Locale('pt', 'BR')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       routerConfig: ref.watch(routerProvider),
     );
   }

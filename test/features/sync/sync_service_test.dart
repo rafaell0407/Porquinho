@@ -231,6 +231,86 @@ void main() {
     });
   });
 
+  group('dependências entre operações (Entrega 35)', () {
+    OutboxOperation create(String key, String entity) => OutboxOperation(
+      ownerId: 'u1',
+      idempotencyKey: key,
+      entityType: 'category',
+      entityId: entity,
+      expectedVersion: 0,
+      rpc: 'apply_category_change',
+      params: {'p_action': 'create', 'p_category_id': entity},
+    );
+
+    OutboxOperation entry(String key, String entity, List<String> deps) =>
+        OutboxOperation(
+          ownerId: 'u1',
+          idempotencyKey: key,
+          entityType: 'income_entry',
+          entityId: entity,
+          expectedVersion: 0,
+          rpc: 'apply_income_entry_change',
+          params: {'p_action': 'create', 'p_entry_id': entity},
+          dependsOn: deps,
+        );
+
+    test('dependente segue depois da criação, na mesma passada', () async {
+      await service.enqueue(create('k1', 'cat1'));
+      await service.enqueue(entry('k2', 'e1', ['cat1']));
+      gateway.handlers['apply_category_change'] = applied;
+      gateway.handlers['apply_income_entry_change'] = applied;
+      expect(await service.syncOnce('u1'), 2);
+      expect(gateway.calls.map((c) => c.$1).toList(), [
+        'apply_category_change',
+        'apply_income_entry_change',
+      ]);
+    });
+
+    test('categoria em conflito segura o lançamento sem recusa', () async {
+      await service.enqueue(create('k1', 'cat1'));
+      await service.enqueue(entry('k2', 'e1', ['cat1']));
+      await service.enqueue(entry('k3', 'e2', []));
+      gateway.handlers['apply_category_change'] = (_) async => {
+        'status': 'conflict',
+        'conflict_id': 'cf1',
+        'remote_category': {'version': 1},
+      };
+      gateway.handlers['apply_income_entry_change'] = applied;
+      expect(await service.syncOnce('u1'), 1);
+      // Só o lançamento sem dependência foi enviado.
+      expect(
+        gateway.calls.where((c) => c.$1 == 'apply_income_entry_change').length,
+        1,
+      );
+      final ops = await service.operations('u1');
+      expect(ops.map((o) => o.idempotencyKey), ['k1', 'k2']);
+      expect(ops.last.state, OutboxState.pending);
+    });
+
+    test('categoria com falha de rede mantém o lançamento esperando', () async {
+      await service.enqueue(create('k1', 'cat1'));
+      await service.enqueue(entry('k2', 'e1', ['cat1']));
+      gateway.handlers['apply_category_change'] = (_) async =>
+          throw const SyncTransientError('sem rede');
+      expect(await service.syncOnce('u1'), 0);
+      expect(gateway.calls.length, 1);
+      expect((await service.operations('u1')).last.state, OutboxState.pending);
+    });
+
+    test('criação já aplicada antes não segura o dependente', () async {
+      await service.enqueue(entry('k2', 'e1', ['cat1']));
+      gateway.handlers['apply_income_entry_change'] = applied;
+      expect(await service.syncOnce('u1'), 1);
+    });
+
+    test('dependência sobrevive à gravação e à leitura da fila', () async {
+      await service.enqueue(entry('k2', 'e1', ['cat1', 'per1']));
+      final stored = (await service.operations('u1')).single;
+      expect(stored.dependsOn, ['cat1', 'per1']);
+      expect(stored.params.containsKey('depends_on'), isFalse);
+    });
+  });
+
   test('atraso de reenvio dobra e tem teto de 1 hora', () {
     expect(retryDelay(1), const Duration(seconds: 30));
     expect(retryDelay(2), const Duration(seconds: 60));

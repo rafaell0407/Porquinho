@@ -257,6 +257,8 @@ Operação aplicada com sucesso (ou resposta idempotente de reenvio) é **removi
 
 **Resolução (aprovada em 10/11/2026):** o usuário escolhe (a) manter a versão do aparelho, (b) manter a do servidor ou (c) editar e salvar uma versão nova. Em (a) e (c) é criada uma nova versão consolidada do registro; em (b) os dados não mudam e o aparelho adota a versão do servidor. Em todos os casos há evento de auditoria (`conflict_resolved`) e as duas versões originais permanecem preservadas no conflito. Conflitos de criação (mesmo identificador já existente) e de período só aceitam (b).
 
+**Conflitos na Web (aprovado em 10/11/2026):** a Web não tem fila local; quando uma gravação dela gera conflito, ele fica aberto no servidor e é apresentado e resolvido na própria Web, na mesma tela de itens que precisam de atenção (Entrega 22).
+
 **Cancelamento x edição concorrentes (aprovado em 10/11/2026):** se um lado cancelou e o outro editou o mesmo lançamento, é conflito e o usuário decide; não há regra automática.
 
 ### 16.2 Segurança, backup e portabilidade
@@ -302,6 +304,8 @@ supabase/
   tests/
 ```
 
+**Implementação (Fases 3 e 4):** além das pastas acima existem `core/domain/` (dinheiro BRL em centavos, data civil, períodos, sobra e relógio `America/Sao_Paulo`, sem acesso a dados), `features/totals/`, `features/attention/` (itens que precisam de atenção) e `features/transactions/` (tela da aba Lançamentos, que usa as regras de `features/entries/`; alinhamento previsto na Entrega 39). Cada funcionalidade com dados tem a interface do repositório, uma implementação local (Drift + fila de envio, celular) e uma remota (Supabase, Web), escolhidas por `dataAccessModeProvider`. Operações da fila declaram dependências (`depends_on` no `payload_json`): uma operação só segue depois que a criação das categorias, subcategorias e períodos de que depende for aplicada (Entrega 35).
+
 As dependências fluem da apresentação para a aplicação e desta para o domínio. A camada `data` implementa contratos de repositório definidos para os casos de uso. `core` contém mecanismos técnicos compartilhados, sem regras financeiras; cada funcionalidade só cria as camadas de que precisa. Riverpod compõe estado e dependências; GoRouter apresenta apenas Dashboard, Lançamentos e Mais na navegação principal. As regras financeiras permanecem no domínio.
 
 ### 17.2 Ambientes e configuração
@@ -316,7 +320,7 @@ Para os ambientes hospedados, propõe-se separar projetos Supabase de desenvolvi
 
 **Status:** APROVADO tecnicamente para representação dos dados e decisão do responsável para a zona operacional.
 
-Datas de competência, vencimento e pagamento serão datas de calendário, sem conversão em instantes. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC. A zona IANA armazenada por usuário é `America/Sao_Paulo`, aprovada pelo responsável em 08/11/2026. A data corrente é calculada nessa zona e a geração de ocorrências ocorre ao abrir o aplicativo e durante a sincronização; não há execução em segundo plano.
+Datas de competência, vencimento e pagamento serão datas de calendário, sem conversão em instantes. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC. A zona IANA armazenada por usuário é `America/Sao_Paulo`, aprovada pelo responsável em 08/11/2026. No app, a data corrente nessa zona usa o pacote `timezone` (aprovado em 10/11/2026; avaliação de manutenção e licença na Entrega 32). A data corrente é calculada nessa zona e a geração de ocorrências ocorre ao abrir o aplicativo e durante a sincronização; não há execução em segundo plano.
 
 ### 17.4 Persistência local, fila e conflitos
 
