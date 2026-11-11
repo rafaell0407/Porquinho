@@ -16,6 +16,7 @@ import '../features/categories/categories_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/more/more_screen.dart';
 import '../features/periods/period_gate.dart';
+import '../features/recurrence/recurrences_screen.dart';
 import '../features/transactions/transactions_screen.dart';
 import '../features/sync/sync_indicator.dart';
 import '../shared/main_shell.dart';
@@ -55,6 +56,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/seguranca', builder: (_, _) => const SecurityScreen()),
       GoRoute(path: '/categorias', builder: (_, _) => const CategoriesScreen()),
       GoRoute(path: '/atencao', builder: (_, _) => const AttentionScreen()),
+      GoRoute(
+        path: '/recorrencias',
+        builder: (_, _) => const RecurrencesScreen(),
+      ),
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(
         path: '/nova-senha',

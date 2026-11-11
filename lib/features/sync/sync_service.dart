@@ -10,6 +10,9 @@ import 'sync_models.dart';
 /// Operações do mesmo registro seguem em ordem; operações independentes
 /// continuam mesmo quando outro registro está em conflito. Nada é sobrescrito
 /// ou descartado em silêncio.
+/// RPC que gera as ocorrências recorrentes devidas no servidor.
+const generateRpc = 'generate_due_recurrence_occurrences';
+
 class SyncService {
   SyncService(this._db, this._gateway, {DateTime Function()? clock})
     : _clock = clock ?? DateTime.now;
@@ -78,9 +81,10 @@ class SyncService {
     // espera, em vez de ser enviado e recusado pelo servidor.
     final unresolvedCreations = <String>{};
     var applied = 0;
+    var generated = false;
     for (final op in await operations(ownerId)) {
       final entity = '${op.entityType}/${op.entityId}';
-      if (op.isCreate) unresolvedCreations.add(op.entityId);
+      unresolvedCreations.addAll(op.createdIds);
       if (op.state == OutboxState.conflict ||
           op.state == OutboxState.rejected) {
         blocked.add(entity);
@@ -97,10 +101,22 @@ class SyncService {
         blocked.add(entity);
         continue;
       }
+      // As ocorrências geradas no servidor precisam existir antes de enviar as
+      // alterações delas, mas depois dos períodos e modelos (RN038).
+      if (!generated && op.rpc.contains('recurrence_occurrence_change')) {
+        generated = true;
+        try {
+          await _gateway.call(generateRpc, {'p_operation_id': newUuid()});
+        } on SyncTransientError {
+          return applied;
+        } on SyncRejectedError {
+          // Segue: cada alteração terá a recusa adequada, visível em atenção.
+        }
+      }
       switch (await _send(op)) {
         case _Outcome.applied:
           applied++;
-          if (op.isCreate) unresolvedCreations.remove(op.entityId);
+          unresolvedCreations.removeAll(op.createdIds);
         case _Outcome.blocked:
           blocked.add(entity);
         case _Outcome.offline:
@@ -324,7 +340,9 @@ class SyncService {
     if (op == null || op.state != OutboxState.rejected) return;
     final table = _tableByEntity[op.entityType];
     await _db.transaction(() async {
-      if (table != null) {
+      if (op.rpc == 'create_recurrence_from_entry') {
+        await _revertRecurrenceCreation(ownerId, op, table!);
+      } else if (table != null) {
         if (op.isCreate) {
           await _db.customStatement(
             'DELETE FROM sync_outbox WHERE owner_id = ? AND entity_type = ? '
@@ -358,6 +376,53 @@ class SyncService {
         );
       }
     });
+  }
+
+  /// Desfaz localmente uma recorrência recusada: o modelo e o que dependia
+  /// dele saem da fila; o lançamento novo é removido e o avulso convertido
+  /// volta a ser avulso (será restaurado pelo servidor no próximo download).
+  Future<void> _revertRecurrenceCreation(
+    String ownerId,
+    OutboxOperation op,
+    String entryTable,
+  ) async {
+    final templateId = op.params['p_template_id']! as String;
+    final templateTable = entryTable == 'income_entries'
+        ? 'income_recurrence_templates'
+        : 'expense_recurrence_templates';
+    for (final id in [op.entityId, templateId]) {
+      await _db.customStatement(
+        'DELETE FROM sync_outbox WHERE owner_id = ? AND entity_id = ?',
+        [ownerId, id],
+      );
+    }
+    if (op.isCreate) {
+      await _db.customStatement(
+        'DELETE FROM $entryTable WHERE owner_id = ? AND id = ?',
+        [ownerId, op.entityId],
+      );
+    } else {
+      await _db.customStatement(
+        'UPDATE $entryTable SET recurrence_template_id = NULL, '
+        'scheduled_for_date = NULL, scheduled_period_id = NULL, version = 0 '
+        'WHERE owner_id = ? AND id = ?',
+        [ownerId, op.entityId],
+      );
+      await _db.customStatement(
+        'DELETE FROM sync_cursors WHERE owner_id = ? AND source_table = ?',
+        [ownerId, entryTable],
+      );
+    }
+    // Ocorrências geradas localmente a partir do modelo recusado.
+    await _db.customStatement(
+      'DELETE FROM $entryTable WHERE owner_id = ? '
+      'AND recurrence_template_id = ?',
+      [ownerId, templateId],
+    );
+    await _db.customStatement(
+      'DELETE FROM $templateTable WHERE owner_id = ? AND id = ?',
+      [ownerId, templateId],
+    );
   }
 
   /// Descarta uma operação recusada pelo servidor, por decisão do usuário.

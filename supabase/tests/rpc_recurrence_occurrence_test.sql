@@ -25,7 +25,7 @@ BEGIN
     VALUES
         (v_owner_id,'92000000-0000-0000-0000-000000000101','Monthly fixed','monthly',start_date,31,'fixed',5000),
         (v_owner_id,'92000000-0000-0000-0000-000000000102','By-period variable','by_period',(period_base+2*INTERVAL '1 month'+INTERVAL '14 days')::DATE,NULL,'variable',NULL),
-        (v_owner_id,'92000000-0000-0000-0000-000000000103','Month end clamp','monthly','2026-01-01',31,'fixed',2500),
+        (v_owner_id,'92000000-0000-0000-0000-000000000103','Month end clamp','monthly',period_base,31,'fixed',2500),
         (v_owner_id,'92000000-0000-0000-0000-000000000104','Inactive','monthly',start_date,31,'fixed',1000);
     UPDATE public.income_recurrence_templates AS t SET is_active=FALSE
     WHERE t.owner_id=v_owner_id AND t.id='92000000-0000-0000-0000-000000000104';
@@ -98,13 +98,14 @@ BEGIN
         AND e.competence_on=first_candidate AND e.amount_centavos=12000 AND e.status='pending') THEN
         RAISE EXCEPTION 'monthly expense was not assigned to its scheduled competence';
     END IF;
-    IF today>='2026-02-28' AND NOT EXISTS(SELECT 1 FROM public.income_entries e WHERE e.owner_id=v_owner_id
-        AND e.recurrence_template_id='92000000-0000-0000-0000-000000000103' AND e.scheduled_for_date='2026-02-28') THEN
-        RAISE EXCEPTION 'monthly recurrence did not clamp day 31 to February end';
+    IF EXISTS(SELECT 1 FROM public.income_entries e WHERE e.owner_id=v_owner_id
+        AND e.recurrence_template_id='92000000-0000-0000-0000-000000000103'
+        AND e.scheduled_for_date<>(pg_catalog.date_trunc('month',e.scheduled_for_date)+INTERVAL '1 month'-INTERVAL '1 day')::DATE) THEN
+        RAISE EXCEPTION 'day-31 recurrence did not clamp to each month end';
     END IF;
-    IF today>='2026-03-31' AND NOT EXISTS(SELECT 1 FROM public.income_entries e WHERE e.owner_id=v_owner_id
-        AND e.recurrence_template_id='92000000-0000-0000-0000-000000000103' AND e.scheduled_for_date='2026-03-31') THEN
-        RAISE EXCEPTION 'monthly recurrence did not restore day 31 after February';
+    IF (SELECT pg_catalog.count(*) FROM public.income_entries e WHERE e.owner_id=v_owner_id
+        AND e.recurrence_template_id='92000000-0000-0000-0000-000000000103')<3 THEN
+        RAISE EXCEPTION 'month-end recurrence did not catch up every month';
     END IF;
     IF EXISTS(SELECT 1 FROM public.income_entries e WHERE e.owner_id=v_owner_id
         AND e.recurrence_template_id='92000000-0000-0000-0000-000000000104') THEN

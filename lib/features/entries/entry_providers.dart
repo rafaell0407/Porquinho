@@ -1,13 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/data_access.dart';
 import '../../core/domain/surplus.dart';
+import '../alerts/alert_providers.dart';
 import '../auth/auth_providers.dart';
 import '../categories/category_providers.dart';
 import '../periods/period_navigation.dart';
 import '../periods/period_providers.dart';
 import '../totals/totals_repository.dart';
+import '../recurrence/recurrence_providers.dart';
 import 'entry_models.dart';
 import 'entry_repository.dart';
 import 'entry_service.dart';
@@ -32,6 +36,7 @@ final entryServiceProvider = FutureProvider<EntryService>((ref) async {
     await ref.watch(entryRepositoryProvider.future),
     await ref.watch(categoryRepositoryProvider.future),
     await ref.watch(periodServiceProvider.future),
+    recurrences: await ref.watch(recurrenceRepositoryProvider.future),
   );
 });
 
@@ -67,4 +72,6 @@ void refreshFinanceData(WidgetRef ref) {
   ref.invalidate(selectedPeriodProvider);
   ref.invalidate(periodEntriesProvider);
   ref.invalidate(periodTotalsProvider);
+  // Vencimentos mudaram (nova despesa, pagamento, edição): reagenda os alertas.
+  unawaited(ref.read(alertsRefreshProvider)());
 }

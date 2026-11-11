@@ -104,11 +104,11 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF003 | Bloqueio móvel opcional por PIN ou biometria ao abrir o app | Alta | APROVADO |
 | RF004 | Navegação principal Dashboard, Lançamentos e Mais | Essencial | APROVADO |
 | RF005 | Registrar receitas avulsas com data de recebimento informada (passada ou futura) | Essencial | APROVADO (revisado em 10/11/2026) |
-| RF006 | Criar receitas recorrentes mensais ou por período, fixas ou variáveis | Alta | APROVADO |
+| RF006 | Criar receitas recorrentes mensais ou por período, fixas ou variáveis, ativando "Repetir" no formulário do lançamento (o lançamento é a primeira ocorrência); consultar em Mais → Recorrências | Alta | APROVADO (D8, 11/11/2026) |
 | RF007 | Gerar ocorrência pendente de receita recorrente e contabilizar somente após confirmação de recebimento | Essencial | APROVADO |
 | RF008 | Permitir editar o valor de uma ocorrência de receita sem alterar recorrência ou outras ocorrências | Alta | APROVADO |
 | RF009 | Registrar despesas avulsas, contabilizando-as no momento do cadastro | Essencial | APROVADO |
-| RF010 | Criar despesas recorrentes mensais ou por período, fixas ou variáveis | Essencial | APROVADO |
+| RF010 | Criar despesas recorrentes mensais ou por período, fixas ou variáveis, ativando "Repetir" no formulário; editar "só esta" ocorrência ou "a recorrência" e parar de repetir | Essencial | APROVADO (D8, 11/11/2026) |
 | RF011 | Contabilizar despesa recorrente ao gerar a ocorrência e, se variável, após informar seu valor | Essencial | APROVADO |
 | RF012 | Confirmar pagamento de despesa, alterando status e registrando data sem nova dedução | Essencial | APROVADO |
 | RF013 | Representar fatura de cartão como despesa recorrente variável | Alta | APROVADO |
@@ -188,6 +188,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 **RF023 — Alertas**
 - Alertas móveis previstos: três dias antes do vencimento, no dia e diariamente após o vencimento enquanto a despesa estiver pendente.
 - Os alertas continuam após o fim do período enquanto a despesa estiver pendente e cessam quando paga ou cancelada.
+- Às 9h (zona do usuário), uma única notificação por dia resume as despesas, sem valores; só no Android; reagendada ao abrir, sincronizar e salvar; apagada ao sair da conta (D9, 11/11/2026).
 
 ## 7. Requisitos não funcionais
 

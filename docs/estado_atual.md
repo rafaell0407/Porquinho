@@ -1,12 +1,13 @@
 # Estado atual — Porquinho
 
-**Atualizado em:** 11/11/2026. Ponto de partida de cada sessão. Detalhe das entregas: `docs/entregas_fase2.md` e `docs/entregas_fase3.md`. Histórico de decisões: `docs/historico/decisoes.md`.
+**Atualizado em:** 11/11/2026. Ponto de partida de cada sessão. Detalhe das entregas: `docs/entregas_fase2.md` a `docs/entregas_fase5.md`. Histórico de decisões: `docs/historico/decisoes.md`.
 
 ## Fase
 - Fase 1 (documentação): CONCLUÍDA em 08/11/2026.
 - Fase 2 (modelagem física e base técnica): CONCLUÍDA em 10/11/2026 (Entregas 1–21).
 - Fase 3 (estrutura Flutter e base offline): CONCLUÍDA em 10/11/2026 (Entregas 23–31 validadas pelo responsável).
-- Fase 4 (categorias e lançamentos avulsos): IMPLEMENTADA em 11/11/2026 (Entregas 32–42, `docs/entregas_fase4.md`); aguardando validação do responsável. Fases 5 a 8: NÃO INICIADAS.
+- Fase 4 (categorias e lançamentos avulsos): CONCLUÍDA em 11/11/2026 (Entregas 32–42, `docs/entregas_fase4.md`, validadas pelo responsável).
+- Fase 5 (recorrências): CONCLUÍDA em 11/11/2026 (Entregas 43–50, `docs/entregas_fase5.md`, validadas pelo responsável). Fases 6 a 8: NÃO INICIADAS.
 - Plataformas do MVP: Android e Web (iOS fora do MVP — decisão de 10/11/2026). Web somente online.
 
 ## Entregas
@@ -19,7 +20,7 @@
 | 14–19 | Sessão, Supabase Auth, confirmação de e-mail, login, nova senha, banco local ligado ao app, logout | validadas |
 | 20 | PIN/biometria (RF003) | validada (biometria só em testes automáticos) |
 | 21 | Protocolo de sincronização (21A–21D): estados, RPC `resolve_sync_conflict`, motor de envio, logout com pendências | validada (10/11/2026) |
-| 22 | Itens que precisam de atenção (conflitos e recusas), celular e Web | implementada em 11/11/2026; sem validação |
+| 22 | Itens que precisam de atenção (conflitos e recusas), celular e Web | validada (11/11/2026) |
 | 23 | Composição pelo Riverpod | validada |
 | 24 | Navegação Dashboard / Lançamentos / Mais | validada (10/11/2026) |
 | 25 | Banco local ligado ao usuário (D2) | validada (10/11/2026) |
@@ -29,7 +30,8 @@
 | 28 | Indicador de conexão e sincronização | validada (10/11/2026) |
 | 29 | Web somente online | validada (10/11/2026) |
 | 31 | Fechamento da Fase 3 | validada (10/11/2026) |
-| 32–42 | Fase 4: domínio (dinheiro, períodos, sobra), fila com dependências, primeiro acesso, períodos sob demanda, categorias e subcategorias, receita e despesa avulsas, Dashboard e Lançamentos | implementadas em 11/11/2026; sem validação (regressão no emulador e no Chrome pendente) |
+| 32–42 | Fase 4: domínio (dinheiro, períodos, sobra), fila com dependências, primeiro acesso, períodos sob demanda, categorias e subcategorias, receita e despesa avulsas, Dashboard e Lançamentos | validadas (11/11/2026) |
+| 43–50 | Fase 5: domínio da agenda, migration de geração determinística e conversão, "Repetir" no formulário, geração local e no servidor, receitas e despesas recorrentes, alertas Android, fechamento | validadas (11/11/2026; detalhe em `docs/entregas_fase5.md`) |
 
 ## Lacunas encontradas (diagnóstico da Fase 3)
 - Contrato de dados Web × celular só tem a porta de gravação e o modo (`lib/core/data_access.dart`); os repositórios local e remoto nascem com cada funcionalidade (Fase 4+).
@@ -40,8 +42,8 @@
 ## Pendências técnicas (lista-mestra: `docs/arquitetura.md` §15)
 1. Validar migrations, grants, RLS e ownership no Supabase gerenciado; provisionar dev/teste/produção — Fase 8 (exige autorização explícita).
 2. Backup, restauração, retenção, CSV e exclusão definitiva da conta (FKs hoje `RESTRICT`).
-3. Observabilidade, notificações móveis e Vector do Supabase local reiniciando.
-4. No app: ciclos 29–31 e ano bissexto (Fase 4), alertas após o fim do período, consultas dos cinco relatórios.
+3. Observabilidade e Vector do Supabase local reiniciando (notificações móveis: feitas na Fase 5).
+4. No app: consultas dos cinco relatórios (Fase 7).
 5. Medir índices e metas de desempenho (RN043).
 
 ## Ações do responsável
@@ -60,4 +62,4 @@ Emulador `Medium_Phone_API_37.0`, aberto sem flags gráficas; app com `--dart-de
 D1–D13 registradas em `docs/entregas_fase4.md`. Destaques: datas passadas e futuras aceitas em receitas e despesas (RN004, RN008); períodos anteriores/futuros sob demanda com confirmação (RN002); desfazer pagamento, reativar categoria e desfazer cancelamento fora do MVP; sugestões de categorias no primeiro acesso (RN024).
 
 ## Próximo passo
-Validação da Fase 4 pelo responsável (roteiro e limitações em `docs/entregas_fase4.md`, "Situação da implementação"). Depois, Fase 5 (recorrências) mediante autorização.
+Fase 6 (investimentos simples e rendimentos manuais), mediante autorização do responsável. Há alterações da Fase 5 ainda sem commit; commit só quando você pedir.

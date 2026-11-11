@@ -68,8 +68,18 @@ class OutboxOperation {
     if (dependsOn.isNotEmpty) 'depends_on': dependsOn,
   });
 
+  /// Ids de registros que esta operação cria: quem depende deles espera até a
+  /// operação ser aplicada. A criação da recorrência cria também o modelo.
+  List<String> get createdIds => [
+    if (isCreate) entityId,
+    if (rpc == 'create_recurrence_from_entry')
+      params['p_template_id'] as String,
+  ];
+
   /// Operação que cria o registro (as demais apenas o alteram).
   bool get isCreate =>
+      (rpc == 'create_recurrence_from_entry' &&
+          params['p_expected_entry_version'] == 0) ||
       rpc == 'create_accounting_period' ||
       rpc == 'create_earlier_accounting_period' ||
       params['p_action'] == 'create';

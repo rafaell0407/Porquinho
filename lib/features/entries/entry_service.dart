@@ -1,25 +1,31 @@
 import '../../core/domain/calendar_date.dart';
+import '../../core/domain/recurrence_schedule.dart';
 import '../categories/category_models.dart';
 import '../categories/category_repository.dart';
+import '../periods/period_models.dart';
 import '../periods/period_service.dart';
+import '../recurrence/recurrence_repository.dart';
 import '../sync/sync_models.dart';
 import 'entry_models.dart';
 import 'entry_repository.dart';
 
-/// Regras de receitas e despesas avulsas (RN004–RN008, RN015, `AGENTS.md`
-/// §4.3–4.4). As mesmas validações da RPC, para que o que for salvo no
-/// aparelho não seja recusado depois.
+/// Regras de receitas e despesas, avulsas e recorrentes (RN004–RN008, RN011,
+/// RN015, `AGENTS.md` §4.3–4.4). As mesmas validações da RPC, para que o que
+/// for salvo no aparelho não seja recusado depois.
 class EntryService {
   EntryService(
     this._entries,
     this._categories,
     this._periods, {
+    RecurrenceRepository? recurrences,
     String Function()? newId,
-  }) : _newId = newId ?? newUuid;
+  }) : _recurrences = recurrences,
+       _newId = newId ?? newUuid;
 
   final EntryRepository _entries;
   final CategoryRepository _categories;
   final PeriodService _periods;
+  final RecurrenceRepository? _recurrences;
   final String Function() _newId;
 
   static const maxDescriptionLength = 120;
@@ -27,43 +33,79 @@ class EntryService {
   Future<List<EntryRecord>> entriesInPeriod(String periodId) =>
       _entries.entriesInPeriod(periodId);
 
-  /// Cadastra uma receita ou despesa. [alreadyPaid] (só despesa, decisão D10)
-  /// grava o cadastro e o pagamento na mesma operação local, com dois eventos
-  /// de auditoria; o pagamento usa [paidOn] ou, se ausente, a data de hoje.
+  /// Cadastra uma receita ou despesa.
+  ///
+  /// - [alreadyPaid] (só despesa, decisão D10) grava o cadastro e o pagamento
+  ///   na mesma operação local; o pagamento usa [paidOn] ou a data de hoje.
+  /// - [repeat] (D8) cria também a recorrência: o lançamento é a primeira
+  ///   ocorrência. A receita recorrente nasce pendente; [alreadyReceived]
+  ///   confirma o recebimento na hora, em [receivedOn].
   Future<String> create(
     EntryDraft draft, {
     bool alreadyPaid = false,
     CalendarDate? paidOn,
     CalendarDate? today,
+    RepeatChoice? repeat,
+    bool alreadyReceived = false,
+    CalendarDate? receivedOn,
   }) async {
-    final clean = await _validated(draft);
-    await _requirePeriod(clean.date);
-    final id = _newId();
-    final changes = <EntryChange>[CreateEntry(id, clean)];
+    final clean = await _validated(
+      draft,
+      amountOptional: repeat?.variableValue ?? false,
+    );
+    final period = await _requirePeriod(clean.date);
+    if (alreadyPaid && clean.kind != EntryKind.expense) {
+      throw const ChangeRejectedException(
+        'Só despesas podem ser cadastradas como pagas.',
+      );
+    }
+    if (alreadyReceived && (clean.kind != EntryKind.income || repeat == null)) {
+      throw const ChangeRejectedException(
+        'Só uma receita recorrente pode ser criada já recebida.',
+      );
+    }
+    final changes = <EntryChange>[];
+    late final String id;
+    if (repeat == null) {
+      id = _newId();
+      changes.add(CreateEntry(id, clean));
+    } else {
+      final recurrence = _recurrenceFor(clean, repeat, period, null);
+      id = recurrence.entryId;
+      changes.add(recurrence);
+    }
     if (alreadyPaid) {
-      if (clean.kind != EntryKind.expense) {
-        throw const ChangeRejectedException(
-          'Só despesas podem ser cadastradas como pagas.',
-        );
-      }
       final when = paidOn ?? today;
       if (when == null) {
         throw const ChangeRejectedException('Informe a data do pagamento.');
       }
+      if (repeat == null) {
+        changes.add(PayExpense(_pendingRecord(id, clean), when));
+      } else {
+        if (clean.amount == null) {
+          throw const ChangeRejectedException(
+            'Informe o valor da despesa antes de pagar.',
+          );
+        }
+        changes.add(
+          PayExpense(_firstOccurrence(changes.first as CreateRecurrence), when),
+        );
+      }
+    }
+    if (alreadyReceived) {
+      final when = receivedOn ?? today;
+      if (when == null) {
+        throw const ChangeRejectedException('Informe a data do recebimento.');
+      }
+      if (clean.amount == null) {
+        throw const ChangeRejectedException(
+          'Informe o valor da receita antes de confirmar o recebimento.',
+        );
+      }
+      await _requirePeriod(when);
       changes.add(
-        PayExpense(
-          EntryRecord(
-            id: id,
-            kind: EntryKind.expense,
-            amount: clean.amount,
-            status: 'pending',
-            date: clean.date,
-            version: 1,
-            description: clean.description,
-            categoryId: clean.categoryId,
-            subcategoryId: clean.subcategoryId,
-            dueOn: clean.dueOn,
-          ),
+        ReceiveIncome(
+          _firstOccurrence(changes.first as CreateRecurrence),
           when,
         ),
       );
@@ -72,16 +114,135 @@ class EntryService {
     return id;
   }
 
+  EntryRecord _pendingRecord(String id, EntryDraft clean) => EntryRecord(
+    id: id,
+    kind: EntryKind.expense,
+    amount: clean.amount,
+    status: 'pending',
+    date: clean.date,
+    version: 1,
+    description: clean.description,
+    categoryId: clean.categoryId,
+    subcategoryId: clean.subcategoryId,
+    dueOn: clean.dueOn,
+  );
+
+  /// A primeira ocorrência como ficará após [CreateRecurrence] (versão 1).
+  EntryRecord _firstOccurrence(CreateRecurrence c) => EntryRecord(
+    id: c.entryId,
+    kind: c.kind,
+    amount: c.choice.variableValue ? c.draft.amount : c.defaultAmount,
+    status: 'pending',
+    date: c.scheduledFor,
+    version: 1,
+    description: c.draft.description,
+    categoryId: c.draft.categoryId,
+    subcategoryId: c.draft.subcategoryId,
+    dueOn: c.kind == EntryKind.expense
+        ? (c.draft.dueOn ?? c.scheduledFor)
+        : null,
+    templateId: c.templateId,
+    scheduledFor: c.scheduledFor,
+  );
+
+  CreateRecurrence _recurrenceFor(
+    EntryDraft clean,
+    RepeatChoice repeat,
+    PeriodRecord period,
+    EntryRecord? existing,
+  ) {
+    final templateId = _newId();
+    final byPeriod = repeat.frequency == RecurrenceFrequency.byPeriod;
+    final scheduled = RecurrenceCalendar.firstOccurrenceDate(
+      repeat.frequency,
+      clean.date,
+      period.range,
+    );
+    return CreateRecurrence(
+      templateId: templateId,
+      entryId:
+          existing?.id ??
+          RecurrenceCalendar.occurrenceId(templateId, scheduled),
+      draft: clean,
+      choice: repeat,
+      scheduledFor: scheduled,
+      periodId: period.id,
+      scheduledPeriodId: byPeriod ? period.id : null,
+      existing: existing,
+    );
+  }
+
   /// Edita qualquer lançamento não cancelado, mesmo pago ou recebido. Mudar a
-  /// data move o valor para o período da nova data.
-  Future<void> update(EntryRecord current, EntryDraft draft) async {
+  /// data move o valor para o período da nova data. Em ocorrência recorrente,
+  /// altera só esta ocorrência (o modelo e as demais não mudam). Em lançamento
+  /// avulso, [repeat] o transforma na primeira ocorrência de uma recorrência.
+  Future<void> update(
+    EntryRecord current,
+    EntryDraft draft, {
+    RepeatChoice? repeat,
+  }) async {
     _requireEditable(current);
     if (draft.kind != current.kind) {
       throw const ChangeRejectedException('O tipo do lançamento não muda.');
     }
-    final clean = await _validated(draft, current: current);
-    if (clean.date != current.date) await _requirePeriod(clean.date);
-    await _entries.apply([UpdateEntry(current, clean)]);
+    if (repeat != null && current.isRecurring) {
+      throw const ChangeRejectedException('Este lançamento já se repete.');
+    }
+    final optional = await _amountOptionalFor(current, repeat);
+    final clean = await _validated(
+      draft,
+      current: current,
+      amountOptional: optional,
+    );
+    if (current.isPendingIncome) {
+      // Receita recorrente pendente: a data programada não muda.
+      await _entries.apply([
+        UpdateEntry(
+          current,
+          EntryDraft(
+            kind: clean.kind,
+            amount: clean.amount,
+            date: current.date,
+            description: clean.description,
+            categoryId: clean.categoryId,
+            subcategoryId: clean.subcategoryId,
+          ),
+        ),
+      ]);
+      return;
+    }
+    PeriodRecord? period;
+    if (repeat != null || clean.date != current.date) {
+      period = await _requirePeriod(clean.date);
+    }
+    if (current.isRecurring &&
+        current.status != 'pending' &&
+        clean.amount == null) {
+      throw const ChangeRejectedException('Informe o valor do lançamento.');
+    }
+    final changes = <EntryChange>[UpdateEntry(current, clean)];
+    if (repeat != null) {
+      changes.add(
+        _recurrenceFor(
+          clean,
+          repeat,
+          period!,
+          current.copyWith(version: current.version + 1),
+        ),
+      );
+    }
+    await _entries.apply(changes);
+  }
+
+  Future<bool> _amountOptionalFor(
+    EntryRecord current,
+    RepeatChoice? repeat,
+  ) async {
+    if (repeat != null) return repeat.variableValue;
+    final id = current.templateId;
+    if (id == null || _recurrences == null) return false;
+    final template = await _recurrences.template(current.kind, id);
+    return template?.variableValue ?? false;
   }
 
   /// Marca a despesa como paga: registra a data e **não** altera a sobra.
@@ -99,6 +260,35 @@ class EntryService {
     await _entries.apply([PayExpense(current, paidOn)]);
   }
 
+  /// Confirma o recebimento de uma receita recorrente: ela passa a entrar na
+  /// sobra, uma única vez, no período da data de recebimento (RN011–RN012).
+  Future<void> receive(
+    EntryRecord current,
+    CalendarDate receivedOn, {
+    BigInt? amount,
+  }) async {
+    if (current.kind != EntryKind.income || !current.isRecurring) {
+      throw const ChangeRejectedException(
+        'Só receitas recorrentes têm confirmação de recebimento.',
+      );
+    }
+    _requireEditable(current);
+    if (current.status != 'pending') {
+      throw const ChangeRejectedException('Esta receita já foi recebida.');
+    }
+    final value = amount ?? current.amount;
+    if (value == null) {
+      throw const ChangeRejectedException(
+        'Informe o valor recebido para confirmar o recebimento.',
+      );
+    }
+    if (value.isNegative) {
+      throw const ChangeRejectedException('O valor não pode ser negativo.');
+    }
+    await _requirePeriod(receivedOn);
+    await _entries.apply([ReceiveIncome(current, receivedOn, amount: value)]);
+  }
+
   /// Cancela: sai da sobra, mas continua no histórico. Não há desfazer no MVP.
   Future<void> cancel(EntryRecord current) async {
     _requireEditable(current);
@@ -114,17 +304,30 @@ class EntryService {
   }
 
   /// Pergunta ao usuário (via exceção) quando o período da data não existe.
-  Future<void> _requirePeriod(CalendarDate date) async {
+  /// Devolve o período que contém [date].
+  Future<PeriodRecord> _requirePeriod(CalendarDate date) async {
     final plan = await _periods.planFor(date);
     if (plan != null) throw PeriodMissingException(date, plan);
+    final period = await _periods.periodFor(date);
+    if (period == null) {
+      throw const ChangeRejectedException('Nenhum período cobre esta data.');
+    }
+    return period;
   }
 
   /// Cria os períodos faltantes depois da confirmação do usuário.
   Future<void> createMissingPeriods(CalendarDate date) =>
       _periods.createCovering(date);
 
-  Future<EntryDraft> _validated(EntryDraft d, {EntryRecord? current}) async {
-    if (d.amount.isNegative) {
+  Future<EntryDraft> _validated(
+    EntryDraft d, {
+    EntryRecord? current,
+    bool amountOptional = false,
+  }) async {
+    if (d.amount == null && !amountOptional) {
+      throw const ChangeRejectedException('Informe o valor.');
+    }
+    if (d.amount?.isNegative ?? false) {
       throw const ChangeRejectedException('O valor não pode ser negativo.');
     }
     final description = d.description?.trim();

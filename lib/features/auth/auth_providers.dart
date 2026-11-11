@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/infra_providers.dart';
+import '../alerts/alert_providers.dart';
 import '../app_lock/app_lock_providers.dart';
 import '../sync/sync_providers.dart';
 import 'auth_models.dart';
@@ -51,6 +52,8 @@ final sessionControllerProvider = Provider<SessionController>((ref) {
     onSignedOut: manager == null
         ? null
         : (_) async {
+            // Os alertas agendados pertencem ao usuário que saiu.
+            await ref.read(alertSchedulerProvider).cancelAll();
             await manager.closeAndWipe();
             await lock.clear();
           },

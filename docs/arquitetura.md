@@ -36,6 +36,7 @@ Regras financeiras independem da interface e devem ser testáveis sem widgets.
 | GoRouter | Navegação | APROVADO |
 | Supabase Auth | Autenticação | APROVADO |
 | Serviço próprio em Dart | Sincronização | APROVADO como abordagem |
+| `flutter_local_notifications` 23 | Alertas de vencimento agendados no Android (BSD-3; mantido; sem permissão de alarme exato) | APROVADO (Fase 5, Entrega 49) |
 | Git | Versionamento | APROVADO |
 
 Plataformas do MVP: Android e Web. iOS fora do MVP (decisão de 10/11/2026); trechos que citam iOS ficam como registro para versão futura.
@@ -222,7 +223,7 @@ Não são decisões de produto pendentes; são detalhamentos necessários antes 
 2. Migrations, políticas e testes RLS, constraints e modelo físico; validação no Supabase gerenciado (grants, ownership de funções, RLS).
 3. Configuração OAuth, gestão de sessão, autorização e armazenamento seguro por plataforma.
 4. Protocolo de sincronização, retentativas e mecanismo técnico para preservar e resolver conflitos segundo a política aprovada. Envio e conflitos feitos (Entrega 21); faltam a versão local após o envio (Entrega 26), o download dos dados do servidor (Entrega 27) e a tela de conflitos (Entrega 22, Fase 4).
-5. Estratégia de notificações móveis e validação multiplataforma.
+5. Notificações móveis: FEITO na Fase 5 (Entrega 49) — `flutter_local_notifications`, notificação diária às 9h (agendamento inexato), janela de 30 dias reagendada ao abrir, sincronizar e salvar, cancelada no logout; Android 13+ pede a permissão de notificações; Web sem alertas. Falta apenas a validação multiplataforma completa (Fase 8).
 6. Mecanismo e procedimento de backup, restauração, retenção, exportação CSV e exclusão definitiva.
 7. Observabilidade, publicação e compatibilidade dos mecanismos em Android e Web.
 8. ~~Estratégia de chaves, criptografia e logout com fila offline~~ — Android validado (Entregas 13–21); Web sem banco local; iOS fora do MVP.
@@ -320,7 +321,7 @@ Para os ambientes hospedados, propõe-se separar projetos Supabase de desenvolvi
 
 **Status:** APROVADO tecnicamente para representação dos dados e decisão do responsável para a zona operacional.
 
-Datas de competência, vencimento e pagamento serão datas de calendário, sem conversão em instantes. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC. A zona IANA armazenada por usuário é `America/Sao_Paulo`, aprovada pelo responsável em 08/11/2026. No app, a data corrente nessa zona usa o pacote `timezone` (aprovado em 10/11/2026; avaliação de manutenção e licença na Entrega 32). A data corrente é calculada nessa zona e a geração de ocorrências ocorre ao abrir o aplicativo e durante a sincronização; não há execução em segundo plano.
+Datas de competência, vencimento e pagamento serão datas de calendário, sem conversão em instantes. **Geração na sincronização (Fase 5, Entrega 46):** a rodada de sincronização envia períodos e modelos, chama `generate_due_recurrence_occurrences` no servidor antes da primeira alteração de ocorrência, baixa os dados e gera localmente o que ainda faltar; o app gera localmente ao abrir. O identificador da ocorrência é determinístico (modelo + data programada) no app e no servidor, então gerar em dois lugares não duplica. Instantes de auditoria e sincronização usam timestamp com timezone, normalizado em UTC. A zona IANA armazenada por usuário é `America/Sao_Paulo`, aprovada pelo responsável em 08/11/2026. No app, a data corrente nessa zona usa o pacote `timezone` (aprovado em 10/11/2026; avaliação de manutenção e licença na Entrega 32). A data corrente é calculada nessa zona e a geração de ocorrências ocorre ao abrir o aplicativo e durante a sincronização; não há execução em segundo plano.
 
 ### 17.4 Persistência local, fila e conflitos
 

@@ -10,6 +10,9 @@ import '../entries/entry_models.dart';
 import '../entries/entry_providers.dart';
 import '../periods/period_navigation.dart';
 import '../periods/period_providers.dart';
+import '../recurrence/recurrence_edit_screen.dart';
+import '../recurrence/recurrence_providers.dart';
+import '../recurrence/recurrences_screen.dart';
 
 /// Filtro por tipo (decisão D12; categoria e status ficam para a Fase 7).
 enum EntryFilter {
@@ -176,7 +179,9 @@ class _EntryList extends ConsumerWidget {
 
 String entryStatusLabel(EntryRecord e) {
   if (e.isCancelled) return 'Cancelado';
-  if (e.kind == EntryKind.income) return 'Recebida';
+  if (e.kind == EntryKind.income) {
+    return e.status == 'pending' ? 'A receber' : 'Recebida';
+  }
   return e.isPaid ? 'Paga' : 'Pendente';
 }
 
@@ -211,6 +216,7 @@ class _EntryTile extends ConsumerWidget {
           entry.date.toBr(),
           ?categoryName,
           entryStatusLabel(entry),
+          if (entry.isRecurring) 'Recorrente',
           if (entry.dueOn != null && entry.isPendingExpense)
             'vence ${entry.dueOn!.toBr()}',
         ].join(' · '),
@@ -233,10 +239,30 @@ class _EntryTile extends ConsumerWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (!entry.isCancelled) ...[
+              if (entry.isPendingIncome)
+                ListTile(
+                  key: const Key('acao-receber'),
+                  leading: const Icon(Icons.download_done_outlined),
+                  title: const Text('Confirmar recebimento'),
+                  onTap: () {
+                    Navigator.pop(sheet);
+                    _receive(context, ref);
+                  },
+                ),
+              if (entry.isRecurring && entry.amount == null)
+                ListTile(
+                  key: const Key('acao-informar-valor'),
+                  leading: const Icon(Icons.attach_money),
+                  title: const Text('Informar valor'),
+                  onTap: () {
+                    Navigator.pop(sheet);
+                    _informAmount(context, ref);
+                  },
+                ),
               ListTile(
                 key: const Key('acao-editar'),
                 leading: const Icon(Icons.edit_outlined),
-                title: const Text('Editar'),
+                title: Text(entry.isRecurring ? 'Editar só esta' : 'Editar'),
                 onTap: () async {
                   Navigator.pop(sheet);
                   await Navigator.of(context).push<bool>(
@@ -261,6 +287,38 @@ class _EntryTile extends ConsumerWidget {
                     _pay(context, ref);
                   },
                 ),
+              if (entry.isRecurring) ...[
+                ListTile(
+                  key: const Key('acao-editar-recorrencia'),
+                  leading: const Icon(Icons.repeat),
+                  title: const Text('Editar a recorrência'),
+                  onTap: () {
+                    Navigator.pop(sheet);
+                    _withTemplate(
+                      context,
+                      ref,
+                      (t) => Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          builder: (_) => RecurrenceEditScreen(template: t),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  key: const Key('acao-parar-recorrencia'),
+                  leading: const Icon(Icons.stop_circle_outlined),
+                  title: const Text('Parar de repetir'),
+                  onTap: () {
+                    Navigator.pop(sheet);
+                    _withTemplate(
+                      context,
+                      ref,
+                      (t) => confirmStopRecurrence(context, ref, t),
+                    );
+                  },
+                ),
+              ],
               ListTile(
                 key: const Key('acao-cancelar'),
                 leading: const Icon(Icons.cancel_outlined),
@@ -315,6 +373,76 @@ class _EntryTile extends ConsumerWidget {
     await _run(context, ref, (s) => s.pay(entry, date));
   }
 
+  Future<void> _withTemplate(
+    BuildContext context,
+    WidgetRef ref,
+    Future<void> Function(dynamic template) action,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final repo = await ref.read(recurrenceRepositoryProvider.future);
+    final template = await repo.template(entry.kind, entry.templateId!);
+    if (template == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Recorrência não encontrada.')),
+      );
+      return;
+    }
+    if (context.mounted) await action(template);
+  }
+
+  /// Pede só o valor (recorrência de valor variável): a ocorrência passa a
+  /// contar na sobra (despesa) ou fica pronta para ser confirmada (receita).
+  Future<void> _informAmount(BuildContext context, WidgetRef ref) async {
+    final value = await _askAmount(context, 'Valor desta ocorrência');
+    if (value == null || !context.mounted) return;
+    await _run(
+      context,
+      ref,
+      (s) => s.update(
+        entry,
+        EntryDraft(
+          kind: entry.kind,
+          amount: value,
+          date: entry.date,
+          description: entry.description,
+          categoryId: entry.categoryId,
+          subcategoryId: entry.subcategoryId,
+          dueOn: entry.dueOn,
+        ),
+      ),
+    );
+  }
+
+  Future<BigInt?> _askAmount(
+    BuildContext context,
+    String title, {
+    BigInt? initial,
+  }) => showDialog<BigInt>(
+    context: context,
+    builder: (context) => _AmountDialog(title: title, initial: initial),
+  );
+
+  /// Confirma o recebimento: data (padrão hoje) e valor (RN011–RN012).
+  Future<void> _receive(BuildContext context, WidgetRef ref) async {
+    final today = ref.read(userClockProvider).today();
+    final picked = await showDatePicker(
+      context: context,
+      helpText: 'Data do recebimento',
+      initialDate: DateTime(today.year, today.month, today.day),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null || !context.mounted) return;
+    final date = CalendarDate(picked.year, picked.month, picked.day);
+    BigInt? amount = entry.amount;
+    if (amount == null || !context.mounted) {
+      amount = await _askAmount(context, 'Valor recebido');
+      if (amount == null || !context.mounted) return;
+    }
+    final value = amount;
+    await _run(context, ref, (s) => s.receive(entry, date, amount: value));
+  }
+
   Future<void> _cancel(BuildContext context, WidgetRef ref) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -340,5 +468,66 @@ class _EntryTile extends ConsumerWidget {
     if (ok == true && context.mounted) {
       await _run(context, ref, (s) => s.cancel(entry));
     }
+  }
+}
+
+/// Pergunta um valor em reais; guarda o próprio controlador de texto.
+class _AmountDialog extends StatefulWidget {
+  const _AmountDialog({required this.title, this.initial});
+
+  final String title;
+  final BigInt? initial;
+
+  @override
+  State<_AmountDialog> createState() => _AmountDialogState();
+}
+
+class _AmountDialogState extends State<_AmountDialog> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.initial == null
+        ? ''
+        : formatBrl(widget.initial!).replaceFirst('R\$ ', ''),
+  );
+  String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.title),
+      content: TextField(
+        key: const Key('campo-valor-ocorrencia'),
+        controller: _controller,
+        autofocus: true,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        decoration: InputDecoration(
+          prefixText: 'R\$ ',
+          hintText: '0,00',
+          errorText: _error,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Voltar'),
+        ),
+        FilledButton(
+          key: const Key('confirmar-valor'),
+          onPressed: () {
+            try {
+              Navigator.pop(context, parseBrlToCentavos(_controller.text));
+            } on MoneyFormatException catch (e) {
+              setState(() => _error = e.message);
+            }
+          },
+          child: const Text('Confirmar'),
+        ),
+      ],
+    );
   }
 }

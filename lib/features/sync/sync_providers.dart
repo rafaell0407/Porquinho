@@ -1,10 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/domain/user_clock.dart';
 import '../../core/infra_providers.dart';
+import '../alerts/alert_providers.dart';
+import '../recurrence/local_recurrence_repository.dart';
 import 'download_service.dart';
 import 'remote_table_reader.dart';
 import 'supabase_sync_gateway.dart';
 import 'supabase_sync_reader.dart';
+import 'sync_models.dart';
 import 'sync_service.dart';
 import 'sync_status.dart';
 
@@ -32,7 +36,20 @@ final fullSyncProvider = Provider<Future<void> Function(String ownerId)?>((
   return (ownerId) async {
     final db = await manager.open();
     await SyncService(db, gateway).syncOnce(ownerId);
+    // Gera no servidor o que estiver devido antes de baixar (RN038): o
+    // identificador é o mesmo da geração local, então nada se duplica.
+    try {
+      await gateway.call(generateRpc, {'p_operation_id': newUuid()});
+    } on SyncRejectedError {
+      // Sem período para alguma data: aparece pela própria ocorrência faltante.
+    }
     await DownloadService(db, reader).downloadAll(ownerId);
+    // Modelos e períodos baixados podem ter novas ocorrências devidas.
+    await LocalRecurrenceRepository(
+      db,
+      ownerId,
+      null,
+    ).generateDue(const UserClock().today());
   };
 });
 
@@ -104,6 +121,7 @@ class SyncStatusNotifier extends Notifier<SyncStatus> {
     if (online) {
       try {
         await syncNow(ownerId);
+        await ref.read(alertsRefreshProvider)();
       } on Object {
         // O que não subiu continua na fila e aparece nas contagens.
       }

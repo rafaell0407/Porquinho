@@ -25,8 +25,31 @@ class RemoteEntryRepository implements EntryRepository {
       );
       result.addAll(rows.map((r) => _fromRow(kind, r)));
     }
+    result.addAll(await _pendingIncomeIn(periodId));
     result.sort((a, b) => b.date.compareTo(a.date));
     return result;
+  }
+
+  /// Receita recorrente ainda sem período (pendente): aparece no período que
+  /// contém a data programada.
+  Future<List<EntryRecord>> _pendingIncomeIn(String periodId) async {
+    final periods = await _reader.select(
+      'accounting_periods',
+      filters: [RemoteFilter.eq('id', periodId)],
+    );
+    if (periods.isEmpty) return const [];
+    final rows = await _reader.select(
+      EntryKind.income.table,
+      filters: [
+        RemoteFilter.gte('scheduled_for_date', periods.first['start_date']),
+        RemoteFilter.lt('scheduled_for_date', periods.first['end_date']),
+      ],
+      orderBy: 'scheduled_for_date',
+    );
+    return rows
+        .where((r) => r['accounting_period_id'] == null)
+        .map((r) => _fromRow(EntryKind.income, r))
+        .toList();
   }
 
   @override
@@ -42,6 +65,7 @@ class RemoteEntryRepository implements EntryRepository {
     final amount = d['amount_centavos'];
     final due = d['due_on'] as String?;
     final paid = d['paid_on'] as String?;
+    final scheduled = d['scheduled_for_date'] as String?;
     return EntryRecord(
       id: d['id'] as String,
       kind: kind,
@@ -51,7 +75,7 @@ class RemoteEntryRepository implements EntryRepository {
                 ? BigInt.from(amount)
                 : BigInt.parse(amount.toString())),
       status: d['status'] as String,
-      date: CalendarDate.parse(d[kind.dateColumn] as String),
+      date: CalendarDate.parse(((d[kind.dateColumn] as String?) ?? scheduled)!),
       version: (d['version'] as num).toInt(),
       description: d['description'] as String?,
       categoryId: d['category_id'] as String?,
@@ -59,7 +83,8 @@ class RemoteEntryRepository implements EntryRepository {
       dueOn: due == null ? null : CalendarDate.parse(due),
       paidOn: paid == null ? null : CalendarDate.parse(paid),
       periodId: d['accounting_period_id'] as String?,
-      isRecurring: d['recurrence_template_id'] != null,
+      templateId: d['recurrence_template_id'] as String?,
+      scheduledFor: scheduled == null ? null : CalendarDate.parse(scheduled),
     );
   }
 

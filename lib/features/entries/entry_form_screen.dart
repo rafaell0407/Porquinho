@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/data_access.dart';
 import '../../core/domain/calendar_date.dart';
 import '../../core/domain/money.dart';
+import '../../core/domain/recurrence_schedule.dart';
 import '../categories/category_models.dart';
 import '../categories/category_providers.dart';
 import '../periods/period_providers.dart';
@@ -33,6 +34,10 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   late CalendarDate _date;
   CalendarDate? _dueOn;
   bool _alreadyPaid = false;
+  bool _repeat = false;
+  RecurrenceFrequency _frequency = RecurrenceFrequency.monthly;
+  bool _variable = false;
+  bool _alreadyReceived = false;
   late CalendarDate _paidOn;
   String? _categoryId;
   String? _subcategoryId;
@@ -41,6 +46,19 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
 
   bool get _isIncome => widget.kind == EntryKind.income;
   bool get _editing => widget.existing != null;
+
+  /// Ocorrência de recorrência que está sendo editada (só esta, D8).
+  bool get _occurrence => widget.existing?.isRecurring ?? false;
+
+  /// Receita recorrente ainda não recebida: não tem data de recebimento.
+  bool get _pendingIncome => widget.existing?.isPendingIncome ?? false;
+
+  /// "Repetir" só em lançamento novo ou avulso (D8).
+  bool get _canRepeat => !_occurrence;
+
+  /// O valor pode ficar em branco: recorrência de valor variável (a
+  /// ocorrência recebe o valor depois) ou ocorrência já existente.
+  bool get _amountOptional => (_repeat && _variable) || _occurrence;
 
   @override
   void initState() {
@@ -92,7 +110,9 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     });
     final draft = EntryDraft(
       kind: widget.kind,
-      amount: parseBrlToCentavos(_amount.text),
+      amount: _amount.text.trim().isEmpty
+          ? null
+          : parseBrlToCentavos(_amount.text),
       date: _date,
       description: _description.text,
       categoryId: _categoryId,
@@ -115,14 +135,20 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   }
 
   Future<void> _write(EntryService service, EntryDraft draft) async {
+    final repeat = _repeat && _canRepeat
+        ? RepeatChoice(frequency: _frequency, variableValue: _variable)
+        : null;
     Future<void> attempt() async {
       if (_editing) {
-        await service.update(widget.existing!, draft);
+        await service.update(widget.existing!, draft, repeat: repeat);
       } else {
         await service.create(
           draft,
           alreadyPaid: !_isIncome && _alreadyPaid,
           paidOn: _paidOn,
+          repeat: repeat,
+          alreadyReceived: _isIncome && repeat != null && _alreadyReceived,
+          receivedOn: _paidOn,
         );
       }
     }
@@ -156,6 +182,66 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
       await attempt();
     }
   }
+
+  /// "Repetir" (D8): o lançamento vira a primeira ocorrência; as próximas
+  /// seguem o dia dele (todo mês) ou o início de cada período.
+  List<Widget> _repeatSection() => [
+    SwitchListTile(
+      key: const Key('repetir'),
+      contentPadding: EdgeInsets.zero,
+      title: const Text('Repetir'),
+      subtitle: Text(
+        _repeat
+            ? 'Este lançamento é o primeiro; os próximos são criados '
+                  'automaticamente'
+            : 'Lançamento único',
+      ),
+      value: _repeat,
+      onChanged: (v) => setState(() => _repeat = v),
+    ),
+    if (_repeat) ...[
+      SegmentedButton<RecurrenceFrequency>(
+        key: const Key('frequencia'),
+        segments: [
+          for (final f in RecurrenceFrequency.values)
+            ButtonSegment(value: f, label: Text(f.label)),
+        ],
+        selected: {_frequency},
+        onSelectionChanged: (s) => setState(() => _frequency = s.first),
+      ),
+      Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: Text(
+          _frequency == RecurrenceFrequency.monthly
+              ? 'Repete todo dia ${_date.day} (em mês curto, no último dia).'
+              : 'A ocorrência fica no início do período que contém a data '
+                    'informada.',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ),
+      SwitchListTile(
+        key: const Key('valor-variavel'),
+        contentPadding: EdgeInsets.zero,
+        title: const Text('O valor muda todo mês'),
+        subtitle: const Text('Informe o valor de cada ocorrência depois'),
+        value: _variable,
+        onChanged: (v) => setState(() => _variable = v),
+      ),
+      if (_isIncome)
+        SwitchListTile(
+          key: const Key('ja-recebi'),
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Já recebi'),
+          subtitle: Text(
+            _alreadyReceived
+                ? 'Recebida em ${_paidOn.toBr()}'
+                : 'Nasce pendente e só entra na sobra quando confirmada',
+          ),
+          value: _alreadyReceived,
+          onChanged: (v) => setState(() => _alreadyReceived = v),
+        ),
+    ],
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -200,6 +286,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                 hintText: '0,00',
               ),
               validator: (v) {
+                if (_amountOptional && (v ?? '').trim().isEmpty) return null;
                 try {
                   parseBrlToCentavos(v ?? '');
                   return null;
@@ -209,19 +296,30 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
               },
             ),
             const SizedBox(height: 12),
-            ListTile(
-              key: const Key('campo-data'),
-              contentPadding: EdgeInsets.zero,
-              title: Text(
-                _isIncome ? 'Data do recebimento' : 'Data da despesa',
+            if (_pendingIncome)
+              ListTile(
+                key: const Key('campo-data-prevista'),
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Recebimento previsto'),
+                subtitle: Text(
+                  '${_date.toBr()} (a data de recebimento é informada '
+                  'ao confirmar)',
+                ),
+              )
+            else
+              ListTile(
+                key: const Key('campo-data'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  _isIncome ? 'Data do recebimento' : 'Data da despesa',
+                ),
+                subtitle: Text(_date.toBr()),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final picked = await _pick(_date);
+                  if (picked != null) setState(() => _date = picked);
+                },
               ),
-              subtitle: Text(_date.toBr()),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final picked = await _pick(_date);
-                if (picked != null) setState(() => _date = picked);
-              },
-            ),
             TextFormField(
               key: const Key('campo-descricao'),
               controller: _description,
@@ -298,6 +396,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                   onChanged: (v) => setState(() => _alreadyPaid = v),
                 ),
             ],
+            if (_canRepeat) ..._repeatSection(),
             if (_error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),

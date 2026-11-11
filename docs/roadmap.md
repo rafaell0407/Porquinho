@@ -122,7 +122,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 **Testes:** inclusão, edição, cancelamento, alteração de data, categoria, pagamento sem segunda dedução e cálculo da sobra.
 
 **Prioridade:** Essencial.  
-**Status:** IMPLEMENTADA em 11/11/2026 (Entregas 32–42) — aguardando validação do responsável. Regressão no emulador e no Chrome pendente (ver `docs/entregas_fase4.md`, "Situação da implementação").
+**Status:** CONCLUÍDA em 11/11/2026 — Entregas 22 e 32–42 implementadas e validadas pelo responsável.
 
 ### Fase 5 — Recorrências
 
@@ -144,7 +144,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 **Testes:** geração mensal e por período, ocorrência fixa/variável, confirmação de receita, edição isolada, despesa recorrente e ausência de duplicidade.
 
 **Prioridade:** Essencial.  
-**Status:** NÃO INICIADO.
+**Status:** CONCLUÍDA em 11/11/2026 — Entregas 43–50 (`docs/entregas_fase5.md`) implementadas e validadas pelo responsável.
 
 ### Fase 6 — Investimentos simples e rendimentos manuais
 

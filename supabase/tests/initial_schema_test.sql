@@ -36,7 +36,7 @@ INSERT INTO public.income_recurrence_templates
      value_mode, default_amount_centavos, category_id)
 VALUES
     ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000003001',
-     'Fixture: monthly income', 'monthly', '2026-01-01', 31, 'fixed', 2500,
+     'Fixture: monthly income', 'monthly', '2026-11-01', 31, 'fixed', 2500,
      '00000000-0000-0000-0000-000000001001');
 
 INSERT INTO public.income_recurrence_templates
