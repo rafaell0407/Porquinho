@@ -52,6 +52,9 @@ class UserPreferences extends Table {
   IntColumn get version => integer().withDefault(const Constant(1))();
   TextColumn get updatedAt => text()();
 
+  /// Progresso do assistente inicial (RF024, D7): JSON `{etapa: done|skipped}`.
+  TextColumn get onboarding => text().withDefault(const Constant('{}'))();
+
   @override
   Set<Column<Object>> get primaryKey => {ownerId};
 }
@@ -408,7 +411,7 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
   PorquinhoDatabase(super.executor);
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -470,6 +473,13 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
           ),
         );
         await migrator.create(schema.uniqueInvestmentOccurrenceSchedule);
+      },
+      // v5 (Fase 7, Entrega 67): progresso do assistente inicial na conta.
+      from4To5: (migrator, schema) async {
+        await migrator.addColumn(
+          schema.userPreferences,
+          schema.userPreferences.onboarding,
+        );
       },
     ),
     beforeOpen: (_) async => customStatement('PRAGMA foreign_keys = ON'),

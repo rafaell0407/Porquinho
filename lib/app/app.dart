@@ -15,6 +15,7 @@ import '../features/attention/attention_screen.dart';
 import '../features/categories/categories_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/more/more_screen.dart';
+import '../features/onboarding/onboarding_screen.dart';
 import '../features/periods/period_gate.dart';
 import '../features/preferences/preferences_providers.dart';
 import '../features/preferences/theme_screen.dart';
@@ -65,6 +66,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, _) => const PeriodSettingsScreen(),
       ),
       GoRoute(path: '/relatorios', builder: (_, _) => const ReportsScreen()),
+      GoRoute(
+        path: '/configuracao-inicial',
+        builder: (context, _) => OnboardingScreen(onExit: () => context.pop()),
+      ),
       GoRoute(path: '/tema', builder: (_, _) => const ThemeScreen()),
       GoRoute(
         path: '/recorrencias',

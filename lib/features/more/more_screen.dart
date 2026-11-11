@@ -38,6 +38,12 @@ class MoreScreen extends ConsumerWidget {
             onTap: () => context.push('/relatorios'),
           ),
           ListTile(
+            key: const Key('mais-configuracao-inicial'),
+            leading: const Icon(Icons.checklist_outlined),
+            title: const Text('Configuração inicial'),
+            onTap: () => context.push('/configuracao-inicial'),
+          ),
+          ListTile(
             key: const Key('mais-tema'),
             leading: const Icon(Icons.brightness_6_outlined),
             title: const Text('Tema'),

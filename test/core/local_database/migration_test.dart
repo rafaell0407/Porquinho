@@ -89,6 +89,33 @@ void main() {
     await db.close();
   });
 
+  test(
+    'v4 -> v5 preserva preferências e acrescenta onboarding vazio',
+    () async {
+      final schema = await verifier.schemaAt(4);
+      schema.rawDatabase.execute(
+        "INSERT INTO user_preferences (owner_id, theme, version, updated_at) "
+        "VALUES ('u1', 'dark', 3, 'x')",
+      );
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 5);
+      final row = await db
+          .customSelect('SELECT * FROM user_preferences')
+          .getSingle();
+      expect(row.read<String>('theme'), 'dark');
+      expect(row.read<int>('version'), 3);
+      expect(row.read<String>('onboarding'), '{}');
+      await db.close();
+    },
+  );
+
+  test('criação direta na v5 equivale ao snapshot v5', () async {
+    final schema = await verifier.schemaAt(5);
+    final db = PorquinhoDatabase(schema.newConnection());
+    await verifier.migrateAndValidate(db, 5);
+    await db.close();
+  });
+
   test('v2 -> v3 preserva dados e troca per_period por by_period', () async {
     final schema = await verifier.schemaAt(2);
     final raw = schema.rawDatabase;

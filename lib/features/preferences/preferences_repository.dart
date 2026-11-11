@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart';
 
 import '../../core/local_database/app_database.dart';
@@ -14,9 +16,30 @@ abstract interface class PreferencesRepository {
   /// Grava o tema; `null` volta a seguir o aparelho. Decisão D5: vale a
   /// última gravação enviada, sem tela de conflito.
   Future<void> setTheme(String? theme);
+
+  /// Progresso do assistente inicial (RF024, D7): etapa → `done` | `skipped`.
+  Future<Map<String, String>> onboarding();
+
+  /// Marca a etapa como concluída ou pulada. Etapas de aparelhos diferentes se
+  /// somam no servidor.
+  Future<void> setOnboardingStep(String step, String status);
+}
+
+Map<String, String> decodeOnboarding(Object? raw) {
+  Object? value = raw;
+  if (value is String) {
+    try {
+      value = jsonDecode(value);
+    } on FormatException {
+      return {};
+    }
+  }
+  if (value is! Map) return {};
+  return {for (final e in value.entries) '${e.key}': '${e.value}'};
 }
 
 const setThemeRpc = 'set_user_theme';
+const setOnboardingStepRpc = 'set_onboarding_step';
 
 /// Celular: grava primeiro no banco local (registro, auditoria e fila na mesma
 /// transação), funcionando sem conexão.
@@ -82,6 +105,50 @@ class LocalPreferencesRepository implements PreferencesRepository {
       },
     );
   }
+
+  @override
+  Future<Map<String, String>> onboarding() async =>
+      decodeOnboarding((await _row())?['onboarding']);
+
+  @override
+  Future<void> setOnboardingStep(String step, String status) async {
+    final old = await _row();
+    final previousVersion = (old?['version'] as int?) ?? 0;
+    final merged = {...decodeOnboarding(old?['onboarding']), step: status};
+    final encoded = jsonEncode(merged);
+    final now = _clock().toUtc().toIso8601String();
+    await _recorder.record(
+      ownerId: _ownerId,
+      entityType: 'user_preferences',
+      entityId: _ownerId,
+      operation: old == null ? 'create' : 'update',
+      expectedVersion: previousVersion,
+      rpc: setOnboardingStepRpc,
+      params: {'p_step': step, 'p_status': status},
+      oldSnapshot: old == null
+          ? null
+          : {
+              'owner_id': _ownerId,
+              'onboarding': decodeOnboarding(old['onboarding']),
+              'version': previousVersion,
+            },
+      newSnapshot: {
+        'owner_id': _ownerId,
+        'onboarding': merged,
+        'version': previousVersion + 1,
+      },
+      apply: () async {
+        await _db.customStatement(
+          'INSERT INTO user_preferences (owner_id, onboarding, version, '
+          'updated_at) VALUES (?, ?, ?, ?) '
+          'ON CONFLICT (owner_id) DO UPDATE SET '
+          'onboarding = excluded.onboarding, '
+          'version = excluded.version, updated_at = excluded.updated_at',
+          [_ownerId, encoded, previousVersion + 1, now],
+        );
+      },
+    );
+  }
 }
 
 /// Web: lê e grava direto no servidor (somente online).
@@ -110,6 +177,24 @@ class RemotePreferencesRepository implements PreferencesRepository {
     });
     if (response['status'] != 'applied') {
       throw const SyncRejectedError('Não foi possível salvar o tema.');
+    }
+  }
+
+  @override
+  Future<Map<String, String>> onboarding() async {
+    final rows = await _reader.select('user_preferences');
+    return rows.isEmpty ? {} : decodeOnboarding(rows.first['onboarding']);
+  }
+
+  @override
+  Future<void> setOnboardingStep(String step, String status) async {
+    final response = await _gateway.call(setOnboardingStepRpc, {
+      'p_operation_id': _newId(),
+      'p_step': step,
+      'p_status': status,
+    });
+    if (response['status'] != 'applied') {
+      throw const SyncRejectedError('Não foi possível salvar a etapa.');
     }
   }
 }

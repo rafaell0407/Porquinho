@@ -1,6 +1,6 @@
 # Fase 7 — Períodos, Dashboard e relatórios
 
-**Status:** EM VALIDAÇÃO (implementada em 11/11/2026, aguardando validação do responsável). Entregas 59A–66 e 68 implementadas; 67 ADIADA (precisa liberar `drift_schemas/` para a Drift v5); gráficos (D9) aguardando aprovação da biblioteca — relatórios 4 e 5 usam barras simples. Decisões D1–D11 APROVADAS em 11/11/2026 (seção 9.1); D6 acrescenta a Entrega 59A (nome "Dinheiro livre do período").
+**Status:** CONCLUÍDA e VALIDADA em 11/11/2026 (Entregas 59A–68; gráficos D9 com `fl_chart` 1.3.1). Decisões D1–D11 APROVADAS em 11/11/2026 (seção 9.1); D6 acrescenta a Entrega 59A (nome "Dinheiro livre do período").
 **Estado vigente:** `docs/estado_atual.md`. Regras: `docs/regras_negocio.md`. Escopo: `docs/requisitos.md` (RF019, RF020, RF024–RF026, §5, §13.7).
 
 ## 1. Objetivo

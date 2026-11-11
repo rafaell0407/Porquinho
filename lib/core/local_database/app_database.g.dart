@@ -64,6 +64,18 @@ class $UserPreferencesTable extends UserPreferences
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _onboardingMeta = const VerificationMeta(
+    'onboarding',
+  );
+  @override
+  late final GeneratedColumn<String> onboarding = GeneratedColumn<String>(
+    'onboarding',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     ownerId,
@@ -71,6 +83,7 @@ class $UserPreferencesTable extends UserPreferences
     timeZoneId,
     version,
     updatedAt,
+    onboarding,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -121,6 +134,12 @@ class $UserPreferencesTable extends UserPreferences
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
     }
+    if (data.containsKey('onboarding')) {
+      context.handle(
+        _onboardingMeta,
+        onboarding.isAcceptableOrUnknown(data['onboarding']!, _onboardingMeta),
+      );
+    }
     return context;
   }
 
@@ -150,6 +169,10 @@ class $UserPreferencesTable extends UserPreferences
         DriftSqlType.string,
         data['${effectivePrefix}updated_at'],
       )!,
+      onboarding: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}onboarding'],
+      )!,
     );
   }
 
@@ -165,12 +188,16 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
   final String timeZoneId;
   final int version;
   final String updatedAt;
+
+  /// Progresso do assistente inicial (RF024, D7): JSON `{etapa: done|skipped}`.
+  final String onboarding;
   const UserPreference({
     required this.ownerId,
     this.theme,
     required this.timeZoneId,
     required this.version,
     required this.updatedAt,
+    required this.onboarding,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -182,6 +209,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
     map['time_zone_id'] = Variable<String>(timeZoneId);
     map['version'] = Variable<int>(version);
     map['updated_at'] = Variable<String>(updatedAt);
+    map['onboarding'] = Variable<String>(onboarding);
     return map;
   }
 
@@ -194,6 +222,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
       timeZoneId: Value(timeZoneId),
       version: Value(version),
       updatedAt: Value(updatedAt),
+      onboarding: Value(onboarding),
     );
   }
 
@@ -208,6 +237,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
       timeZoneId: serializer.fromJson<String>(json['timeZoneId']),
       version: serializer.fromJson<int>(json['version']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      onboarding: serializer.fromJson<String>(json['onboarding']),
     );
   }
   @override
@@ -219,6 +249,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
       'timeZoneId': serializer.toJson<String>(timeZoneId),
       'version': serializer.toJson<int>(version),
       'updatedAt': serializer.toJson<String>(updatedAt),
+      'onboarding': serializer.toJson<String>(onboarding),
     };
   }
 
@@ -228,12 +259,14 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
     String? timeZoneId,
     int? version,
     String? updatedAt,
+    String? onboarding,
   }) => UserPreference(
     ownerId: ownerId ?? this.ownerId,
     theme: theme.present ? theme.value : this.theme,
     timeZoneId: timeZoneId ?? this.timeZoneId,
     version: version ?? this.version,
     updatedAt: updatedAt ?? this.updatedAt,
+    onboarding: onboarding ?? this.onboarding,
   );
   UserPreference copyWithCompanion(UserPreferencesCompanion data) {
     return UserPreference(
@@ -244,6 +277,9 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
           : this.timeZoneId,
       version: data.version.present ? data.version.value : this.version,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      onboarding: data.onboarding.present
+          ? data.onboarding.value
+          : this.onboarding,
     );
   }
 
@@ -254,14 +290,15 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
           ..write('theme: $theme, ')
           ..write('timeZoneId: $timeZoneId, ')
           ..write('version: $version, ')
-          ..write('updatedAt: $updatedAt')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('onboarding: $onboarding')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode =>
-      Object.hash(ownerId, theme, timeZoneId, version, updatedAt);
+      Object.hash(ownerId, theme, timeZoneId, version, updatedAt, onboarding);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -270,7 +307,8 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
           other.theme == this.theme &&
           other.timeZoneId == this.timeZoneId &&
           other.version == this.version &&
-          other.updatedAt == this.updatedAt);
+          other.updatedAt == this.updatedAt &&
+          other.onboarding == this.onboarding);
 }
 
 class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
@@ -279,6 +317,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
   final Value<String> timeZoneId;
   final Value<int> version;
   final Value<String> updatedAt;
+  final Value<String> onboarding;
   final Value<int> rowid;
   const UserPreferencesCompanion({
     this.ownerId = const Value.absent(),
@@ -286,6 +325,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
     this.timeZoneId = const Value.absent(),
     this.version = const Value.absent(),
     this.updatedAt = const Value.absent(),
+    this.onboarding = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   UserPreferencesCompanion.insert({
@@ -294,6 +334,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
     this.timeZoneId = const Value.absent(),
     this.version = const Value.absent(),
     required String updatedAt,
+    this.onboarding = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : ownerId = Value(ownerId),
        updatedAt = Value(updatedAt);
@@ -303,6 +344,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
     Expression<String>? timeZoneId,
     Expression<int>? version,
     Expression<String>? updatedAt,
+    Expression<String>? onboarding,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -311,6 +353,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
       if (timeZoneId != null) 'time_zone_id': timeZoneId,
       if (version != null) 'version': version,
       if (updatedAt != null) 'updated_at': updatedAt,
+      if (onboarding != null) 'onboarding': onboarding,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -321,6 +364,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
     Value<String>? timeZoneId,
     Value<int>? version,
     Value<String>? updatedAt,
+    Value<String>? onboarding,
     Value<int>? rowid,
   }) {
     return UserPreferencesCompanion(
@@ -329,6 +373,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
       timeZoneId: timeZoneId ?? this.timeZoneId,
       version: version ?? this.version,
       updatedAt: updatedAt ?? this.updatedAt,
+      onboarding: onboarding ?? this.onboarding,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -351,6 +396,9 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
     if (updatedAt.present) {
       map['updated_at'] = Variable<String>(updatedAt.value);
     }
+    if (onboarding.present) {
+      map['onboarding'] = Variable<String>(onboarding.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -365,6 +413,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
           ..write('timeZoneId: $timeZoneId, ')
           ..write('version: $version, ')
           ..write('updatedAt: $updatedAt, ')
+          ..write('onboarding: $onboarding, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10471,6 +10520,7 @@ typedef $$UserPreferencesTableCreateCompanionBuilder =
       Value<String> timeZoneId,
       Value<int> version,
       required String updatedAt,
+      Value<String> onboarding,
       Value<int> rowid,
     });
 typedef $$UserPreferencesTableUpdateCompanionBuilder =
@@ -10480,6 +10530,7 @@ typedef $$UserPreferencesTableUpdateCompanionBuilder =
       Value<String> timeZoneId,
       Value<int> version,
       Value<String> updatedAt,
+      Value<String> onboarding,
       Value<int> rowid,
     });
 
@@ -10514,6 +10565,11 @@ class $$UserPreferencesTableFilterComposer
 
   ColumnFilters<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get onboarding => $composableBuilder(
+    column: $table.onboarding,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -10551,6 +10607,11 @@ class $$UserPreferencesTableOrderingComposer
     column: $table.updatedAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get onboarding => $composableBuilder(
+    column: $table.onboarding,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$UserPreferencesTableAnnotationComposer
@@ -10578,6 +10639,11 @@ class $$UserPreferencesTableAnnotationComposer
 
   GeneratedColumn<String> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get onboarding => $composableBuilder(
+    column: $table.onboarding,
+    builder: (column) => column,
+  );
 }
 
 class $$UserPreferencesTableTableManager
@@ -10622,6 +10688,7 @@ class $$UserPreferencesTableTableManager
                 Value<String> timeZoneId = const Value.absent(),
                 Value<int> version = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
+                Value<String> onboarding = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UserPreferencesCompanion(
                 ownerId: ownerId,
@@ -10629,6 +10696,7 @@ class $$UserPreferencesTableTableManager
                 timeZoneId: timeZoneId,
                 version: version,
                 updatedAt: updatedAt,
+                onboarding: onboarding,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -10638,6 +10706,7 @@ class $$UserPreferencesTableTableManager
                 Value<String> timeZoneId = const Value.absent(),
                 Value<int> version = const Value.absent(),
                 required String updatedAt,
+                Value<String> onboarding = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UserPreferencesCompanion.insert(
                 ownerId: ownerId,
@@ -10645,6 +10714,7 @@ class $$UserPreferencesTableTableManager
                 timeZoneId: timeZoneId,
                 version: version,
                 updatedAt: updatedAt,
+                onboarding: onboarding,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../categories/category_providers.dart';
-import '../categories/category_suggestions_screen.dart';
+import '../onboarding/onboarding_screen.dart';
 import '../recurrence/recurrence_providers.dart';
 import 'period_providers.dart';
 import 'period_setup_screen.dart';
@@ -38,7 +38,9 @@ class PeriodGate extends ConsumerWidget {
       data: (needsSetup) {
         if (needsSetup) return const PeriodSetupScreen();
         if (ref.watch(pendingSuggestionsProvider)) {
-          return const CategorySuggestionsScreen();
+          return OnboardingScreen(
+            onExit: () => ref.read(pendingSuggestionsProvider.notifier).done(),
+          );
         }
         // Gera as ocorrências recorrentes devidas ao abrir (RN038).
         ref.watch(recurrenceGenerationProvider);

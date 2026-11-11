@@ -7,7 +7,18 @@ import 'category_providers.dart';
 /// Sugestões do primeiro acesso (RN024): todas marcadas e desmarcáveis; as
 /// escolhidas viram categorias comuns, sem tratamento especial.
 class CategorySuggestionsScreen extends ConsumerStatefulWidget {
-  const CategorySuggestionsScreen({this.onFinished, super.key});
+  const CategorySuggestionsScreen({
+    this.onFinished,
+    this.onSkipped,
+    this.manageFlag = true,
+    super.key,
+  });
+
+  /// Chamado só quando o usuário escolhe "Agora não" (antes de [onFinished]).
+  final VoidCallback? onSkipped;
+
+  /// `false` dentro do assistente inicial, que controla a própria saída.
+  final bool manageFlag;
 
   /// Chamado ao concluir ou pular; por padrão encerra o primeiro acesso.
   final VoidCallback? onFinished;
@@ -25,7 +36,9 @@ class _CategorySuggestionsScreenState
   String? _error;
 
   void _finish() {
-    ref.read(pendingSuggestionsProvider.notifier).done();
+    if (widget.manageFlag) {
+      ref.read(pendingSuggestionsProvider.notifier).done();
+    }
     widget.onFinished?.call();
   }
 
@@ -103,7 +116,7 @@ class _CategorySuggestionsScreenState
                   ),
                 ),
                 TextButton(
-                  onPressed: _saving ? null : _finish,
+                  onPressed: _saving ? null : widget.onSkipped ?? _finish,
                   child: const Text('Agora não'),
                 ),
               ],

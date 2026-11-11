@@ -5,6 +5,7 @@ import '../../core/domain/money.dart';
 import '../../core/domain/reports.dart';
 import '../periods/period_navigation.dart';
 import 'reports_providers.dart';
+import 'series_chart.dart';
 
 /// Os cinco relatórios básicos (RF025; `requisitos.md` §13.7).
 enum ReportKind {
@@ -284,6 +285,12 @@ class _SeriesReport extends ConsumerWidget {
                 'Últimos ${items.length} períodos até o selecionado',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: kind == ReportKind.evolution
+                  ? EvolutionChart(items: items)
+                  : ComparisonChart(items: items),
             ),
             for (final item in shown)
               kind == ReportKind.evolution

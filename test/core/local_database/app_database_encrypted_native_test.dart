@@ -104,7 +104,7 @@ void main() {
   });
 
   test(
-    'migra v1 -> atual (v4) em arquivo cifrado preservando centavos 2^63-1',
+    'migra v1 -> atual (v5) em arquivo cifrado preservando centavos 2^63-1',
     () async {
       final pragma = buildKeyPragma(_keyA);
       // Cria o banco exatamente como a v1 (sem os índices da v2).
@@ -148,7 +148,7 @@ void main() {
       expect(indices, hasLength(4));
 
       final version = await db.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 4);
+      expect(version.read<int>('user_version'), 5);
       expect(await db.customSelect('PRAGMA foreign_key_check').get(), isEmpty);
       await db.close();
     },

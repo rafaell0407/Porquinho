@@ -180,14 +180,16 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 - Evolução do dinheiro livre entre períodos.
 - Comparativo de receitas, despesas e investimentos por período.
 - Tema claro/escuro, salvo na conta por nova função no servidor (`user_preferences` ainda não tem RPC de gravação; nova migration — decisão de 10/11/2026).
-- Onboarding com etapas opcionais (Entrega 67 ADIADA em 11/11/2026: aguarda Drift v5).
+- Onboarding com etapas opcionais (Entrega 67, validada).
 
 **Dependências:** Fases 4 a 6 e implementação/testes da regra aprovada de meses curtos.
 
 **Testes:** cálculo em mês-calendário e ciclo personalizado, mudança de configuração, período histórico, edição/cancelamento entre períodos, dashboard e relatórios.
 
+**Status:** CONCLUÍDA e VALIDADA em 11/11/2026 — Entregas 59A–68 (`docs/entregas_fase7.md`), incluindo assistente inicial (67) e gráficos (`fl_chart`).
+
 **Prioridade:** Alta.  
-**Status:** NÃO INICIADO.
+**Status:** CONCLUÍDA e VALIDADA em 11/11/2026 (`docs/entregas_fase7.md`).
 
 ### Fase 8 — Sincronização completa, qualidade e publicação
 
@@ -209,7 +211,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 **Testes:** operação offline prolongada, reenvio, interrupção, duplicidade, divergência local/remota, conflito entre dispositivos, autenticação e recuperação.
 
 **Prioridade:** Essencial.  
-**Status:** NÃO INICIADO.
+**Status:** EM EXECUÇÃO em 11/11/2026 — Entregas 69–82 (`docs/entregas_fase8.md`). Feitas, aguardando validação: 69, 70, 71, 72, 73, 74 e 75 (parcial, sem D1). Dependem de decisão/serviço externo: 76–81; 82 fecha a fase.
 
 ## 4. Prioridades do MVP
 

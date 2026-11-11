@@ -362,8 +362,10 @@ Todos os testes usam PostgreSQL 18.6 temporário e `auth.uid()` simulado, o que 
 
 **Fase 7 (Entregas 59, 62 e 66/67):** `20261112000100_schedule_period_configuration.sql` (RPC `schedule_period_configuration`, teste `rpc_schedule_period_configuration_test.sql`); `20261112000200_period_report_rpc.sql` (RPC de leitura `get_period_report`: somas exatas por período e categoria, devolvidas como texto; teste `rpc_period_report_test.sql`); `20261112000300_user_preferences_write_rpc.sql` (RPCs `set_user_theme` e `set_onboarding_step`, coluna `user_preferences.onboarding`; teste `rpc_user_preferences_test.sql`). Nada aplicado no Supabase gerenciado.
 
-### 16.10 Schema local Drift (v1 a v4)
+### 16.10 Schema local Drift (v1 a v5)
 
 **v4 (Fase 6, Entrega 56):** tabela `investment_recurrence_templates` e colunas opcionais `recurrence_template_id`, `scheduled_for_date`, `scheduled_period_id` (mais o índice único de agenda) em `investment_allocations`; snapshot `drift_schemas/porquinho/drift_schema_v4.json` e teste de migração v3 → v4 preservando dados (`test/core/local_database/migration_test.dart`).
+
+**v5 (Fase 7, Entrega 67):** coluna `onboarding` (JSON `{etapa: done|skipped}`, padrão `{}`) em `user_preferences`; snapshot `drift_schemas/porquinho/drift_schema_v5.json` e testes de migração v4 → v5 e criação direta (`migration_test.dart`). O download grava a coluna; a escrita usa a RPC `set_onboarding_step`.
 
 `lib/core/local_database/app_database.dart` define as 14 tabelas locais do schema aprovado, chaves compostas por proprietário, referências locais, índices únicos de agenda recorrente, constraints de status e ciclo, e centavos como texto decimal convertido para `BigInt`. A versão 1 está em `drift_schemas/porquinho/drift_schema_v1.json`; o código tipado é gerado em `app_database.g.dart`. A conexão recebe um `QueryExecutor` injetado; não há armazenamento persistente criptografado. Teste: `test/core/local_database/app_database_test.dart` (schema, chaves estrangeiras, versão, limites de `BigInt`, gravação e leitura exata de 9.007.199.254.740.993 centavos em SQLite nativo). Pendentes: teste Flutter Web, adapter persistente criptografado e sincronização com PostgreSQL.
