@@ -202,6 +202,6 @@ void runDatabaseContract({
     final fk = await db.customSelect('PRAGMA foreign_keys').getSingle();
     expect(fk.read<int>('foreign_keys'), 1);
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 2);
+    expect(version.read<int>('user_version'), 3);
   });
 }

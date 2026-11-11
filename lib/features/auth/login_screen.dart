@@ -23,6 +23,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _error;
   String? _info;
 
+  int get _blockedCount {
+    final state = ref.watch(sessionStateProvider).value;
+    return state is SessionSignedOut ? state.blockedPendingCount : 0;
+  }
+
   @override
   void dispose() {
     _email.dispose();
@@ -159,6 +164,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       onFieldSubmitted: (_) => _busy ? null : _submit(),
                     ),
                     const SizedBox(height: 16),
+                    if (_blockedCount > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: Text(
+                          'Este aparelho ainda tem $_blockedCount '
+                          'operação(ões) de outra conta que não foram '
+                          'enviadas. Entre com a conta anterior, conecte-se '
+                          'à internet e aguarde a sincronização; depois será '
+                          'possível trocar de conta.',
+                          style: TextStyle(color: theme.colorScheme.error),
+                        ),
+                      ),
                     if (_error != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),

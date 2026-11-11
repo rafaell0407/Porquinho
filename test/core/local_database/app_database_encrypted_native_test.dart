@@ -103,51 +103,54 @@ void main() {
     await db.close();
   });
 
-  test('migra v1 -> v2 em arquivo cifrado preservando centavos 2^63-1', () async {
-    final pragma = buildKeyPragma(_keyA);
-    // Cria o banco exatamente como a v1 (sem os índices da v2).
-    final v1 = DatabaseAtV1(
-      NativeDatabase(File(path), setup: (raw) => raw.execute(pragma)),
-    );
-    await v1.customStatement(
-      "INSERT INTO period_configurations (id, owner_id, created_at, updated_at, "
-      "mode, effective_from) VALUES ('c1','o1','t','t','calendar_month','2026-11-01')",
-    );
-    await v1.customStatement(
-      "INSERT INTO accounting_periods (id, owner_id, created_at, updated_at, "
-      "configuration_id, start_date, end_date) "
-      "VALUES ('p1','o1','t','t','c1','2026-11-01','2026-12-01')",
-    );
-    await v1.customStatement(
-      "INSERT INTO investment_allocations (id, owner_id, created_at, updated_at, "
-      "amount_centavos, allocated_on, accounting_period_id) "
-      "VALUES ('i1','o1','t','t','$_maxCentavos','2026-11-09','p1')",
-    );
-    final antes = await v1
-        .customSelect(
-          "SELECT count(*) AS n FROM sqlite_master "
-          "WHERE type = 'index' AND name LIKE '%_period_idx'",
-        )
-        .getSingle();
-    expect(antes.read<int>('n'), 0);
-    await v1.close();
+  test(
+    'migra v1 -> atual (v3) em arquivo cifrado preservando centavos 2^63-1',
+    () async {
+      final pragma = buildKeyPragma(_keyA);
+      // Cria o banco exatamente como a v1 (sem os índices da v2).
+      final v1 = DatabaseAtV1(
+        NativeDatabase(File(path), setup: (raw) => raw.execute(pragma)),
+      );
+      await v1.customStatement(
+        "INSERT INTO period_configurations (id, owner_id, created_at, updated_at, "
+        "mode, effective_from) VALUES ('c1','o1','t','t','calendar_month','2026-11-01')",
+      );
+      await v1.customStatement(
+        "INSERT INTO accounting_periods (id, owner_id, created_at, updated_at, "
+        "configuration_id, start_date, end_date) "
+        "VALUES ('p1','o1','t','t','c1','2026-11-01','2026-12-01')",
+      );
+      await v1.customStatement(
+        "INSERT INTO investment_allocations (id, owner_id, created_at, updated_at, "
+        "amount_centavos, allocated_on, accounting_period_id) "
+        "VALUES ('i1','o1','t','t','$_maxCentavos','2026-11-09','p1')",
+      );
+      final antes = await v1
+          .customSelect(
+            "SELECT count(*) AS n FROM sqlite_master "
+            "WHERE type = 'index' AND name LIKE '%_period_idx'",
+          )
+          .getSingle();
+      expect(antes.read<int>('n'), 0);
+      await v1.close();
 
-    final db = abrir(_keyA);
-    final linhas = await db.select(db.investmentAllocations).get();
-    expect(linhas.single.amountCentavos, BigInt.parse(_maxCentavos));
+      final db = abrir(_keyA);
+      final linhas = await db.select(db.investmentAllocations).get();
+      expect(linhas.single.amountCentavos, BigInt.parse(_maxCentavos));
 
-    final indices = await db
-        .customSelect(
-          "SELECT name FROM sqlite_master WHERE type = 'index' "
-          "AND name IN ('income_entries_period_idx', 'expense_entries_period_idx', "
-          "'investment_allocations_period_idx', 'sync_outbox_state_idx')",
-        )
-        .get();
-    expect(indices, hasLength(4));
+      final indices = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'index' "
+            "AND name IN ('income_entries_period_idx', 'expense_entries_period_idx', "
+            "'investment_allocations_period_idx', 'sync_outbox_state_idx')",
+          )
+          .get();
+      expect(indices, hasLength(4));
 
-    final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 2);
-    expect(await db.customSelect('PRAGMA foreign_key_check').get(), isEmpty);
-    await db.close();
-  });
+      final version = await db.customSelect('PRAGMA user_version').getSingle();
+      expect(version.read<int>('user_version'), 3);
+      expect(await db.customSelect('PRAGMA foreign_key_check').get(), isEmpty);
+      await db.close();
+    },
+  );
 }

@@ -84,7 +84,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 **Testes:** autenticação, sessão, autorização, persistência local, download idempotente e isolamento entre usuários.
 
 **Prioridade:** Essencial.  
-**Status:** EM EXECUÇÃO — planejamento aprovado; próxima: Entrega 23.
+**Status:** EM EXECUÇÃO — planejamento aprovado; Entregas 21–23 validadas; Entregas 24–29 e 31 implementadas, aguardando validação.
 
 ### Fase 4 — Categorias e lançamentos avulsos
 

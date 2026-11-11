@@ -146,18 +146,23 @@ void main() {
     tester,
   ) async {
     await _pump(tester, restored: _user, pending: 2);
+    await tester.tap(find.text('Mais'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sair'));
     await tester.pumpAndSettle();
     expect(find.textContaining('2 operação(ões)'), findsOneWidget);
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
-    expect(find.text('Você está conectado.'), findsOneWidget);
+    expect(find.text('Entrar com Google'), findsNothing);
+    expect(find.text('Sair'), findsOneWidget);
   });
 
   testWidgets('sair mesmo assim descarta as pendências e volta ao login', (
     tester,
   ) async {
     await _pump(tester, restored: _user, pending: 2);
+    await tester.tap(find.text('Mais'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sair'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sair mesmo assim'));
@@ -194,6 +199,8 @@ void main() {
 
   testWidgets('sair sem pendências volta ao login', (tester) async {
     await _pump(tester, restored: _user);
+    await tester.tap(find.text('Mais'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Sair'));
     await tester.pumpAndSettle();
     expect(find.text('Entrar com Google'), findsOneWidget);

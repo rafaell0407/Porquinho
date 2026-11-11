@@ -1,17 +1,24 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/infra_providers.dart';
 import '../../core/local_database/stored_database_key_provider.dart';
 import 'app_lock_controller.dart';
 import 'app_lock_service.dart';
 import 'biometric_authenticator.dart';
 
-/// Sobrescrito em `main.dart`. O padrão (memória, sem bloqueio ativo) mantém
-/// os testes de outras telas independentes do bloqueio.
+/// Bloqueio por PIN/biometria (RF003): só no aplicativo móvel. Na Web usa
+/// memória e sem biometria (nunca bloqueia). Nos testes é sobrescrito.
 final appLockControllerProvider = Provider<AppLockController>(
-  (ref) => AppLockController(
-    AppLockService(InMemorySecureValueStore()),
-    const NoBiometric(),
-  ),
+  (ref) => kIsWeb
+      ? AppLockController(
+          AppLockService(InMemorySecureValueStore()),
+          const NoBiometric(),
+        )
+      : AppLockController(
+          AppLockService(ref.watch(secureValueStoreProvider)),
+          LocalAuthBiometric(),
+        ),
 );
 
 /// `true` enquanto o app está bloqueado.

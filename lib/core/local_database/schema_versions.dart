@@ -1241,8 +1241,517 @@ i1.GeneratedColumn<String> _column_60(String aliasedName) =>
       type: i1.DriftSqlType.string,
       $customConstraints: 'NULL',
     );
+
+final class Schema3 extends i0.VersionedSchema {
+  Schema3({required super.database}) : super(version: 3);
+  @override
+  late final List<i1.DatabaseSchemaEntity> entities = [
+    userPreferences,
+    periodConfigurations,
+    accountingPeriods,
+    categories,
+    subcategories,
+    incomeRecurrenceTemplates,
+    expenseRecurrenceTemplates,
+    incomeEntries,
+    expenseEntries,
+    investmentAllocations,
+    auditEvents,
+    appliedSyncOperations,
+    syncConflicts,
+    syncOutbox,
+    syncCursors,
+    uniqueIncomeOccurrenceSchedule,
+    incomeEntriesPeriodIdx,
+    uniqueExpenseOccurrenceSchedule,
+    expenseEntriesPeriodIdx,
+    investmentAllocationsPeriodIdx,
+    syncOutboxStateIdx,
+  ];
+  late final Shape0 userPreferences = Shape0(
+    source: i0.VersionedTable(
+      entityName: 'user_preferences',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(owner_id)'],
+      columns: [_column_0, _column_1, _column_2, _column_3, _column_4],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape1 periodConfigurations = Shape1(
+    source: i0.VersionedTable(
+      entityName: 'period_configurations',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(owner_id, id)',
+        'CHECK((mode = \'calendar_month\' AND custom_start_day IS NULL)OR(mode = \'custom_cycle\' AND custom_start_day BETWEEN 1 AND 31))',
+        'CHECK(mode IN (\'calendar_month\', \'custom_cycle\'))',
+      ],
+      columns: [
+        _column_5,
+        _column_0,
+        _column_3,
+        _column_6,
+        _column_4,
+        _column_7,
+        _column_8,
+        _column_9,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape2 accountingPeriods = Shape2(
+    source: i0.VersionedTable(
+      entityName: 'accounting_periods',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(owner_id, id)',
+        'CHECK(start_date < end_date)',
+        'UNIQUE(owner_id, start_date)',
+        'FOREIGN KEY(owner_id, configuration_id)REFERENCES period_configurations(owner_id, id)ON DELETE RESTRICT',
+      ],
+      columns: [
+        _column_5,
+        _column_0,
+        _column_3,
+        _column_6,
+        _column_4,
+        _column_10,
+        _column_11,
+        _column_12,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape3 categories = Shape3(
+    source: i0.VersionedTable(
+      entityName: 'categories',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(owner_id, id)',
+        'CHECK(kind IN (\'income\', \'expense\'))',
+      ],
+      columns: [
+        _column_5,
+        _column_0,
+        _column_3,
+        _column_6,
+        _column_4,
+        _column_13,
+        _column_14,
+        _column_15,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape4 subcategories = Shape4(
+    source: i0.VersionedTable(
+      entityName: 'subcategories',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(owner_id, id)',
+        'FOREIGN KEY(owner_id, category_id)REFERENCES categories(owner_id, id)ON DELETE RESTRICT',
+        'UNIQUE(owner_id, category_id, id)',
+      ],
+      columns: [
+        _column_5,
+        _column_0,
+        _column_3,
+        _column_6,
+        _column_4,
+        _column_16,
+        _column_14,
+        _column_15,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape13 incomeRecurrenceTemplates = Shape13(
+    source: i0.VersionedTable(
+      entityName: 'income_recurrence_templates',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(owner_id, id)',
+        'CHECK((frequency = \'monthly\' AND monthly_reference_day BETWEEN 1 AND 31)OR(frequency = \'by_period\' AND monthly_reference_day IS NULL))',
+        'CHECK(frequency IN (\'monthly\', \'by_period\'))',
+        'CHECK((value_mode = \'fixed\' AND default_amount_centavos IS NOT NULL)OR(value_mode = \'variable\' AND default_amount_centavos IS NULL))',
+        'CHECK(value_mode IN (\'fixed\', \'variable\'))',
+        'CHECK(default_amount_centavos IS NULL OR(length(default_amount_centavos) BETWEEN 1 AND 19 AND default_amount_centavos NOT GLOB \'*[^0-9]*\' AND(default_amount_centavos = \'0\' OR substr(default_amount_centavos, 1, 1) BETWEEN \'1\' AND \'9\')AND(length(default_amount_centavos) < 19 OR default_amount_centavos <= \'9223372036854775807\')))',
+        'FOREIGN KEY(owner_id, category_id)REFERENCES categories(owner_id, id)ON DELETE RESTRICT',
+        'FOREIGN KEY(owner_id, category_id, subcategory_id)REFERENCES subcategories(owner_id, category_id, id)ON DELETE RESTRICT',
+        'CHECK(subcategory_id IS NULL OR category_id IS NOT NULL)',
+      ],
+      columns: [
+        _column_61,
+        _column_17,
+        _column_18,
+        _column_19,
+        _column_20,
+        _column_21,
+        _column_22,
+        _column_23,
+        _column_15,
+        _column_5,
+        _column_0,
+        _column_3,
+        _column_6,
+        _column_4,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape13 expenseRecurrenceTemplates = Shape13(
+    source: i0.VersionedTable(
+      entityName: 'expense_recurrence_templates',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(owner_id, id)',
+        'CHECK((frequency = \'monthly\' AND monthly_reference_day BETWEEN 1 AND 31)OR(frequency = \'by_period\' AND monthly_reference_day IS NULL))',
+        'CHECK(frequency IN (\'monthly\', \'by_period\'))',
+        'CHECK((value_mode = \'fixed\' AND default_amount_centavos IS NOT NULL)OR(value_mode = \'variable\' AND default_amount_centavos IS NULL))',
+        'CHECK(value_mode IN (\'fixed\', \'variable\'))',
+        'CHECK(default_amount_centavos IS NULL OR(length(default_amount_centavos) BETWEEN 1 AND 19 AND default_amount_centavos NOT GLOB \'*[^0-9]*\' AND(default_amount_centavos = \'0\' OR substr(default_amount_centavos, 1, 1) BETWEEN \'1\' AND \'9\')AND(length(default_amount_centavos) < 19 OR default_amount_centavos <= \'9223372036854775807\')))',
+        'FOREIGN KEY(owner_id, category_id)REFERENCES categories(owner_id, id)ON DELETE RESTRICT',
+        'FOREIGN KEY(owner_id, category_id, subcategory_id)REFERENCES subcategories(owner_id, category_id, id)ON DELETE RESTRICT',
+        'CHECK(subcategory_id IS NULL OR category_id IS NOT NULL)',
+      ],
+      columns: [
+        _column_61,
+        _column_17,
+        _column_18,
+        _column_19,
+        _column_20,
+        _column_21,
+        _column_22,
+        _column_23,
+        _column_15,
+        _column_5,
+        _column_0,
+        _column_3,
+        _column_6,
+        _column_4,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape6 incomeEntries = Shape6(
+    source: i0.VersionedTable(
+      entityName: 'income_entries',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(owner_id, id)',
+        'FOREIGN KEY(owner_id, accounting_period_id)REFERENCES accounting_periods(owner_id, id)ON DELETE RESTRICT',
+        'FOREIGN KEY(owner_id, recurrence_template_id)REFERENCES income_recurrence_templates(owner_id, id)ON DELETE RESTRICT',
+        'FOREIGN KEY(owner_id, category_id)REFERENCES categories(owner_id, id)ON DELETE RESTRICT',
+        'FOREIGN KEY(owner_id, category_id, subcategory_id)REFERENCES subcategories(owner_id, category_id, id)ON DELETE RESTRICT',
+        'CHECK(amount_centavos IS NULL OR(length(amount_centavos) BETWEEN 1 AND 19 AND amount_centavos NOT GLOB \'*[^0-9]*\' AND(amount_centavos = \'0\' OR substr(amount_centavos, 1, 1) BETWEEN \'1\' AND \'9\')AND(length(amount_centavos) < 19 OR amount_centavos <= \'9223372036854775807\')))',
+        'CHECK(status IN (\'pending\', \'received\', \'cancelled\'))',
+        'CHECK(status <> \'received\' OR(received_on IS NOT NULL AND accounting_period_id IS NOT NULL AND amount_centavos IS NOT NULL))',
+        'CHECK(amount_centavos IS NOT NULL OR recurrence_template_id IS NOT NULL)',
+        'CHECK(status <> \'pending\' OR(received_on IS NULL AND accounting_period_id IS NULL))',
+        'CHECK(subcategory_id IS NULL OR category_id IS NOT NULL)',
+      ],
+      columns: [
+        _column_61,
+        _column_25,
+        _column_26,
+        _column_22,
+        _column_23,
+        _column_27,
+        _column_28,
+        _column_29,
+        _column_5,
+        _column_0,
+        _column_3,
+        _column_6,
+        _column_4,
+        _column_30,
+        _column_31,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape7 expenseEntries = Shape7(
+    source: i0.VersionedTable(
+      entityName: 'expense_entries',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(owner_id, id)',
+        'FOREIGN KEY(owner_id, accounting_period_id)REFERENCES accounting_periods(owner_id, id)ON DELETE RESTRICT',
+        'FOREIGN KEY(owner_id, recurrence_template_id)REFERENCES expense_recurrence_templates(owner_id, id)ON DELETE RESTRICT',
+        'FOREIGN KEY(owner_id, category_id)REFERENCES categories(owner_id, id)ON DELETE RESTRICT',
+        'FOREIGN KEY(owner_id, category_id, subcategory_id)REFERENCES subcategories(owner_id, category_id, id)ON DELETE RESTRICT',
+        'CHECK(amount_centavos IS NULL OR(length(amount_centavos) BETWEEN 1 AND 19 AND amount_centavos NOT GLOB \'*[^0-9]*\' AND(amount_centavos = \'0\' OR substr(amount_centavos, 1, 1) BETWEEN \'1\' AND \'9\')AND(length(amount_centavos) < 19 OR amount_centavos <= \'9223372036854775807\')))',
+        'CHECK(status IN (\'pending\', \'paid\', \'cancelled\'))',
+        'CHECK(status <> \'paid\' OR paid_on IS NOT NULL)',
+        'CHECK(status <> \'pending\' OR paid_on IS NULL)',
+        'CHECK(amount_centavos IS NOT NULL OR recurrence_template_id IS NOT NULL)',
+        'CHECK(subcategory_id IS NULL OR category_id IS NOT NULL)',
+      ],
+      columns: [
+        _column_61,
+        _column_25,
+        _column_26,
+        _column_22,
+        _column_23,
+        _column_27,
+        _column_28,
+        _column_29,
+        _column_5,
+        _column_0,
+        _column_3,
+        _column_6,
+        _column_4,
+        _column_32,
+        _column_33,
+        _column_34,
+        _column_35,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape8 investmentAllocations = Shape8(
+    source: i0.VersionedTable(
+      entityName: 'investment_allocations',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: [
+        'PRIMARY KEY(owner_id, id)',
+        'CHECK(amount_centavos IS NULL OR(length(amount_centavos) BETWEEN 1 AND 19 AND amount_centavos NOT GLOB \'*[^0-9]*\' AND(amount_centavos = \'0\' OR substr(amount_centavos, 1, 1) BETWEEN \'1\' AND \'9\')AND(length(amount_centavos) < 19 OR amount_centavos <= \'9223372036854775807\')))',
+        'FOREIGN KEY(owner_id, accounting_period_id)REFERENCES accounting_periods(owner_id, id)ON DELETE RESTRICT',
+      ],
+      columns: [
+        _column_5,
+        _column_0,
+        _column_3,
+        _column_6,
+        _column_4,
+        _column_36,
+        _column_37,
+        _column_32,
+        _column_38,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape9 auditEvents = Shape9(
+    source: i0.VersionedTable(
+      entityName: 'audit_events',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(owner_id, id)'],
+      columns: [
+        _column_5,
+        _column_0,
+        _column_3,
+        _column_6,
+        _column_4,
+        _column_39,
+        _column_40,
+        _column_41,
+        _column_42,
+        _column_43,
+        _column_44,
+        _column_45,
+        _column_46,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape10 appliedSyncOperations = Shape10(
+    source: i0.VersionedTable(
+      entityName: 'applied_sync_operations',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(owner_id, idempotency_key)'],
+      columns: [_column_0, _column_47, _column_48, _column_49, _column_50],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape11 syncConflicts = Shape11(
+    source: i0.VersionedTable(
+      entityName: 'sync_conflicts',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(owner_id, id)'],
+      columns: [
+        _column_5,
+        _column_0,
+        _column_3,
+        _column_6,
+        _column_4,
+        _column_39,
+        _column_40,
+        _column_51,
+        _column_52,
+        _column_53,
+        _column_54,
+        _column_55,
+        _column_56,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape12 syncOutbox = Shape12(
+    source: i0.VersionedTable(
+      entityName: 'sync_outbox',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(owner_id, idempotency_key)'],
+      columns: [
+        _column_0,
+        _column_47,
+        _column_39,
+        _column_40,
+        _column_51,
+        _column_57,
+        _column_55,
+        _column_58,
+        _column_59,
+        _column_60,
+      ],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  late final Shape14 syncCursors = Shape14(
+    source: i0.VersionedTable(
+      entityName: 'sync_cursors',
+      withoutRowId: false,
+      isStrict: false,
+      tableConstraints: ['PRIMARY KEY(owner_id, source_table)'],
+      columns: [_column_0, _column_62, _column_63, _column_64],
+      attachedDatabase: database,
+    ),
+    alias: null,
+  );
+  final i1.Index uniqueIncomeOccurrenceSchedule = i1.Index(
+    'unique_income_occurrence_schedule',
+    'CREATE UNIQUE INDEX unique_income_occurrence_schedule ON income_entries (owner_id, recurrence_template_id, scheduled_for_date) WHERE recurrence_template_id IS NOT NULL',
+  );
+  final i1.Index incomeEntriesPeriodIdx = i1.Index(
+    'income_entries_period_idx',
+    'CREATE INDEX income_entries_period_idx ON income_entries (owner_id, accounting_period_id)',
+  );
+  final i1.Index uniqueExpenseOccurrenceSchedule = i1.Index(
+    'unique_expense_occurrence_schedule',
+    'CREATE UNIQUE INDEX unique_expense_occurrence_schedule ON expense_entries (owner_id, recurrence_template_id, scheduled_for_date) WHERE recurrence_template_id IS NOT NULL',
+  );
+  final i1.Index expenseEntriesPeriodIdx = i1.Index(
+    'expense_entries_period_idx',
+    'CREATE INDEX expense_entries_period_idx ON expense_entries (owner_id, accounting_period_id)',
+  );
+  final i1.Index investmentAllocationsPeriodIdx = i1.Index(
+    'investment_allocations_period_idx',
+    'CREATE INDEX investment_allocations_period_idx ON investment_allocations (owner_id, accounting_period_id)',
+  );
+  final i1.Index syncOutboxStateIdx = i1.Index(
+    'sync_outbox_state_idx',
+    'CREATE INDEX sync_outbox_state_idx ON sync_outbox (owner_id, state)',
+  );
+}
+
+class Shape13 extends i0.VersionedTable {
+  Shape13({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get description =>
+      columnsByName['description']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get frequency =>
+      columnsByName['frequency']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get startsOn =>
+      columnsByName['starts_on']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get monthlyReferenceDay =>
+      columnsByName['monthly_reference_day']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get valueMode =>
+      columnsByName['value_mode']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get defaultAmountCentavos =>
+      columnsByName['default_amount_centavos']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get categoryId =>
+      columnsByName['category_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get subcategoryId =>
+      columnsByName['subcategory_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get isActive =>
+      columnsByName['is_active']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get id =>
+      columnsByName['id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get ownerId =>
+      columnsByName['owner_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<int> get version =>
+      columnsByName['version']! as i1.GeneratedColumn<int>;
+  i1.GeneratedColumn<String> get createdAt =>
+      columnsByName['created_at']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get updatedAt =>
+      columnsByName['updated_at']! as i1.GeneratedColumn<String>;
+}
+
+i1.GeneratedColumn<String> _column_61(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'description',
+      aliasedName,
+      true,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NULL',
+    );
+
+class Shape14 extends i0.VersionedTable {
+  Shape14({required super.source, required super.alias}) : super.aliased();
+  i1.GeneratedColumn<String> get ownerId =>
+      columnsByName['owner_id']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get sourceTable =>
+      columnsByName['source_table']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get lastOrderValue =>
+      columnsByName['last_order_value']! as i1.GeneratedColumn<String>;
+  i1.GeneratedColumn<String> get lastId =>
+      columnsByName['last_id']! as i1.GeneratedColumn<String>;
+}
+
+i1.GeneratedColumn<String> _column_62(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'source_table',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NOT NULL',
+    );
+i1.GeneratedColumn<String> _column_63(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'last_order_value',
+      aliasedName,
+      false,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NOT NULL',
+    );
+i1.GeneratedColumn<String> _column_64(String aliasedName) =>
+    i1.GeneratedColumn<String>(
+      'last_id',
+      aliasedName,
+      true,
+      type: i1.DriftSqlType.string,
+      $customConstraints: 'NULL',
+    );
 i0.MigrationStepWithVersion migrationSteps({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
+  required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
 }) {
   return (currentVersion, database) async {
     switch (currentVersion) {
@@ -1251,6 +1760,11 @@ i0.MigrationStepWithVersion migrationSteps({
         final migrator = i1.Migrator(database, schema);
         await from1To2(migrator, schema);
         return 2;
+      case 2:
+        final schema = Schema3(database: database);
+        final migrator = i1.Migrator(database, schema);
+        await from2To3(migrator, schema);
+        return 3;
       default:
         throw ArgumentError.value('Unknown migration from $currentVersion');
     }
@@ -1259,6 +1773,7 @@ i0.MigrationStepWithVersion migrationSteps({
 
 i1.OnUpgrade stepByStep({
   required Future<void> Function(i1.Migrator m, Schema2 schema) from1To2,
+  required Future<void> Function(i1.Migrator m, Schema3 schema) from2To3,
 }) => i0.VersionedSchema.stepByStepHelper(
-  step: migrationSteps(from1To2: from1To2),
+  step: migrationSteps(from1To2: from1To2, from2To3: from2To3),
 );

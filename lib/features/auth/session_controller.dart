@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'auth_models.dart';
 import 'auth_repository.dart';
+import 'local_owner_binder.dart';
 
 /// Conta operações locais ainda não confirmadas pelo servidor.
 abstract interface class PendingSyncCounter {
@@ -32,11 +33,15 @@ class SessionController {
     this._pending, {
     Future<void> Function(String ownerId)? onSignedOut,
     Future<void> Function(String ownerId)? flushPending,
+    LocalOwnerBinder? binder,
   }) : _onSignedOut = onSignedOut,
-       _flushPending = flushPending;
+       _flushPending = flushPending,
+       _binder = binder;
 
   final AuthRepository _auth;
   final PendingSyncCounter _pending;
+  final LocalOwnerBinder? _binder;
+  int _blockedPending = 0;
   final Future<void> Function(String ownerId)? _onSignedOut;
 
   /// Tenta enviar a fila antes de recusar o logout. Falhas são ignoradas: o
@@ -54,7 +59,7 @@ class SessionController {
 
   /// Restaura a sessão e passa a acompanhar mudanças. Chamar uma vez.
   Future<void> start() async {
-    _subscription = _auth.userChanges.listen(_setUser);
+    _subscription = _auth.userChanges.listen((u) => unawaited(_setUser(u)));
     _recoverySubscription = _auth.passwordRecovery.listen((_) {
       final current = _state;
       if (current is SessionSignedIn) {
@@ -63,7 +68,7 @@ class SessionController {
         _recoveryPending = true;
       }
     });
-    _setUser(await _auth.restoreSession());
+    await _setUser(await _auth.restoreSession());
   }
 
   Future<void> signInWithEmail(String email, String password) async =>
@@ -97,7 +102,7 @@ class SessionController {
     }
     await _auth.signOut();
     await _onSignedOut?.call(user.id);
-    _setUser(null);
+    await _setUser(null);
     return const LogoutDone();
   }
 
@@ -117,11 +122,31 @@ class SessionController {
     }
   }
 
-  void _setUser(AuthUser? user) {
+  Future<void> _setUser(AuthUser? user) async {
     if (user == null) {
       _recoveryPending = false;
-      _emit(const SessionSignedOut());
-    } else if (_state is SessionPasswordRecovery) {
+      _emit(SessionSignedOut(blockedPendingCount: _blockedPending));
+      return;
+    }
+    final binder = _binder;
+    if (binder != null) {
+      final result = await binder.bind(user.id);
+      if (result is LocalBlockedByPending) {
+        // Outra conta com pendências neste aparelho: não entra, nada é
+        // apagado, e a sessão remota recém-aberta é encerrada.
+        _blockedPending = result.pendingCount;
+        try {
+          await _auth.signOut();
+        } on Object {
+          // Mesmo sem encerrar a sessão remota, a área logada não abre.
+        }
+        _recoveryPending = false;
+        _emit(SessionSignedOut(blockedPendingCount: _blockedPending));
+        return;
+      }
+    }
+    _blockedPending = 0;
+    if (_state is SessionPasswordRecovery) {
       // Mantém a recuperação em andamento (eventos de usuário repetidos).
     } else if (_recoveryPending) {
       _recoveryPending = false;

@@ -1,19 +1,63 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/infra_providers.dart';
+import '../app_lock/app_lock_providers.dart';
+import '../sync/sync_providers.dart';
 import 'auth_models.dart';
 import 'auth_repository.dart';
+import 'drift_pending_sync_counter.dart';
+import 'local_owner_binder.dart';
 import 'session_controller.dart';
+import 'supabase_auth_repository.dart';
 
-/// Sobrescrito em `main.dart` com o adaptador real (e nos testes, com falsos).
+/// Adaptador do Supabase Auth (nos testes, sobrescrito com falsos).
 final authRepositoryProvider = Provider<AuthRepository>(
-  (ref) => throw UnimplementedError('authRepositoryProvider não configurado'),
+  (ref) => SupabaseAuthRepository(
+    ref.watch(supabaseClientProvider).auth,
+    redirectTo: kIsWeb ? null : _mobileRedirect,
+  ),
 );
 
-/// Sobrescrito em `main.dart`. O controlador já deve ter executado `start()`.
-final sessionControllerProvider = Provider<SessionController>(
-  (ref) =>
-      throw UnimplementedError('sessionControllerProvider não configurado'),
-);
+/// Retorno do login por navegador no celular (deep link do Android).
+const _mobileRedirect = 'br.com.porquinho.porquinho://login-callback';
+
+/// Conta pendências de sincronização. Na Web não há banco local.
+final pendingSyncCounterProvider = Provider<PendingSyncCounter>((ref) {
+  final manager = ref.watch(localDatabaseManagerProvider);
+  return manager == null
+      ? const _NoLocalData()
+      : ManagedPendingSyncCounter(manager);
+});
+
+class _NoLocalData implements PendingSyncCounter {
+  const _NoLocalData();
+
+  @override
+  Future<int> countPending(String ownerId) async => 0;
+}
+
+/// Controlador da sessão. Quem o cria deve chamar `start()` antes de exibir o
+/// app (ver `main.dart`); nos testes é sobrescrito.
+final sessionControllerProvider = Provider<SessionController>((ref) {
+  final manager = ref.watch(localDatabaseManagerProvider);
+  final lock = ref.watch(appLockControllerProvider);
+  final controller = SessionController(
+    ref.watch(authRepositoryProvider),
+    ref.watch(pendingSyncCounterProvider),
+    flushPending: ref.watch(syncNowProvider),
+    binder: manager == null ? null : ManagedLocalOwnerBinder(manager),
+    // Logout só chega aqui sem pendências: apaga banco, chave e PIN locais.
+    onSignedOut: manager == null
+        ? null
+        : (_) async {
+            await manager.closeAndWipe();
+            await lock.clear();
+          },
+  );
+  ref.onDispose(controller.dispose);
+  return controller;
+});
 
 /// Estado da sessão para a interface e para o roteamento.
 final sessionStateProvider = StreamProvider<SessionState>((ref) async* {

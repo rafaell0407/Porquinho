@@ -38,7 +38,12 @@ class SessionUnknown extends SessionState {
 }
 
 class SessionSignedOut extends SessionState {
-  const SessionSignedOut();
+  const SessionSignedOut({this.blockedPendingCount = 0});
+
+  /// Maior que zero quando a entrada foi recusada porque este aparelho ainda
+  /// guarda operações não sincronizadas de outra conta (decisão D2,
+  /// 10/11/2026).
+  final int blockedPendingCount;
 }
 
 class SessionSignedIn extends SessionState {

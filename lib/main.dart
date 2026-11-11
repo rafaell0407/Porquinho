@@ -5,37 +5,18 @@ import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app.dart';
-import 'core/local_database/flutter_secure_value_store.dart';
-import 'core/local_database/local_database_manager.dart';
-import 'core/local_database/stored_database_key_provider.dart';
-import 'features/app_lock/app_lock_controller.dart';
+import 'core/infra_providers.dart';
 import 'features/app_lock/app_lock_providers.dart';
-import 'features/app_lock/app_lock_service.dart';
-import 'features/app_lock/biometric_authenticator.dart';
 import 'features/auth/auth_models.dart';
 import 'features/auth/auth_providers.dart';
-import 'features/auth/drift_pending_sync_counter.dart';
 import 'features/auth/secure_session_storage.dart';
-import 'features/auth/session_controller.dart';
-import 'features/auth/supabase_auth_repository.dart';
-import 'features/sync/supabase_sync_gateway.dart';
-import 'features/sync/sync_scheduler.dart';
-import 'features/sync/sync_service.dart';
+import 'core/local_database/flutter_secure_value_store.dart';
+import 'features/sync/sync_scheduler_provider.dart';
 
 /// Configuração por `--dart-define` (nada de segredo no repositório):
 /// `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY`.
 const _supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const _supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
-
-/// Retorno do login por navegador no celular (deep link do Android).
-const _mobileRedirect = 'br.com.porquinho.porquinho://login-callback';
-
-/// Web: ainda não há banco local (a chave depende da reautenticação, opção B)
-/// nem dados financeiros gravados, então não há operações pendentes.
-class _NoLocalDataYet implements PendingSyncCounter {
-  @override
-  Future<int> countPending(String ownerId) async => 0;
-}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +26,7 @@ Future<void> main() async {
   }
 
   // Web: sem persistência da sessão, o que exige novo login a cada sessão do
-  // navegador (decisão de 10/11/2026, opção B; `arquitetura.md` §17.5).
+  // navegador (`arquitetura.md` §17.5).
   await Supabase.initialize(
     url: _supabaseUrl,
     publishableKey: _supabaseKey,
@@ -56,74 +37,30 @@ Future<void> main() async {
     ),
   );
 
-  final auth = SupabaseAuthRepository(
-    Supabase.instance.client.auth,
-    redirectTo: kIsWeb ? null : _mobileRedirect,
+  // Web: sem banco local (caminho nulo) e, portanto, sem sincronização.
+  final String? databasePath = kIsWeb
+      ? null
+      : '${(await getApplicationSupportDirectory()).path}/porquinho.db';
+
+  // Todo o restante é composto pelos providers.
+  final container = ProviderContainer(
+    overrides: [databasePathProvider.overrideWithValue(databasePath)],
   );
-  // Bloqueio por PIN/biometria: só no aplicativo móvel (RF003).
-  final lock = kIsWeb
-      ? AppLockController(
-          AppLockService(InMemorySecureValueStore()),
-          const NoBiometric(),
-        )
-      : AppLockController(
-          AppLockService(FlutterSecureValueStore()),
-          LocalAuthBiometric(),
-        );
-  final SessionController session;
-  Future<void> Function(String ownerId)? syncNow;
-  if (kIsWeb) {
-    session = SessionController(auth, _NoLocalDataYet());
-  } else {
-    final support = await getApplicationSupportDirectory();
-    final manager = LocalDatabaseManager(
-      store: FlutterSecureValueStore(),
-      path: '${support.path}/porquinho.db',
-    );
-    final gateway = SupabaseSyncGateway(Supabase.instance.client);
-    syncNow = (ownerId) async => SyncService(
-      await manager.open(),
-      gateway,
-    ).syncOnce(ownerId).then((_) {});
-    session = SessionController(
-      auth,
-      ManagedPendingSyncCounter(manager),
-      flushPending: syncNow,
-      // Logout só chega aqui sem pendências: apaga banco, chave e PIN locais.
-      onSignedOut: (_) async {
-        await manager.closeAndWipe();
-        await lock.clear();
-      },
-    );
-  }
+  final session = container.read(sessionControllerProvider);
   await session.start();
-  await lock.start(signedIn: session.state is SessionSignedIn);
-  if (syncNow != null) {
-    final scheduler = SyncScheduler(session, syncNow)..start();
-    WidgetsBinding.instance.addObserver(_ResumeSync(scheduler.onResume));
-  }
+  await container
+      .read(appLockControllerProvider)
+      .start(signedIn: session.state is SessionSignedIn);
+  container.read(
+    syncSchedulerProvider,
+  ); // inicia a sincronização (celular) ou o acompanhamento da conexão (Web)
 
   runApp(
-    ProviderScope(
-      overrides: [
-        authRepositoryProvider.overrideWithValue(auth),
-        sessionControllerProvider.overrideWithValue(session),
-        appLockControllerProvider.overrideWithValue(lock),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: const PorquinhoApp(),
     ),
   );
-}
-
-/// Sincroniza ao voltar ao primeiro plano.
-class _ResumeSync with WidgetsBindingObserver {
-  _ResumeSync(this._onResume);
-  final VoidCallback _onResume;
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _onResume();
-  }
 }
 
 class _MissingConfigApp extends StatelessWidget {

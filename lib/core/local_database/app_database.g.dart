@@ -2434,6 +2434,17 @@ class $IncomeRecurrenceTemplatesTable extends IncomeRecurrenceTemplates
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $IncomeRecurrenceTemplatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _frequencyMeta = const VerificationMeta(
     'frequency',
   );
@@ -2582,6 +2593,7 @@ class $IncomeRecurrenceTemplatesTable extends IncomeRecurrenceTemplates
   );
   @override
   List<GeneratedColumn> get $columns => [
+    description,
     frequency,
     startsOn,
     monthlyReferenceDay,
@@ -2608,6 +2620,15 @@ class $IncomeRecurrenceTemplatesTable extends IncomeRecurrenceTemplates
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
     if (data.containsKey('frequency')) {
       context.handle(
         _frequencyMeta,
@@ -2709,6 +2730,10 @@ class $IncomeRecurrenceTemplatesTable extends IncomeRecurrenceTemplates
   }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return IncomeRecurrenceTemplate(
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
       frequency: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}frequency'],
@@ -2781,6 +2806,7 @@ class $IncomeRecurrenceTemplatesTable extends IncomeRecurrenceTemplates
 
 class IncomeRecurrenceTemplate extends DataClass
     implements Insertable<IncomeRecurrenceTemplate> {
+  final String? description;
   final String frequency;
   final String startsOn;
   final int? monthlyReferenceDay;
@@ -2795,6 +2821,7 @@ class IncomeRecurrenceTemplate extends DataClass
   final String createdAt;
   final String updatedAt;
   const IncomeRecurrenceTemplate({
+    this.description,
     required this.frequency,
     required this.startsOn,
     this.monthlyReferenceDay,
@@ -2812,6 +2839,9 @@ class IncomeRecurrenceTemplate extends DataClass
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
     map['frequency'] = Variable<String>(frequency);
     map['starts_on'] = Variable<String>(startsOn);
     if (!nullToAbsent || monthlyReferenceDay != null) {
@@ -2842,6 +2872,9 @@ class IncomeRecurrenceTemplate extends DataClass
 
   IncomeRecurrenceTemplatesCompanion toCompanion(bool nullToAbsent) {
     return IncomeRecurrenceTemplatesCompanion(
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
       frequency: Value(frequency),
       startsOn: Value(startsOn),
       monthlyReferenceDay: monthlyReferenceDay == null && nullToAbsent
@@ -2872,6 +2905,7 @@ class IncomeRecurrenceTemplate extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return IncomeRecurrenceTemplate(
+      description: serializer.fromJson<String?>(json['description']),
       frequency: serializer.fromJson<String>(json['frequency']),
       startsOn: serializer.fromJson<String>(json['startsOn']),
       monthlyReferenceDay: serializer.fromJson<int?>(
@@ -2895,6 +2929,7 @@ class IncomeRecurrenceTemplate extends DataClass
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'description': serializer.toJson<String?>(description),
       'frequency': serializer.toJson<String>(frequency),
       'startsOn': serializer.toJson<String>(startsOn),
       'monthlyReferenceDay': serializer.toJson<int?>(monthlyReferenceDay),
@@ -2914,6 +2949,7 @@ class IncomeRecurrenceTemplate extends DataClass
   }
 
   IncomeRecurrenceTemplate copyWith({
+    Value<String?> description = const Value.absent(),
     String? frequency,
     String? startsOn,
     Value<int?> monthlyReferenceDay = const Value.absent(),
@@ -2928,6 +2964,7 @@ class IncomeRecurrenceTemplate extends DataClass
     String? createdAt,
     String? updatedAt,
   }) => IncomeRecurrenceTemplate(
+    description: description.present ? description.value : this.description,
     frequency: frequency ?? this.frequency,
     startsOn: startsOn ?? this.startsOn,
     monthlyReferenceDay: monthlyReferenceDay.present
@@ -2952,6 +2989,9 @@ class IncomeRecurrenceTemplate extends DataClass
     IncomeRecurrenceTemplatesCompanion data,
   ) {
     return IncomeRecurrenceTemplate(
+      description: data.description.present
+          ? data.description.value
+          : this.description,
       frequency: data.frequency.present ? data.frequency.value : this.frequency,
       startsOn: data.startsOn.present ? data.startsOn.value : this.startsOn,
       monthlyReferenceDay: data.monthlyReferenceDay.present
@@ -2979,6 +3019,7 @@ class IncomeRecurrenceTemplate extends DataClass
   @override
   String toString() {
     return (StringBuffer('IncomeRecurrenceTemplate(')
+          ..write('description: $description, ')
           ..write('frequency: $frequency, ')
           ..write('startsOn: $startsOn, ')
           ..write('monthlyReferenceDay: $monthlyReferenceDay, ')
@@ -2998,6 +3039,7 @@ class IncomeRecurrenceTemplate extends DataClass
 
   @override
   int get hashCode => Object.hash(
+    description,
     frequency,
     startsOn,
     monthlyReferenceDay,
@@ -3016,6 +3058,7 @@ class IncomeRecurrenceTemplate extends DataClass
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is IncomeRecurrenceTemplate &&
+          other.description == this.description &&
           other.frequency == this.frequency &&
           other.startsOn == this.startsOn &&
           other.monthlyReferenceDay == this.monthlyReferenceDay &&
@@ -3033,6 +3076,7 @@ class IncomeRecurrenceTemplate extends DataClass
 
 class IncomeRecurrenceTemplatesCompanion
     extends UpdateCompanion<IncomeRecurrenceTemplate> {
+  final Value<String?> description;
   final Value<String> frequency;
   final Value<String> startsOn;
   final Value<int?> monthlyReferenceDay;
@@ -3048,6 +3092,7 @@ class IncomeRecurrenceTemplatesCompanion
   final Value<String> updatedAt;
   final Value<int> rowid;
   const IncomeRecurrenceTemplatesCompanion({
+    this.description = const Value.absent(),
     this.frequency = const Value.absent(),
     this.startsOn = const Value.absent(),
     this.monthlyReferenceDay = const Value.absent(),
@@ -3064,6 +3109,7 @@ class IncomeRecurrenceTemplatesCompanion
     this.rowid = const Value.absent(),
   });
   IncomeRecurrenceTemplatesCompanion.insert({
+    this.description = const Value.absent(),
     required String frequency,
     required String startsOn,
     this.monthlyReferenceDay = const Value.absent(),
@@ -3086,6 +3132,7 @@ class IncomeRecurrenceTemplatesCompanion
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
   static Insertable<IncomeRecurrenceTemplate> custom({
+    Expression<String>? description,
     Expression<String>? frequency,
     Expression<String>? startsOn,
     Expression<int>? monthlyReferenceDay,
@@ -3102,6 +3149,7 @@ class IncomeRecurrenceTemplatesCompanion
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (description != null) 'description': description,
       if (frequency != null) 'frequency': frequency,
       if (startsOn != null) 'starts_on': startsOn,
       if (monthlyReferenceDay != null)
@@ -3122,6 +3170,7 @@ class IncomeRecurrenceTemplatesCompanion
   }
 
   IncomeRecurrenceTemplatesCompanion copyWith({
+    Value<String?>? description,
     Value<String>? frequency,
     Value<String>? startsOn,
     Value<int?>? monthlyReferenceDay,
@@ -3138,6 +3187,7 @@ class IncomeRecurrenceTemplatesCompanion
     Value<int>? rowid,
   }) {
     return IncomeRecurrenceTemplatesCompanion(
+      description: description ?? this.description,
       frequency: frequency ?? this.frequency,
       startsOn: startsOn ?? this.startsOn,
       monthlyReferenceDay: monthlyReferenceDay ?? this.monthlyReferenceDay,
@@ -3159,6 +3209,9 @@ class IncomeRecurrenceTemplatesCompanion
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
     if (frequency.present) {
       map['frequency'] = Variable<String>(frequency.value);
     }
@@ -3211,6 +3264,7 @@ class IncomeRecurrenceTemplatesCompanion
   @override
   String toString() {
     return (StringBuffer('IncomeRecurrenceTemplatesCompanion(')
+          ..write('description: $description, ')
           ..write('frequency: $frequency, ')
           ..write('startsOn: $startsOn, ')
           ..write('monthlyReferenceDay: $monthlyReferenceDay, ')
@@ -3237,6 +3291,17 @@ class $ExpenseRecurrenceTemplatesTable extends ExpenseRecurrenceTemplates
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
   $ExpenseRecurrenceTemplatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _descriptionMeta = const VerificationMeta(
+    'description',
+  );
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+    'description',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _frequencyMeta = const VerificationMeta(
     'frequency',
   );
@@ -3385,6 +3450,7 @@ class $ExpenseRecurrenceTemplatesTable extends ExpenseRecurrenceTemplates
   );
   @override
   List<GeneratedColumn> get $columns => [
+    description,
     frequency,
     startsOn,
     monthlyReferenceDay,
@@ -3411,6 +3477,15 @@ class $ExpenseRecurrenceTemplatesTable extends ExpenseRecurrenceTemplates
   }) {
     final context = VerificationContext();
     final data = instance.toColumns(true);
+    if (data.containsKey('description')) {
+      context.handle(
+        _descriptionMeta,
+        description.isAcceptableOrUnknown(
+          data['description']!,
+          _descriptionMeta,
+        ),
+      );
+    }
     if (data.containsKey('frequency')) {
       context.handle(
         _frequencyMeta,
@@ -3512,6 +3587,10 @@ class $ExpenseRecurrenceTemplatesTable extends ExpenseRecurrenceTemplates
   }) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
     return ExpenseRecurrenceTemplate(
+      description: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}description'],
+      ),
       frequency: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}frequency'],
@@ -3584,6 +3663,7 @@ class $ExpenseRecurrenceTemplatesTable extends ExpenseRecurrenceTemplates
 
 class ExpenseRecurrenceTemplate extends DataClass
     implements Insertable<ExpenseRecurrenceTemplate> {
+  final String? description;
   final String frequency;
   final String startsOn;
   final int? monthlyReferenceDay;
@@ -3598,6 +3678,7 @@ class ExpenseRecurrenceTemplate extends DataClass
   final String createdAt;
   final String updatedAt;
   const ExpenseRecurrenceTemplate({
+    this.description,
     required this.frequency,
     required this.startsOn,
     this.monthlyReferenceDay,
@@ -3615,6 +3696,9 @@ class ExpenseRecurrenceTemplate extends DataClass
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
     map['frequency'] = Variable<String>(frequency);
     map['starts_on'] = Variable<String>(startsOn);
     if (!nullToAbsent || monthlyReferenceDay != null) {
@@ -3645,6 +3729,9 @@ class ExpenseRecurrenceTemplate extends DataClass
 
   ExpenseRecurrenceTemplatesCompanion toCompanion(bool nullToAbsent) {
     return ExpenseRecurrenceTemplatesCompanion(
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
       frequency: Value(frequency),
       startsOn: Value(startsOn),
       monthlyReferenceDay: monthlyReferenceDay == null && nullToAbsent
@@ -3675,6 +3762,7 @@ class ExpenseRecurrenceTemplate extends DataClass
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ExpenseRecurrenceTemplate(
+      description: serializer.fromJson<String?>(json['description']),
       frequency: serializer.fromJson<String>(json['frequency']),
       startsOn: serializer.fromJson<String>(json['startsOn']),
       monthlyReferenceDay: serializer.fromJson<int?>(
@@ -3698,6 +3786,7 @@ class ExpenseRecurrenceTemplate extends DataClass
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
+      'description': serializer.toJson<String?>(description),
       'frequency': serializer.toJson<String>(frequency),
       'startsOn': serializer.toJson<String>(startsOn),
       'monthlyReferenceDay': serializer.toJson<int?>(monthlyReferenceDay),
@@ -3717,6 +3806,7 @@ class ExpenseRecurrenceTemplate extends DataClass
   }
 
   ExpenseRecurrenceTemplate copyWith({
+    Value<String?> description = const Value.absent(),
     String? frequency,
     String? startsOn,
     Value<int?> monthlyReferenceDay = const Value.absent(),
@@ -3731,6 +3821,7 @@ class ExpenseRecurrenceTemplate extends DataClass
     String? createdAt,
     String? updatedAt,
   }) => ExpenseRecurrenceTemplate(
+    description: description.present ? description.value : this.description,
     frequency: frequency ?? this.frequency,
     startsOn: startsOn ?? this.startsOn,
     monthlyReferenceDay: monthlyReferenceDay.present
@@ -3755,6 +3846,9 @@ class ExpenseRecurrenceTemplate extends DataClass
     ExpenseRecurrenceTemplatesCompanion data,
   ) {
     return ExpenseRecurrenceTemplate(
+      description: data.description.present
+          ? data.description.value
+          : this.description,
       frequency: data.frequency.present ? data.frequency.value : this.frequency,
       startsOn: data.startsOn.present ? data.startsOn.value : this.startsOn,
       monthlyReferenceDay: data.monthlyReferenceDay.present
@@ -3782,6 +3876,7 @@ class ExpenseRecurrenceTemplate extends DataClass
   @override
   String toString() {
     return (StringBuffer('ExpenseRecurrenceTemplate(')
+          ..write('description: $description, ')
           ..write('frequency: $frequency, ')
           ..write('startsOn: $startsOn, ')
           ..write('monthlyReferenceDay: $monthlyReferenceDay, ')
@@ -3801,6 +3896,7 @@ class ExpenseRecurrenceTemplate extends DataClass
 
   @override
   int get hashCode => Object.hash(
+    description,
     frequency,
     startsOn,
     monthlyReferenceDay,
@@ -3819,6 +3915,7 @@ class ExpenseRecurrenceTemplate extends DataClass
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ExpenseRecurrenceTemplate &&
+          other.description == this.description &&
           other.frequency == this.frequency &&
           other.startsOn == this.startsOn &&
           other.monthlyReferenceDay == this.monthlyReferenceDay &&
@@ -3836,6 +3933,7 @@ class ExpenseRecurrenceTemplate extends DataClass
 
 class ExpenseRecurrenceTemplatesCompanion
     extends UpdateCompanion<ExpenseRecurrenceTemplate> {
+  final Value<String?> description;
   final Value<String> frequency;
   final Value<String> startsOn;
   final Value<int?> monthlyReferenceDay;
@@ -3851,6 +3949,7 @@ class ExpenseRecurrenceTemplatesCompanion
   final Value<String> updatedAt;
   final Value<int> rowid;
   const ExpenseRecurrenceTemplatesCompanion({
+    this.description = const Value.absent(),
     this.frequency = const Value.absent(),
     this.startsOn = const Value.absent(),
     this.monthlyReferenceDay = const Value.absent(),
@@ -3867,6 +3966,7 @@ class ExpenseRecurrenceTemplatesCompanion
     this.rowid = const Value.absent(),
   });
   ExpenseRecurrenceTemplatesCompanion.insert({
+    this.description = const Value.absent(),
     required String frequency,
     required String startsOn,
     this.monthlyReferenceDay = const Value.absent(),
@@ -3889,6 +3989,7 @@ class ExpenseRecurrenceTemplatesCompanion
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt);
   static Insertable<ExpenseRecurrenceTemplate> custom({
+    Expression<String>? description,
     Expression<String>? frequency,
     Expression<String>? startsOn,
     Expression<int>? monthlyReferenceDay,
@@ -3905,6 +4006,7 @@ class ExpenseRecurrenceTemplatesCompanion
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
+      if (description != null) 'description': description,
       if (frequency != null) 'frequency': frequency,
       if (startsOn != null) 'starts_on': startsOn,
       if (monthlyReferenceDay != null)
@@ -3925,6 +4027,7 @@ class ExpenseRecurrenceTemplatesCompanion
   }
 
   ExpenseRecurrenceTemplatesCompanion copyWith({
+    Value<String?>? description,
     Value<String>? frequency,
     Value<String>? startsOn,
     Value<int?>? monthlyReferenceDay,
@@ -3941,6 +4044,7 @@ class ExpenseRecurrenceTemplatesCompanion
     Value<int>? rowid,
   }) {
     return ExpenseRecurrenceTemplatesCompanion(
+      description: description ?? this.description,
       frequency: frequency ?? this.frequency,
       startsOn: startsOn ?? this.startsOn,
       monthlyReferenceDay: monthlyReferenceDay ?? this.monthlyReferenceDay,
@@ -3962,6 +4066,9 @@ class ExpenseRecurrenceTemplatesCompanion
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
     if (frequency.present) {
       map['frequency'] = Variable<String>(frequency.value);
     }
@@ -4014,6 +4121,7 @@ class ExpenseRecurrenceTemplatesCompanion
   @override
   String toString() {
     return (StringBuffer('ExpenseRecurrenceTemplatesCompanion(')
+          ..write('description: $description, ')
           ..write('frequency: $frequency, ')
           ..write('startsOn: $startsOn, ')
           ..write('monthlyReferenceDay: $monthlyReferenceDay, ')
@@ -4046,9 +4154,9 @@ class $IncomeEntriesTable extends IncomeEntries
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
     'description',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   @override
   late final GeneratedColumnWithTypeConverter<BigInt?, String> amountCentavos =
@@ -4238,8 +4346,6 @@ class $IncomeEntriesTable extends IncomeEntries
           _descriptionMeta,
         ),
       );
-    } else if (isInserting) {
-      context.missing(_descriptionMeta);
     }
     if (data.containsKey('status')) {
       context.handle(
@@ -4353,7 +4459,7 @@ class $IncomeEntriesTable extends IncomeEntries
       description: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}description'],
-      )!,
+      ),
       amountCentavos: $IncomeEntriesTable.$converteramountCentavosn.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -4427,7 +4533,7 @@ class $IncomeEntriesTable extends IncomeEntries
 }
 
 class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
-  final String description;
+  final String? description;
   final BigInt? amountCentavos;
   final String status;
   final String? categoryId;
@@ -4443,7 +4549,7 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
   final String? receivedOn;
   final String? accountingPeriodId;
   const IncomeEntry({
-    required this.description,
+    this.description,
     this.amountCentavos,
     required this.status,
     this.categoryId,
@@ -4462,7 +4568,9 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['description'] = Variable<String>(description);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
     if (!nullToAbsent || amountCentavos != null) {
       map['amount_centavos'] = Variable<String>(
         $IncomeEntriesTable.$converteramountCentavosn.toSql(amountCentavos),
@@ -4500,7 +4608,9 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
 
   IncomeEntriesCompanion toCompanion(bool nullToAbsent) {
     return IncomeEntriesCompanion(
-      description: Value(description),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
       amountCentavos: amountCentavos == null && nullToAbsent
           ? const Value.absent()
           : Value(amountCentavos),
@@ -4540,7 +4650,7 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return IncomeEntry(
-      description: serializer.fromJson<String>(json['description']),
+      description: serializer.fromJson<String?>(json['description']),
       amountCentavos: serializer.fromJson<BigInt?>(json['amountCentavos']),
       status: serializer.fromJson<String>(json['status']),
       categoryId: serializer.fromJson<String?>(json['categoryId']),
@@ -4567,7 +4677,7 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'description': serializer.toJson<String>(description),
+      'description': serializer.toJson<String?>(description),
       'amountCentavos': serializer.toJson<BigInt?>(amountCentavos),
       'status': serializer.toJson<String>(status),
       'categoryId': serializer.toJson<String?>(categoryId),
@@ -4586,7 +4696,7 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
   }
 
   IncomeEntry copyWith({
-    String? description,
+    Value<String?> description = const Value.absent(),
     Value<BigInt?> amountCentavos = const Value.absent(),
     String? status,
     Value<String?> categoryId = const Value.absent(),
@@ -4602,7 +4712,7 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
     Value<String?> receivedOn = const Value.absent(),
     Value<String?> accountingPeriodId = const Value.absent(),
   }) => IncomeEntry(
-    description: description ?? this.description,
+    description: description.present ? description.value : this.description,
     amountCentavos: amountCentavos.present
         ? amountCentavos.value
         : this.amountCentavos,
@@ -4730,7 +4840,7 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
 }
 
 class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
-  final Value<String> description;
+  final Value<String?> description;
   final Value<BigInt?> amountCentavos;
   final Value<String> status;
   final Value<String?> categoryId;
@@ -4765,7 +4875,7 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
     this.rowid = const Value.absent(),
   });
   IncomeEntriesCompanion.insert({
-    required String description,
+    this.description = const Value.absent(),
     this.amountCentavos = const Value.absent(),
     required String status,
     this.categoryId = const Value.absent(),
@@ -4781,8 +4891,7 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
     this.receivedOn = const Value.absent(),
     this.accountingPeriodId = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : description = Value(description),
-       status = Value(status),
+  }) : status = Value(status),
        id = Value(id),
        ownerId = Value(ownerId),
        createdAt = Value(createdAt),
@@ -4828,7 +4937,7 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
   }
 
   IncomeEntriesCompanion copyWith({
-    Value<String>? description,
+    Value<String?>? description,
     Value<BigInt?>? amountCentavos,
     Value<String>? status,
     Value<String?>? categoryId,
@@ -4962,9 +5071,9 @@ class $ExpenseEntriesTable extends ExpenseEntries
   late final GeneratedColumn<String> description = GeneratedColumn<String>(
     'description',
     aliasedName,
-    false,
+    true,
     type: DriftSqlType.string,
-    requiredDuringInsert: true,
+    requiredDuringInsert: false,
   );
   @override
   late final GeneratedColumnWithTypeConverter<BigInt?, String> amountCentavos =
@@ -5174,8 +5283,6 @@ class $ExpenseEntriesTable extends ExpenseEntries
           _descriptionMeta,
         ),
       );
-    } else if (isInserting) {
-      context.missing(_descriptionMeta);
     }
     if (data.containsKey('status')) {
       context.handle(
@@ -5308,7 +5415,7 @@ class $ExpenseEntriesTable extends ExpenseEntries
       description: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}description'],
-      )!,
+      ),
       amountCentavos: $ExpenseEntriesTable.$converteramountCentavosn.fromSql(
         attachedDatabase.typeMapping.read(
           DriftSqlType.string,
@@ -5390,7 +5497,7 @@ class $ExpenseEntriesTable extends ExpenseEntries
 }
 
 class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
-  final String description;
+  final String? description;
   final BigInt? amountCentavos;
   final String status;
   final String? categoryId;
@@ -5408,7 +5515,7 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
   final String? dueOn;
   final String? paidOn;
   const ExpenseEntry({
-    required this.description,
+    this.description,
     this.amountCentavos,
     required this.status,
     this.categoryId,
@@ -5429,7 +5536,9 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
-    map['description'] = Variable<String>(description);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
     if (!nullToAbsent || amountCentavos != null) {
       map['amount_centavos'] = Variable<String>(
         $ExpenseEntriesTable.$converteramountCentavosn.toSql(amountCentavos),
@@ -5469,7 +5578,9 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
 
   ExpenseEntriesCompanion toCompanion(bool nullToAbsent) {
     return ExpenseEntriesCompanion(
-      description: Value(description),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
       amountCentavos: amountCentavos == null && nullToAbsent
           ? const Value.absent()
           : Value(amountCentavos),
@@ -5511,7 +5622,7 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ExpenseEntry(
-      description: serializer.fromJson<String>(json['description']),
+      description: serializer.fromJson<String?>(json['description']),
       amountCentavos: serializer.fromJson<BigInt?>(json['amountCentavos']),
       status: serializer.fromJson<String>(json['status']),
       categoryId: serializer.fromJson<String?>(json['categoryId']),
@@ -5540,7 +5651,7 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
   Map<String, dynamic> toJson({ValueSerializer? serializer}) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
-      'description': serializer.toJson<String>(description),
+      'description': serializer.toJson<String?>(description),
       'amountCentavos': serializer.toJson<BigInt?>(amountCentavos),
       'status': serializer.toJson<String>(status),
       'categoryId': serializer.toJson<String?>(categoryId),
@@ -5561,7 +5672,7 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
   }
 
   ExpenseEntry copyWith({
-    String? description,
+    Value<String?> description = const Value.absent(),
     Value<BigInt?> amountCentavos = const Value.absent(),
     String? status,
     Value<String?> categoryId = const Value.absent(),
@@ -5579,7 +5690,7 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
     Value<String?> dueOn = const Value.absent(),
     Value<String?> paidOn = const Value.absent(),
   }) => ExpenseEntry(
-    description: description ?? this.description,
+    description: description.present ? description.value : this.description,
     amountCentavos: amountCentavos.present
         ? amountCentavos.value
         : this.amountCentavos,
@@ -5715,7 +5826,7 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
 }
 
 class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
-  final Value<String> description;
+  final Value<String?> description;
   final Value<BigInt?> amountCentavos;
   final Value<String> status;
   final Value<String?> categoryId;
@@ -5754,7 +5865,7 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
     this.rowid = const Value.absent(),
   });
   ExpenseEntriesCompanion.insert({
-    required String description,
+    this.description = const Value.absent(),
     this.amountCentavos = const Value.absent(),
     required String status,
     this.categoryId = const Value.absent(),
@@ -5772,8 +5883,7 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
     this.dueOn = const Value.absent(),
     this.paidOn = const Value.absent(),
     this.rowid = const Value.absent(),
-  }) : description = Value(description),
-       status = Value(status),
+  }) : status = Value(status),
        id = Value(id),
        ownerId = Value(ownerId),
        createdAt = Value(createdAt),
@@ -5825,7 +5935,7 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
   }
 
   ExpenseEntriesCompanion copyWith({
-    Value<String>? description,
+    Value<String?>? description,
     Value<BigInt?>? amountCentavos,
     Value<String>? status,
     Value<String?>? categoryId,
@@ -9120,6 +9230,335 @@ class SyncOutboxCompanion extends UpdateCompanion<SyncOutboxData> {
   }
 }
 
+class $SyncCursorsTable extends SyncCursors
+    with TableInfo<$SyncCursorsTable, SyncCursor> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncCursorsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _sourceTableMeta = const VerificationMeta(
+    'sourceTable',
+  );
+  @override
+  late final GeneratedColumn<String> sourceTable = GeneratedColumn<String>(
+    'source_table',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastOrderValueMeta = const VerificationMeta(
+    'lastOrderValue',
+  );
+  @override
+  late final GeneratedColumn<String> lastOrderValue = GeneratedColumn<String>(
+    'last_order_value',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _lastIdMeta = const VerificationMeta('lastId');
+  @override
+  late final GeneratedColumn<String> lastId = GeneratedColumn<String>(
+    'last_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    ownerId,
+    sourceTable,
+    lastOrderValue,
+    lastId,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_cursors';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncCursor> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('source_table')) {
+      context.handle(
+        _sourceTableMeta,
+        sourceTable.isAcceptableOrUnknown(
+          data['source_table']!,
+          _sourceTableMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_sourceTableMeta);
+    }
+    if (data.containsKey('last_order_value')) {
+      context.handle(
+        _lastOrderValueMeta,
+        lastOrderValue.isAcceptableOrUnknown(
+          data['last_order_value']!,
+          _lastOrderValueMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_lastOrderValueMeta);
+    }
+    if (data.containsKey('last_id')) {
+      context.handle(
+        _lastIdMeta,
+        lastId.isAcceptableOrUnknown(data['last_id']!, _lastIdMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ownerId, sourceTable};
+  @override
+  SyncCursor map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncCursor(
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      sourceTable: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}source_table'],
+      )!,
+      lastOrderValue: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_order_value'],
+      )!,
+      lastId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_id'],
+      ),
+    );
+  }
+
+  @override
+  $SyncCursorsTable createAlias(String alias) {
+    return $SyncCursorsTable(attachedDatabase, alias);
+  }
+}
+
+class SyncCursor extends DataClass implements Insertable<SyncCursor> {
+  final String ownerId;
+  final String sourceTable;
+  final String lastOrderValue;
+  final String? lastId;
+  const SyncCursor({
+    required this.ownerId,
+    required this.sourceTable,
+    required this.lastOrderValue,
+    this.lastId,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['owner_id'] = Variable<String>(ownerId);
+    map['source_table'] = Variable<String>(sourceTable);
+    map['last_order_value'] = Variable<String>(lastOrderValue);
+    if (!nullToAbsent || lastId != null) {
+      map['last_id'] = Variable<String>(lastId);
+    }
+    return map;
+  }
+
+  SyncCursorsCompanion toCompanion(bool nullToAbsent) {
+    return SyncCursorsCompanion(
+      ownerId: Value(ownerId),
+      sourceTable: Value(sourceTable),
+      lastOrderValue: Value(lastOrderValue),
+      lastId: lastId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastId),
+    );
+  }
+
+  factory SyncCursor.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncCursor(
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      sourceTable: serializer.fromJson<String>(json['sourceTable']),
+      lastOrderValue: serializer.fromJson<String>(json['lastOrderValue']),
+      lastId: serializer.fromJson<String?>(json['lastId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ownerId': serializer.toJson<String>(ownerId),
+      'sourceTable': serializer.toJson<String>(sourceTable),
+      'lastOrderValue': serializer.toJson<String>(lastOrderValue),
+      'lastId': serializer.toJson<String?>(lastId),
+    };
+  }
+
+  SyncCursor copyWith({
+    String? ownerId,
+    String? sourceTable,
+    String? lastOrderValue,
+    Value<String?> lastId = const Value.absent(),
+  }) => SyncCursor(
+    ownerId: ownerId ?? this.ownerId,
+    sourceTable: sourceTable ?? this.sourceTable,
+    lastOrderValue: lastOrderValue ?? this.lastOrderValue,
+    lastId: lastId.present ? lastId.value : this.lastId,
+  );
+  SyncCursor copyWithCompanion(SyncCursorsCompanion data) {
+    return SyncCursor(
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      sourceTable: data.sourceTable.present
+          ? data.sourceTable.value
+          : this.sourceTable,
+      lastOrderValue: data.lastOrderValue.present
+          ? data.lastOrderValue.value
+          : this.lastOrderValue,
+      lastId: data.lastId.present ? data.lastId.value : this.lastId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncCursor(')
+          ..write('ownerId: $ownerId, ')
+          ..write('sourceTable: $sourceTable, ')
+          ..write('lastOrderValue: $lastOrderValue, ')
+          ..write('lastId: $lastId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(ownerId, sourceTable, lastOrderValue, lastId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncCursor &&
+          other.ownerId == this.ownerId &&
+          other.sourceTable == this.sourceTable &&
+          other.lastOrderValue == this.lastOrderValue &&
+          other.lastId == this.lastId);
+}
+
+class SyncCursorsCompanion extends UpdateCompanion<SyncCursor> {
+  final Value<String> ownerId;
+  final Value<String> sourceTable;
+  final Value<String> lastOrderValue;
+  final Value<String?> lastId;
+  final Value<int> rowid;
+  const SyncCursorsCompanion({
+    this.ownerId = const Value.absent(),
+    this.sourceTable = const Value.absent(),
+    this.lastOrderValue = const Value.absent(),
+    this.lastId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncCursorsCompanion.insert({
+    required String ownerId,
+    required String sourceTable,
+    required String lastOrderValue,
+    this.lastId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : ownerId = Value(ownerId),
+       sourceTable = Value(sourceTable),
+       lastOrderValue = Value(lastOrderValue);
+  static Insertable<SyncCursor> custom({
+    Expression<String>? ownerId,
+    Expression<String>? sourceTable,
+    Expression<String>? lastOrderValue,
+    Expression<String>? lastId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ownerId != null) 'owner_id': ownerId,
+      if (sourceTable != null) 'source_table': sourceTable,
+      if (lastOrderValue != null) 'last_order_value': lastOrderValue,
+      if (lastId != null) 'last_id': lastId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncCursorsCompanion copyWith({
+    Value<String>? ownerId,
+    Value<String>? sourceTable,
+    Value<String>? lastOrderValue,
+    Value<String?>? lastId,
+    Value<int>? rowid,
+  }) {
+    return SyncCursorsCompanion(
+      ownerId: ownerId ?? this.ownerId,
+      sourceTable: sourceTable ?? this.sourceTable,
+      lastOrderValue: lastOrderValue ?? this.lastOrderValue,
+      lastId: lastId ?? this.lastId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (sourceTable.present) {
+      map['source_table'] = Variable<String>(sourceTable.value);
+    }
+    if (lastOrderValue.present) {
+      map['last_order_value'] = Variable<String>(lastOrderValue.value);
+    }
+    if (lastId.present) {
+      map['last_id'] = Variable<String>(lastId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncCursorsCompanion(')
+          ..write('ownerId: $ownerId, ')
+          ..write('sourceTable: $sourceTable, ')
+          ..write('lastOrderValue: $lastOrderValue, ')
+          ..write('lastId: $lastId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$PorquinhoDatabase extends GeneratedDatabase {
   _$PorquinhoDatabase(QueryExecutor e) : super(e);
   $PorquinhoDatabaseManager get managers => $PorquinhoDatabaseManager(this);
@@ -9145,6 +9584,7 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
       $AppliedSyncOperationsTable(this);
   late final $SyncConflictsTable syncConflicts = $SyncConflictsTable(this);
   late final $SyncOutboxTable syncOutbox = $SyncOutboxTable(this);
+  late final $SyncCursorsTable syncCursors = $SyncCursorsTable(this);
   late final Index uniqueIncomeOccurrenceSchedule = Index(
     'unique_income_occurrence_schedule',
     'CREATE UNIQUE INDEX unique_income_occurrence_schedule ON income_entries (owner_id, recurrence_template_id, scheduled_for_date) WHERE recurrence_template_id IS NOT NULL',
@@ -9188,6 +9628,7 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
     appliedSyncOperations,
     syncConflicts,
     syncOutbox,
+    syncCursors,
     uniqueIncomeOccurrenceSchedule,
     incomeEntriesPeriodIdx,
     uniqueExpenseOccurrenceSchedule,
@@ -10529,6 +10970,7 @@ typedef $$SubcategoriesTableProcessedTableManager =
     >;
 typedef $$IncomeRecurrenceTemplatesTableCreateCompanionBuilder =
     IncomeRecurrenceTemplatesCompanion Function({
+      Value<String?> description,
       required String frequency,
       required String startsOn,
       Value<int?> monthlyReferenceDay,
@@ -10546,6 +10988,7 @@ typedef $$IncomeRecurrenceTemplatesTableCreateCompanionBuilder =
     });
 typedef $$IncomeRecurrenceTemplatesTableUpdateCompanionBuilder =
     IncomeRecurrenceTemplatesCompanion Function({
+      Value<String?> description,
       Value<String> frequency,
       Value<String> startsOn,
       Value<int?> monthlyReferenceDay,
@@ -10571,6 +11014,11 @@ class $$IncomeRecurrenceTemplatesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get frequency => $composableBuilder(
     column: $table.frequency,
     builder: (column) => ColumnFilters(column),
@@ -10647,6 +11095,11 @@ class $$IncomeRecurrenceTemplatesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get frequency => $composableBuilder(
     column: $table.frequency,
     builder: (column) => ColumnOrderings(column),
@@ -10722,6 +11175,11 @@ class $$IncomeRecurrenceTemplatesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get frequency =>
       $composableBuilder(column: $table.frequency, builder: (column) => column);
 
@@ -10817,6 +11275,7 @@ class $$IncomeRecurrenceTemplatesTableTableManager
               ),
           updateCompanionCallback:
               ({
+                Value<String?> description = const Value.absent(),
                 Value<String> frequency = const Value.absent(),
                 Value<String> startsOn = const Value.absent(),
                 Value<int?> monthlyReferenceDay = const Value.absent(),
@@ -10832,6 +11291,7 @@ class $$IncomeRecurrenceTemplatesTableTableManager
                 Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IncomeRecurrenceTemplatesCompanion(
+                description: description,
                 frequency: frequency,
                 startsOn: startsOn,
                 monthlyReferenceDay: monthlyReferenceDay,
@@ -10849,6 +11309,7 @@ class $$IncomeRecurrenceTemplatesTableTableManager
               ),
           createCompanionCallback:
               ({
+                Value<String?> description = const Value.absent(),
                 required String frequency,
                 required String startsOn,
                 Value<int?> monthlyReferenceDay = const Value.absent(),
@@ -10864,6 +11325,7 @@ class $$IncomeRecurrenceTemplatesTableTableManager
                 required String updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => IncomeRecurrenceTemplatesCompanion.insert(
+                description: description,
                 frequency: frequency,
                 startsOn: startsOn,
                 monthlyReferenceDay: monthlyReferenceDay,
@@ -10922,6 +11384,7 @@ typedef $$IncomeRecurrenceTemplatesTableProcessedTableManager =
     >;
 typedef $$ExpenseRecurrenceTemplatesTableCreateCompanionBuilder =
     ExpenseRecurrenceTemplatesCompanion Function({
+      Value<String?> description,
       required String frequency,
       required String startsOn,
       Value<int?> monthlyReferenceDay,
@@ -10939,6 +11402,7 @@ typedef $$ExpenseRecurrenceTemplatesTableCreateCompanionBuilder =
     });
 typedef $$ExpenseRecurrenceTemplatesTableUpdateCompanionBuilder =
     ExpenseRecurrenceTemplatesCompanion Function({
+      Value<String?> description,
       Value<String> frequency,
       Value<String> startsOn,
       Value<int?> monthlyReferenceDay,
@@ -10964,6 +11428,11 @@ class $$ExpenseRecurrenceTemplatesTableFilterComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnFilters<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnFilters(column),
+  );
+
   ColumnFilters<String> get frequency => $composableBuilder(
     column: $table.frequency,
     builder: (column) => ColumnFilters(column),
@@ -11040,6 +11509,11 @@ class $$ExpenseRecurrenceTemplatesTableOrderingComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  ColumnOrderings<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get frequency => $composableBuilder(
     column: $table.frequency,
     builder: (column) => ColumnOrderings(column),
@@ -11115,6 +11589,11 @@ class $$ExpenseRecurrenceTemplatesTableAnnotationComposer
     super.$addJoinBuilderToRootComposer,
     super.$removeJoinBuilderFromRootComposer,
   });
+  GeneratedColumn<String> get description => $composableBuilder(
+    column: $table.description,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get frequency =>
       $composableBuilder(column: $table.frequency, builder: (column) => column);
 
@@ -11210,6 +11689,7 @@ class $$ExpenseRecurrenceTemplatesTableTableManager
               ),
           updateCompanionCallback:
               ({
+                Value<String?> description = const Value.absent(),
                 Value<String> frequency = const Value.absent(),
                 Value<String> startsOn = const Value.absent(),
                 Value<int?> monthlyReferenceDay = const Value.absent(),
@@ -11225,6 +11705,7 @@ class $$ExpenseRecurrenceTemplatesTableTableManager
                 Value<String> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => ExpenseRecurrenceTemplatesCompanion(
+                description: description,
                 frequency: frequency,
                 startsOn: startsOn,
                 monthlyReferenceDay: monthlyReferenceDay,
@@ -11242,6 +11723,7 @@ class $$ExpenseRecurrenceTemplatesTableTableManager
               ),
           createCompanionCallback:
               ({
+                Value<String?> description = const Value.absent(),
                 required String frequency,
                 required String startsOn,
                 Value<int?> monthlyReferenceDay = const Value.absent(),
@@ -11257,6 +11739,7 @@ class $$ExpenseRecurrenceTemplatesTableTableManager
                 required String updatedAt,
                 Value<int> rowid = const Value.absent(),
               }) => ExpenseRecurrenceTemplatesCompanion.insert(
+                description: description,
                 frequency: frequency,
                 startsOn: startsOn,
                 monthlyReferenceDay: monthlyReferenceDay,
@@ -11315,7 +11798,7 @@ typedef $$ExpenseRecurrenceTemplatesTableProcessedTableManager =
     >;
 typedef $$IncomeEntriesTableCreateCompanionBuilder =
     IncomeEntriesCompanion Function({
-      required String description,
+      Value<String?> description,
       Value<BigInt?> amountCentavos,
       required String status,
       Value<String?> categoryId,
@@ -11334,7 +11817,7 @@ typedef $$IncomeEntriesTableCreateCompanionBuilder =
     });
 typedef $$IncomeEntriesTableUpdateCompanionBuilder =
     IncomeEntriesCompanion Function({
-      Value<String> description,
+      Value<String?> description,
       Value<BigInt?> amountCentavos,
       Value<String> status,
       Value<String?> categoryId,
@@ -11634,7 +12117,7 @@ class $$IncomeEntriesTableTableManager
               $$IncomeEntriesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<String> description = const Value.absent(),
+                Value<String?> description = const Value.absent(),
                 Value<BigInt?> amountCentavos = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String?> categoryId = const Value.absent(),
@@ -11670,7 +12153,7 @@ class $$IncomeEntriesTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String description,
+                Value<String?> description = const Value.absent(),
                 Value<BigInt?> amountCentavos = const Value.absent(),
                 required String status,
                 Value<String?> categoryId = const Value.absent(),
@@ -11740,7 +12223,7 @@ typedef $$IncomeEntriesTableProcessedTableManager =
     >;
 typedef $$ExpenseEntriesTableCreateCompanionBuilder =
     ExpenseEntriesCompanion Function({
-      required String description,
+      Value<String?> description,
       Value<BigInt?> amountCentavos,
       required String status,
       Value<String?> categoryId,
@@ -11761,7 +12244,7 @@ typedef $$ExpenseEntriesTableCreateCompanionBuilder =
     });
 typedef $$ExpenseEntriesTableUpdateCompanionBuilder =
     ExpenseEntriesCompanion Function({
-      Value<String> description,
+      Value<String?> description,
       Value<BigInt?> amountCentavos,
       Value<String> status,
       Value<String?> categoryId,
@@ -12089,7 +12572,7 @@ class $$ExpenseEntriesTableTableManager
               $$ExpenseEntriesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
-                Value<String> description = const Value.absent(),
+                Value<String?> description = const Value.absent(),
                 Value<BigInt?> amountCentavos = const Value.absent(),
                 Value<String> status = const Value.absent(),
                 Value<String?> categoryId = const Value.absent(),
@@ -12129,7 +12612,7 @@ class $$ExpenseEntriesTableTableManager
               ),
           createCompanionCallback:
               ({
-                required String description,
+                Value<String?> description = const Value.absent(),
                 Value<BigInt?> amountCentavos = const Value.absent(),
                 required String status,
                 Value<String?> categoryId = const Value.absent(),
@@ -13825,6 +14308,202 @@ typedef $$SyncOutboxTableProcessedTableManager =
       SyncOutboxData,
       PrefetchHooks Function()
     >;
+typedef $$SyncCursorsTableCreateCompanionBuilder =
+    SyncCursorsCompanion Function({
+      required String ownerId,
+      required String sourceTable,
+      required String lastOrderValue,
+      Value<String?> lastId,
+      Value<int> rowid,
+    });
+typedef $$SyncCursorsTableUpdateCompanionBuilder =
+    SyncCursorsCompanion Function({
+      Value<String> ownerId,
+      Value<String> sourceTable,
+      Value<String> lastOrderValue,
+      Value<String?> lastId,
+      Value<int> rowid,
+    });
+
+class $$SyncCursorsTableFilterComposer
+    extends Composer<_$PorquinhoDatabase, $SyncCursorsTable> {
+  $$SyncCursorsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get sourceTable => $composableBuilder(
+    column: $table.sourceTable,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastOrderValue => $composableBuilder(
+    column: $table.lastOrderValue,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastId => $composableBuilder(
+    column: $table.lastId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncCursorsTableOrderingComposer
+    extends Composer<_$PorquinhoDatabase, $SyncCursorsTable> {
+  $$SyncCursorsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get sourceTable => $composableBuilder(
+    column: $table.sourceTable,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastOrderValue => $composableBuilder(
+    column: $table.lastOrderValue,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastId => $composableBuilder(
+    column: $table.lastId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncCursorsTableAnnotationComposer
+    extends Composer<_$PorquinhoDatabase, $SyncCursorsTable> {
+  $$SyncCursorsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get sourceTable => $composableBuilder(
+    column: $table.sourceTable,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastOrderValue => $composableBuilder(
+    column: $table.lastOrderValue,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastId =>
+      $composableBuilder(column: $table.lastId, builder: (column) => column);
+}
+
+class $$SyncCursorsTableTableManager
+    extends
+        RootTableManager<
+          _$PorquinhoDatabase,
+          $SyncCursorsTable,
+          SyncCursor,
+          $$SyncCursorsTableFilterComposer,
+          $$SyncCursorsTableOrderingComposer,
+          $$SyncCursorsTableAnnotationComposer,
+          $$SyncCursorsTableCreateCompanionBuilder,
+          $$SyncCursorsTableUpdateCompanionBuilder,
+          (
+            SyncCursor,
+            BaseReferences<_$PorquinhoDatabase, $SyncCursorsTable, SyncCursor>,
+          ),
+          SyncCursor,
+          PrefetchHooks Function()
+        > {
+  $$SyncCursorsTableTableManager(
+    _$PorquinhoDatabase db,
+    $SyncCursorsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncCursorsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncCursorsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncCursorsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> ownerId = const Value.absent(),
+                Value<String> sourceTable = const Value.absent(),
+                Value<String> lastOrderValue = const Value.absent(),
+                Value<String?> lastId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncCursorsCompanion(
+                ownerId: ownerId,
+                sourceTable: sourceTable,
+                lastOrderValue: lastOrderValue,
+                lastId: lastId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ownerId,
+                required String sourceTable,
+                required String lastOrderValue,
+                Value<String?> lastId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncCursorsCompanion.insert(
+                ownerId: ownerId,
+                sourceTable: sourceTable,
+                lastOrderValue: lastOrderValue,
+                lastId: lastId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<$SyncCursorsTable, SyncCursor>(table),
+                  BaseReferences<
+                    _$PorquinhoDatabase,
+                    $SyncCursorsTable,
+                    SyncCursor
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncCursorsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PorquinhoDatabase,
+      $SyncCursorsTable,
+      SyncCursor,
+      $$SyncCursorsTableFilterComposer,
+      $$SyncCursorsTableOrderingComposer,
+      $$SyncCursorsTableAnnotationComposer,
+      $$SyncCursorsTableCreateCompanionBuilder,
+      $$SyncCursorsTableUpdateCompanionBuilder,
+      (
+        SyncCursor,
+        BaseReferences<_$PorquinhoDatabase, $SyncCursorsTable, SyncCursor>,
+      ),
+      SyncCursor,
+      PrefetchHooks Function()
+    >;
 
 class $PorquinhoDatabaseManager {
   final _$PorquinhoDatabase _db;
@@ -13864,4 +14543,6 @@ class $PorquinhoDatabaseManager {
       $$SyncConflictsTableTableManager(_db, _db.syncConflicts);
   $$SyncOutboxTableTableManager get syncOutbox =>
       $$SyncOutboxTableTableManager(_db, _db.syncOutbox);
+  $$SyncCursorsTableTableManager get syncCursors =>
+      $$SyncCursorsTableTableManager(_db, _db.syncCursors);
 }

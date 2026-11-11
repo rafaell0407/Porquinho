@@ -5,8 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'app_lock_providers.dart';
 import 'app_lock_service.dart';
 
-/// Ativa, altera e desativa o bloqueio por PIN/biometria. Tela provisória: a
-/// navegação definitiva ("Mais") será definida na Fase 3.
+/// Ativa, altera e desativa o bloqueio por PIN/biometria (aberta de "Mais").
 class SecurityScreen extends ConsumerStatefulWidget {
   const SecurityScreen({super.key});
 

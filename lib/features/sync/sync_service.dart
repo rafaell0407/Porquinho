@@ -110,7 +110,10 @@ class SyncService {
       });
       switch (response['status']) {
         case 'applied':
-          await _remove(op);
+          await _db.transaction(() async {
+            await _adoptRemoteVersion(op, response);
+            await _remove(op);
+          });
           return _Outcome.applied;
         case 'conflict':
           await _storeConflict(op, response);
@@ -146,6 +149,29 @@ class SyncService {
       'WHERE owner_id = ? AND idempotency_key = ?',
       [attempts, next, error, op.ownerId, op.idempotencyKey],
     );
+  }
+
+  /// Grava no registro local a versão devolvida pelo servidor, para que a
+  /// próxima edição não gere conflito falso. Usa `MAX` para nunca recuar uma
+  /// versão local mais nova (outra edição ainda na fila).
+  Future<void> _adoptRemoteVersion(
+    OutboxOperation op,
+    Map<String, dynamic> response,
+  ) async {
+    final table = _tableByEntity[op.entityType];
+    if (table == null) return;
+    for (final value in response.values) {
+      if (value is Map &&
+          value['id'] == op.entityId &&
+          value['version'] is int) {
+        await _db.customStatement(
+          'UPDATE $table SET version = MAX(version, ?) '
+          'WHERE owner_id = ? AND id = ?',
+          [value['version'], op.ownerId, op.entityId],
+        );
+        return;
+      }
+    }
   }
 
   Future<void> _remove(OutboxOperation op) => _db.customStatement(
@@ -288,3 +314,16 @@ class SyncService {
 }
 
 enum _Outcome { applied, blocked, offline }
+
+/// Tabela local de cada tipo de entidade da fila.
+const _tableByEntity = {
+  'category': 'categories',
+  'subcategory': 'subcategories',
+  'accounting_period': 'accounting_periods',
+  'period_configuration': 'period_configurations',
+  'income_entry': 'income_entries',
+  'expense_entry': 'expense_entries',
+  'investment_allocation': 'investment_allocations',
+  'income_recurrence_template': 'income_recurrence_templates',
+  'expense_recurrence_template': 'expense_recurrence_templates',
+};

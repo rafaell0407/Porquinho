@@ -1,0 +1,3 @@
+tags:
+  supabase_local:
+    # Exige o Supabase local em execucao e chaves via --dart-define.

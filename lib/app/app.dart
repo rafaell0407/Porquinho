@@ -9,12 +9,15 @@ import '../features/app_lock/security_screen.dart';
 import '../features/auth/auth_models.dart';
 import '../features/auth/auth_providers.dart';
 import '../features/auth/login_screen.dart';
-import '../features/auth/logout_flow.dart';
 import '../features/auth/new_password_screen.dart';
+import '../features/dashboard/dashboard_screen.dart';
+import '../features/more/more_screen.dart';
+import '../features/transactions/transactions_screen.dart';
+import '../features/sync/sync_indicator.dart';
+import '../shared/main_shell.dart';
 
 /// Rotas: `/login` sem sessão; `/nova-senha` após o link de recuperação;
-/// `/` com sessão. O Dashboard e a navegação
-/// principal serão definidos na Fase 3; `/` é só um marcador.
+/// com sessão, as três abas `/` (Dashboard), `/lancamentos` e `/mais`.
 final routerProvider = Provider<GoRouter>((ref) {
   final controller = ref.watch(sessionControllerProvider);
   final refresh = ValueNotifier<int>(0);
@@ -32,6 +35,8 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final current = controller.state;
       final at = state.matchedLocation;
+      // Segurança (PIN/biometria) só existe no celular.
+      if (kIsWeb && at == '/seguranca') return '/mais';
       if (current is SessionPasswordRecovery) {
         return at == '/nova-senha' ? null : '/nova-senha';
       }
@@ -49,7 +54,30 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/nova-senha',
         builder: (_, _) => const NewPasswordScreen(),
       ),
-      GoRoute(path: '/', builder: (_, _) => const HomePlaceholder()),
+      StatefulShellRoute.indexedStack(
+        builder: (_, _, shell) =>
+            MainShell(navigationShell: shell, banner: const SyncIndicator()),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/', builder: (_, _) => const DashboardScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/lancamentos',
+                builder: (_, _) => const TransactionsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(path: '/mais', builder: (_, _) => const MoreScreen()),
+            ],
+          ),
+        ],
+      ),
     ],
   );
 });
@@ -63,38 +91,6 @@ class PorquinhoApp extends ConsumerWidget {
       title: 'Porquinho',
       theme: ThemeData(colorSchemeSeed: Colors.pink, useMaterial3: true),
       routerConfig: ref.watch(routerProvider),
-    );
-  }
-}
-
-/// Marcador até a Fase 3 (Dashboard). Só permite sair, para testar o login.
-class HomePlaceholder extends ConsumerWidget {
-  const HomePlaceholder({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Porquinho')),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Você está conectado.'),
-            const SizedBox(height: 16),
-            if (!kIsWeb) ...[
-              OutlinedButton(
-                onPressed: () => context.push('/seguranca'),
-                child: const Text('Segurança'),
-              ),
-              const SizedBox(height: 8),
-            ],
-            FilledButton(
-              onPressed: () => signOutWithPendingCheck(context, ref),
-              child: const Text('Sair'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -108,6 +108,7 @@ class Subcategories extends OwnedRecord {
 }
 
 abstract class RecurrenceTemplate extends OwnedRecord {
+  TextColumn get description => text().nullable()();
   TextColumn get frequency => text()();
   TextColumn get startsOn => text()();
   IntColumn get monthlyReferenceDay => integer().nullable()();
@@ -121,8 +122,8 @@ abstract class RecurrenceTemplate extends OwnedRecord {
   @override
   List<String> get customConstraints => [
     '''CHECK ((frequency = 'monthly' AND monthly_reference_day BETWEEN 1 AND 31) OR
-            (frequency = 'per_period' AND monthly_reference_day IS NULL))''',
-    "CHECK (frequency IN ('monthly', 'per_period'))",
+            (frequency = 'by_period' AND monthly_reference_day IS NULL))''',
+    "CHECK (frequency IN ('monthly', 'by_period'))",
     '''CHECK ((value_mode = 'fixed' AND default_amount_centavos IS NOT NULL) OR
             (value_mode = 'variable' AND default_amount_centavos IS NULL))''',
     "CHECK (value_mode IN ('fixed', 'variable'))",
@@ -149,7 +150,7 @@ class IncomeRecurrenceTemplates extends RecurrenceTemplate {}
 class ExpenseRecurrenceTemplates extends RecurrenceTemplate {}
 
 abstract class CashEntry extends OwnedRecord {
-  TextColumn get description => text()();
+  TextColumn get description => text().nullable()();
   TextColumn get amountCentavos =>
       text().map(const BigIntTextConverter()).nullable()();
   TextColumn get status => text()();
@@ -324,6 +325,19 @@ class SyncOutbox extends Table {
   Set<Column<Object>> get primaryKey => {ownerId, idempotencyKey};
 }
 
+/// Ponto até onde cada tabela já foi baixada do servidor (Entrega 27B).
+/// `lastOrderValue` e `lastId` são o último (`updated_at`/`occurred_at`, `id`)
+/// gravado; o próximo download recomeça logo depois dele.
+class SyncCursors extends Table {
+  TextColumn get ownerId => text()();
+  TextColumn get sourceTable => text()();
+  TextColumn get lastOrderValue => text()();
+  TextColumn get lastId => text().nullable()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {ownerId, sourceTable};
+}
+
 @DriftDatabase(
   tables: [
     UserPreferences,
@@ -340,6 +354,7 @@ class SyncOutbox extends Table {
     AppliedSyncOperations,
     SyncConflicts,
     SyncOutbox,
+    SyncCursors,
   ],
 )
 class PorquinhoDatabase extends _$PorquinhoDatabase {
@@ -348,7 +363,7 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
   PorquinhoDatabase(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -360,6 +375,40 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
         await migrator.create(schema.expenseEntriesPeriodIdx);
         await migrator.create(schema.investmentAllocationsPeriodIdx);
         await migrator.create(schema.syncOutboxStateIdx);
+      },
+      // v3 (Entrega 27B): alinha o esquema local ao do servidor para o
+      // download — `by_period` (era `per_period`), descrição opcional nos
+      // lançamentos, descrição nas recorrências — e cria `sync_cursors`.
+      from2To3: (migrator, schema) async {
+        await migrator.alterTable(
+          TableMigration(
+            schema.incomeRecurrenceTemplates,
+            columnTransformer: {
+              schema.incomeRecurrenceTemplates.frequency:
+                  const CustomExpression(
+                    "CASE frequency WHEN 'per_period' THEN 'by_period' "
+                    'ELSE frequency END',
+                  ),
+            },
+            newColumns: [schema.incomeRecurrenceTemplates.description],
+          ),
+        );
+        await migrator.alterTable(
+          TableMigration(
+            schema.expenseRecurrenceTemplates,
+            columnTransformer: {
+              schema.expenseRecurrenceTemplates.frequency:
+                  const CustomExpression(
+                    "CASE frequency WHEN 'per_period' THEN 'by_period' "
+                    'ELSE frequency END',
+                  ),
+            },
+            newColumns: [schema.expenseRecurrenceTemplates.description],
+          ),
+        );
+        await migrator.alterTable(TableMigration(schema.incomeEntries));
+        await migrator.alterTable(TableMigration(schema.expenseEntries));
+        await migrator.create(schema.syncCursors);
       },
     ),
     beforeOpen: (_) async => customStatement('PRAGMA foreign_keys = ON'),
