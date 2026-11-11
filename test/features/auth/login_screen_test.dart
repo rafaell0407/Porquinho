@@ -56,6 +56,9 @@ Future<_FakeAuth> _pump(
   AuthUser? restored,
   int pending = 0,
 }) async {
+  tester.view.physicalSize = const Size(800, 2400);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(tester.view.reset);
   final auth = _FakeAuth()..restored = restored;
   final session = SessionController(auth, _Pending(pending));
   await session.start();
@@ -82,12 +85,12 @@ void main() {
   testWidgets('sem sessão mostra o login', (tester) async {
     await _pump(tester);
     expect(find.text('Entrar com Google'), findsOneWidget);
-    expect(find.text('Sobra do período'), findsNothing);
+    expect(find.text('Dinheiro livre do período'), findsNothing);
   });
 
   testWidgets('com sessão restaurada vai direto ao marcador', (tester) async {
     await _pump(tester, restored: _user);
-    expect(find.text('Sobra do período'), findsOneWidget);
+    expect(find.text('Dinheiro livre do período'), findsOneWidget);
   });
 
   testWidgets('valida e-mail e senha vazios', (tester) async {
@@ -103,7 +106,7 @@ void main() {
     await _fill(tester, 'a@b.com', 'qualquer');
     await tester.tap(find.widgetWithText(FilledButton, 'Entrar'));
     await tester.pumpAndSettle();
-    expect(find.text('Sobra do período'), findsOneWidget);
+    expect(find.text('Dinheiro livre do período'), findsOneWidget);
   });
 
   testWidgets('senha incorreta mostra mensagem em português', (tester) async {
@@ -113,7 +116,7 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Entrar'));
     await tester.pumpAndSettle();
     expect(find.text('E-mail ou senha incorretos.'), findsOneWidget);
-    expect(find.text('Sobra do período'), findsNothing);
+    expect(find.text('Dinheiro livre do período'), findsNothing);
   });
 
   testWidgets('criar conta pede confirmação de e-mail', (tester) async {
@@ -169,7 +172,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Sair mesmo assim'));
     await tester.pumpAndSettle();
-    expect(find.text('Sobra do período'), findsNothing);
+    expect(find.text('Dinheiro livre do período'), findsNothing);
   });
 
   testWidgets('link de recuperação abre a tela de nova senha', (tester) async {
@@ -196,7 +199,7 @@ void main() {
     );
     await tester.tap(find.text('Salvar nova senha'));
     await tester.pumpAndSettle();
-    expect(find.text('Sobra do período'), findsOneWidget);
+    expect(find.text('Dinheiro livre do período'), findsOneWidget);
   });
 
   testWidgets('sair sem pendências volta ao login', (tester) async {

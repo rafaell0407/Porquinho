@@ -26,6 +26,7 @@ import 'package:porquinho/features/sync/remote_table_reader.dart';
 import 'package:porquinho/features/sync/supabase_sync_gateway.dart';
 import 'package:porquinho/features/sync/supabase_sync_reader.dart';
 import 'package:porquinho/features/sync/sync_service.dart';
+import 'package:porquinho/features/reports/reports_repository.dart';
 import 'package:porquinho/features/totals/totals_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -158,7 +159,7 @@ void main() {
 
       // Servidor × celular: mesmo conjunto de períodos e mesmas sobras.
       final remoteTotals = RemoteTotalsRepository(
-        SupabaseTableReader(a.client),
+        RemoteReportsRepository(SupabaseReportSource(a.client)),
       );
       final localTotals = LocalTotalsRepository(db, a.id);
       final localPeriods = await periodRepo.periods();
@@ -253,7 +254,9 @@ void main() {
         ),
       );
       final period = (await periods.periodFor(d(2026, 11, 4)))!;
-      final totals = RemoteTotalsRepository(reader);
+      final totals = RemoteTotalsRepository(
+        RemoteReportsRepository(SupabaseReportSource(a.client)),
+      );
       expect((await totals.totalsFor(period.id)).surplus, c(60000));
 
       await entries.pay(

@@ -26,6 +26,24 @@ class MoreScreen extends ConsumerWidget {
             onTap: () => context.push('/categorias'),
           ),
           ListTile(
+            key: const Key('mais-periodo'),
+            leading: const Icon(Icons.date_range_outlined),
+            title: const Text('Período'),
+            onTap: () => context.push('/periodo'),
+          ),
+          ListTile(
+            key: const Key('mais-relatorios'),
+            leading: const Icon(Icons.bar_chart_outlined),
+            title: const Text('Relatórios'),
+            onTap: () => context.push('/relatorios'),
+          ),
+          ListTile(
+            key: const Key('mais-tema'),
+            leading: const Icon(Icons.brightness_6_outlined),
+            title: const Text('Tema'),
+            onTap: () => context.push('/tema'),
+          ),
+          ListTile(
             key: const Key('mais-recorrencias'),
             leading: const Icon(Icons.repeat),
             title: const Text('Recorrências'),

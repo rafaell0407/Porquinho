@@ -226,7 +226,7 @@ void main() {
     ) async {
       await pump(tester, enabled: true);
       expect(find.text('Digite seu PIN para continuar.'), findsOneWidget);
-      expect(find.text('Sobra do período'), findsNothing);
+      expect(find.text('Dinheiro livre do período'), findsNothing);
 
       await tester.runAsync(() async {
         await tester.enterText(find.byType(TextField), '000000');
@@ -240,7 +240,7 @@ void main() {
         await Future<void>.delayed(const Duration(milliseconds: 200));
       });
       await tester.pumpAndSettle();
-      expect(find.text('Sobra do período'), findsOneWidget);
+      expect(find.text('Dinheiro livre do período'), findsOneWidget);
     });
 
     testWidgets('Esqueci o PIN sai da conta e volta ao login', (tester) async {
@@ -251,12 +251,12 @@ void main() {
       await tester.tap(find.text('Sair da conta'));
       await tester.pumpAndSettle();
       expect(find.text('Digite seu PIN para continuar.'), findsNothing);
-      expect(find.text('Sobra do período'), findsNothing);
+      expect(find.text('Dinheiro livre do período'), findsNothing);
     });
 
     testWidgets('sem bloqueio vai direto ao marcador', (tester) async {
       await pump(tester, enabled: false);
-      expect(find.text('Sobra do período'), findsOneWidget);
+      expect(find.text('Dinheiro livre do período'), findsOneWidget);
     });
   });
 }

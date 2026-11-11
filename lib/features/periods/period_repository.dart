@@ -9,6 +9,10 @@ abstract interface class PeriodRepository {
 
   Future<void> createPeriod(PeriodDraft draft);
 
+  /// Grava a configuração que vale a partir do fim do último período
+  /// (Entrega 59): cria ou altera a configuração agendada.
+  Future<void> scheduleConfiguration(ScheduleDraft draft);
+
   /// Traz do servidor o que já existe, quando houver conexão (celular).
   /// Na Web é desnecessário: a leitura já é remota.
   Future<void> refreshFromServer();

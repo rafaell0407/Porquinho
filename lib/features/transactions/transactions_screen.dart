@@ -336,7 +336,9 @@ class _InvestmentTile extends ConsumerWidget {
             ] else
               const ListTile(
                 title: Text('Investimento cancelado'),
-                subtitle: Text('Fica no histórico e não entra na sobra.'),
+                subtitle: Text(
+                  'Fica no histórico e não entra no dinheiro livre.',
+                ),
               ),
           ],
         ),
@@ -367,7 +369,7 @@ class _InvestmentTile extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Cancelar este investimento?'),
         content: const Text(
-          'O valor volta para a sobra do período em que foi investido e o '
+          'O valor volta para o dinheiro livre do período em que foi investido e o '
           'registro continua no histórico como cancelado. Não é possível '
           'desfazer.',
         ),
@@ -555,7 +557,9 @@ class _EntryTile extends ConsumerWidget {
             ] else
               const ListTile(
                 title: Text('Lançamento cancelado'),
-                subtitle: Text('Fica no histórico e não entra na sobra.'),
+                subtitle: Text(
+                  'Fica no histórico e não entra no dinheiro livre.',
+                ),
               ),
           ],
         ),
@@ -673,7 +677,7 @@ class _EntryTile extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Cancelar este lançamento?'),
         content: const Text(
-          'Ele deixa de entrar na sobra, mas continua no histórico como '
+          'Ele deixa de entrar no dinheiro livre, mas continua no histórico como '
           'cancelado. Não é possível desfazer.',
         ),
         actions: [

@@ -281,7 +281,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         Padding(
           padding: const EdgeInsets.only(top: 4),
           child: Text(
-            'Cada ocorrência nasce com este valor e entra na sobra do período '
+            'Cada ocorrência nasce com este valor e entra no dinheiro livre do período '
             'da sua data. Você pode mudar o valor de um mês depois.',
             style: Theme.of(context).textTheme.bodySmall,
           ),
@@ -303,7 +303,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           subtitle: Text(
             _alreadyReceived
                 ? 'Recebida em ${_paidOn.toBr()}'
-                : 'Nasce pendente e só entra na sobra quando confirmada',
+                : 'Nasce pendente e só entra no dinheiro livre quando confirmada',
           ),
           value: _alreadyReceived,
           onChanged: (v) => setState(() => _alreadyReceived = v),

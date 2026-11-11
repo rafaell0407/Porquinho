@@ -75,8 +75,39 @@ class RemotePeriodRepository implements PeriodRepository {
   }
 
   @override
+  Future<void> scheduleConfiguration(ScheduleDraft draft) async {
+    final Map<String, dynamic> response;
+    try {
+      response = await _gateway.call(scheduleRpc, {
+        'p_operation_id': _newId(),
+        ...scheduleParams(draft),
+      });
+    } on SyncRejectedError catch (e) {
+      throw PeriodCreationException(e.message);
+    }
+    if (response['status'] != 'applied') {
+      throw const PeriodCreationException(
+        'A configuração já foi alterada em outro lugar. Atualize a tela e '
+        'tente de novo.',
+      );
+    }
+  }
+
+  @override
   Future<void> refreshFromServer() async {}
 }
+
+const scheduleRpc = 'schedule_period_configuration';
+
+/// Parâmetros da RPC `schedule_period_configuration` (sem `p_operation_id`).
+Map<String, dynamic> scheduleParams(ScheduleDraft d) => {
+  'p_action': d.isCreate ? 'create' : 'update',
+  'p_configuration_id': d.configurationId,
+  'p_expected_version': d.expectedVersion,
+  'p_effective_from': d.effectiveFrom.toIso(),
+  'p_mode': d.config.mode.dbValue,
+  'p_custom_start_day': d.config.customStartDay,
+};
 
 PeriodConfig configFromRow(Map<String, dynamic> r) =>
     PeriodMode.fromDb(r['mode'] as String) == PeriodMode.calendarMonth

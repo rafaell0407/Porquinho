@@ -1,6 +1,6 @@
 # Fase 7 — Períodos, Dashboard e relatórios
 
-**Status:** PROPOSTA (planejamento de 11/11/2026). Nenhuma entrega iniciada. Decisões D1–D11 APROVADAS em 11/11/2026 (seção 9.1); D6 acrescenta a Entrega 59A (nome "Dinheiro livre do período").
+**Status:** EM VALIDAÇÃO (implementada em 11/11/2026, aguardando validação do responsável). Entregas 59A–66 e 68 implementadas; 67 ADIADA (precisa liberar `drift_schemas/` para a Drift v5); gráficos (D9) aguardando aprovação da biblioteca — relatórios 4 e 5 usam barras simples. Decisões D1–D11 APROVADAS em 11/11/2026 (seção 9.1); D6 acrescenta a Entrega 59A (nome "Dinheiro livre do período").
 **Estado vigente:** `docs/estado_atual.md`. Regras: `docs/regras_negocio.md`. Escopo: `docs/requisitos.md` (RF019, RF020, RF024–RF026, §5, §13.7).
 
 ## 1. Objetivo
@@ -13,9 +13,7 @@ Apresentar a sobra por mês-calendário ou ciclo personalizado: permitir mudar a
 |---|---|---|
 | 4 | CONCLUÍDA e validada (11/11/2026) | Domínio de períodos com meses curtos e bissexto (`period_calendar.dart`, testes em `test/core/domain/period_calendar_test.dart`), regra de transição de configuração (`PeriodCalendar.transition`), criação sob demanda, sobra no domínio (`surplus.dart`), Dashboard com sobra e navegação entre períodos |
 | 5 | CONCLUÍDA e validada (11/11/2026) | Recorrências de receita/despesa e geração por período; receitas pendentes já ficam fora da sobra |
-| 6 | IMPLEMENTADA e VALIDADA (11/11/2026), **sem commit** | Investimentos avulsos e recorrentes já entram na sobra; rendimento é receita comum |
-
-Recomendação: fazer o commit da Fase 6 antes de iniciar a Entrega 59, para separar o histórico das fases.
+| 6 | CONCLUÍDA e VALIDADA (11/11/2026; commit `3560366`) | Investimentos avulsos e recorrentes já entram na sobra; rendimento é receita comum |
 
 ## 3. Estado atual encontrado (o que já existe)
 
@@ -224,21 +222,9 @@ Nenhuma migration existente será editada. Nada será aplicado no Supabase geren
 | Nova dependência de gráficos (D9) | Técnico | Avaliar antes de instalar; aprovação do responsável |
 | Troca de "sobra" por "dinheiro livre" (D6); nome pode sugerir saldo disponível | Terminologia | Entrega 59A; só textos visíveis e documentos canônicos; fórmula inalterada |
 
-## 9. Decisões que dependem da aprovação do responsável
+## 9. Decisões
 
-| # | Pergunta | Opções | Recomendação |
-|---|---|---|---|
-| D1 | O Dashboard mostra o total de investimentos na composição da sobra? (V1) | (a) Sim: receitas, despesas e investimentos — revisa a D3 da Fase 6; (b) Não: só receitas e despesas, e a conta não fecha visualmente | (a) |
-| D2 | Se já existirem períodos futuros criados sob demanda, quando a nova configuração começa? | (a) Após o último período existente, com aviso da data; (b) bloquear a mudança enquanto houver períodos futuros | (a) — nunca altera períodos existentes |
-| D3 | Pode-se trocar ou cancelar uma mudança já agendada antes de ela começar? | (a) Sim, enquanto nenhum período a usar; (b) não | (a) |
-| D4 | Tema antes de o usuário escolher (e na tela de login) | (a) Segue o tema do aparelho/navegador; (b) Claro | (a) |
-| D5 | Tema alterado em dois aparelhos sem conexão | (a) Vale a última gravação enviada, sem tela de conflito (preferência visual, não financeira — exceção explícita à regra de conflitos); (b) mostrar em "Itens que precisam de atenção" | (a) |
-| D6 | Etapas do onboarding | Propostas: apresentação da sobra; categorias sugeridas; tema; PIN/biometria (celular); orientação de recorrências. Pode retirar ou incluir | Aprovar a lista |
-| D7 | Onde guardar o progresso do onboarding | (a) Na conta (nova coluna + migration + Drift v5); (b) só no aparelho (pode reaparecer em outro aparelho ou na Web) | (a) |
-| D8 | Quais períodos aparecem nos relatórios 4 e 5 | (a) Últimos 12 períodos existentes até o selecionado, navegando para trás; (b) todos os períodos | (a) |
-| D9 | Visualização | (a) Listas e barras simples feitas com componentes do Flutter, sem nova biblioteca; (b) biblioteca de gráficos (ex.: `fl_chart`) | (a) |
-| D10 | Relatórios 1 e 2 detalham subcategorias? | (a) Só categoria; (b) categoria com subcategorias | (a) — subcategoria fica como sugestão futura |
-| D11 | Corrigir o limite de 1.000 linhas da leitura Web (V2) | (a) Paginação no app, mesma regra de cálculo; (b) função de soma no servidor (nova migration, segunda implementação da regra) | (a) |
+As perguntas e alternativas originais (D1–D11) foram respondidas em 11/11/2026; vale a tabela abaixo.
 
 ### 9.1 Decisões do responsável (11/11/2026)
 

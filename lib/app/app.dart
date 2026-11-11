@@ -16,6 +16,10 @@ import '../features/categories/categories_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/more/more_screen.dart';
 import '../features/periods/period_gate.dart';
+import '../features/preferences/preferences_providers.dart';
+import '../features/preferences/theme_screen.dart';
+import '../features/periods/period_settings_screen.dart';
+import '../features/reports/reports_screen.dart';
 import '../features/recurrence/recurrences_screen.dart';
 import '../features/transactions/transactions_screen.dart';
 import '../features/sync/sync_indicator.dart';
@@ -56,6 +60,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/seguranca', builder: (_, _) => const SecurityScreen()),
       GoRoute(path: '/categorias', builder: (_, _) => const CategoriesScreen()),
       GoRoute(path: '/atencao', builder: (_, _) => const AttentionScreen()),
+      GoRoute(
+        path: '/periodo',
+        builder: (_, _) => const PeriodSettingsScreen(),
+      ),
+      GoRoute(path: '/relatorios', builder: (_, _) => const ReportsScreen()),
+      GoRoute(path: '/tema', builder: (_, _) => const ThemeScreen()),
       GoRoute(
         path: '/recorrencias',
         builder: (_, _) => const RecurrencesScreen(),
@@ -105,6 +115,12 @@ class PorquinhoApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Porquinho',
       theme: ThemeData(colorSchemeSeed: Colors.pink, useMaterial3: true),
+      darkTheme: ThemeData(
+        colorSchemeSeed: Colors.pink,
+        brightness: Brightness.dark,
+        useMaterial3: true,
+      ),
+      themeMode: ref.watch(themeModeProvider).value ?? ThemeMode.system,
       locale: const Locale('pt', 'BR'),
       supportedLocales: const [Locale('pt', 'BR')],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,

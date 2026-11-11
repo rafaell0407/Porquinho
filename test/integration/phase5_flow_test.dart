@@ -30,6 +30,7 @@ import 'package:porquinho/features/sync/supabase_sync_gateway.dart';
 import 'package:porquinho/features/sync/supabase_sync_reader.dart';
 import 'package:porquinho/features/sync/sync_models.dart';
 import 'package:porquinho/features/sync/sync_service.dart';
+import 'package:porquinho/features/reports/reports_repository.dart';
 import 'package:porquinho/features/totals/totals_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -260,7 +261,7 @@ void main() {
 
       // Sobra igual no aparelho e no servidor (RF027) em todos os períodos.
       final remoteTotals = RemoteTotalsRepository(
-        SupabaseTableReader(a.client),
+        RemoteReportsRepository(SupabaseReportSource(a.client)),
       );
       for (final p in await dev.periodRepo.periods()) {
         expect(
@@ -333,7 +334,7 @@ void main() {
       await d1.download();
       await d2.download();
       final remoteTotals = RemoteTotalsRepository(
-        SupabaseTableReader(a.client),
+        RemoteReportsRepository(SupabaseReportSource(a.client)),
       );
       for (final p in await d1.periodRepo.periods()) {
         final remote = await remoteTotals.totalsFor(p.id);
@@ -373,12 +374,16 @@ void main() {
         id,
       ], reason: 'receita pendente aparece no período da data programada');
       expect(
-        (await RemoteTotalsRepository(reader).totalsFor(period.id)).surplus,
+        (await RemoteTotalsRepository(
+          RemoteReportsRepository(SupabaseReportSource(a.client)),
+        ).totalsFor(period.id)).surplus,
         BigInt.zero,
       );
       await entries.receive(pending, today);
       expect(
-        (await RemoteTotalsRepository(reader).totalsFor(period.id)).surplus,
+        (await RemoteTotalsRepository(
+          RemoteReportsRepository(SupabaseReportSource(a.client)),
+        ).totalsFor(period.id)).surplus,
         c(100000),
       );
 

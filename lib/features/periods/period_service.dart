@@ -76,7 +76,109 @@ class PeriodService {
       range: range,
       newConfiguration: false,
       dependsOnPeriodId: last.id,
+      dependsOnConfigurationId: changed ? applicable.id : null,
     );
+  }
+
+  /// Configuração em vigor hoje: a do período que contém [today] (ou a do
+  /// último período, se o de hoje ainda não foi criado).
+  Future<PeriodConfig?> currentConfig(CalendarDate today) async {
+    final configs = await _repo.configurations();
+    final periods = await _repo.periods();
+    if (periods.isEmpty) return null;
+    final current = periods.lastWhere(
+      (p) => p.range.contains(today),
+      orElse: () => periods.last,
+    );
+    return configs.firstWhere((c) => c.id == current.configurationId).config;
+  }
+
+  /// Períodos existentes, do mais recente ao mais antigo, cada um com a
+  /// configuração que usou (períodos antigos nunca mudam, RN002).
+  Future<List<PeriodHistoryItem>> history() async {
+    final configs = await _repo.configurations();
+    final periods = await _repo.periods();
+    return [
+      for (final p in periods.reversed)
+        PeriodHistoryItem(
+          p.id,
+          p.range,
+          configs.firstWhere((c) => c.id == p.configurationId).config,
+        ),
+    ];
+  }
+
+  /// Data em que começa o próximo período (fim do último existente), ou
+  /// `null` se ainda não há período. É quando uma mudança passa a valer.
+  Future<CalendarDate?> nextPeriodStart() async {
+    final periods = await _repo.periods();
+    return periods.isEmpty ? null : periods.last.range.end;
+  }
+
+  /// Mudança já agendada (diferente da configuração do último período), com a
+  /// data em que começa, ou `null`.
+  Future<ScheduledChange?> scheduledChange() async {
+    final configs = await _repo.configurations();
+    final periods = await _repo.periods();
+    if (periods.isEmpty) return null;
+    final last = periods.last;
+    final scheduled = configs
+        .where((c) => c.effectiveFrom == last.range.end)
+        .firstOrNull;
+    if (scheduled == null) return null;
+    final lastConfig = configs.firstWhere((c) => c.id == last.configurationId);
+    if (scheduled.config == lastConfig.config) return null;
+    return ScheduledChange(scheduled.config, scheduled.effectiveFrom);
+  }
+
+  /// Agenda [config] para o próximo período (RN002; D2 e D3). A nova
+  /// configuração começa quando termina o último período existente; períodos
+  /// já criados não mudam. Reagendar troca a anterior; escolher a configuração
+  /// atual cancela a mudança. Devolve a data de início da mudança, ou `null`
+  /// se não há mudança agendada depois da chamada.
+  Future<CalendarDate?> scheduleChange(
+    PeriodConfig config,
+    CalendarDate today,
+  ) async {
+    // Os períodos até hoje precisam existir antes; senão a mudança começaria
+    // no passado e mudaria períodos que ainda vão ser criados.
+    await ensureUpTo(today);
+    final configs = await _repo.configurations();
+    final periods = await _repo.periods();
+    if (periods.isEmpty) return null;
+    final last = periods.last;
+    final lastConfig = configs.firstWhere((c) => c.id == last.configurationId);
+    final startsOn = last.range.end;
+    final scheduled = configs
+        .where((c) => c.effectiveFrom == startsOn)
+        .firstOrNull;
+    final isCurrent = config == lastConfig.config;
+
+    if (scheduled == null) {
+      if (isCurrent) return null;
+      await _repo.scheduleConfiguration(
+        ScheduleDraft(
+          configurationId: _newId(),
+          config: config,
+          effectiveFrom: startsOn,
+          expectedVersion: 0,
+          lastPeriodId: last.id,
+        ),
+      );
+      return startsOn;
+    }
+    if (scheduled.config != config) {
+      await _repo.scheduleConfiguration(
+        ScheduleDraft(
+          configurationId: scheduled.id,
+          config: config,
+          effectiveFrom: startsOn,
+          expectedVersion: scheduled.version,
+          lastPeriodId: last.id,
+        ),
+      );
+    }
+    return isCurrent ? null : startsOn;
   }
 
   /// Período existente que contém [date], ou `null` se ainda não foi criado.

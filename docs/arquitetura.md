@@ -6,9 +6,9 @@
 
 ## 1. Visão geral
 
-O Porquinho será um aplicativo Flutter/Dart para Android e Web (iOS fora do MVP — decisão de 10/11/2026). O MVP é um sistema individual de lançamentos financeiros por períodos, com receitas, despesas, destinações simples para investimentos e cálculo da sobra do período.
+O Porquinho será um aplicativo Flutter/Dart para Android e Web (iOS fora do MVP — decisão de 10/11/2026). O MVP é um sistema individual de lançamentos financeiros por períodos, com receitas, despesas, destinações simples para investimentos e cálculo do dinheiro livre do período.
 
-A arquitetura não deve incluir módulos de contas bancárias, saldos bancários, Porquinho virtual, reservas, dinheiro livre, compras/parcelas de cartão ou carteira de investimentos.
+A arquitetura não deve incluir módulos de contas bancárias, saldos bancários, Porquinho virtual, reservas, saldo disponível, compras/parcelas de cartão ou carteira de investimentos.
 
 Componentes esperados:
 
@@ -64,7 +64,7 @@ A stack está aprovada (tabela 2.1). Os detalhamentos de implementação pendent
 - **Aplicativo Flutter:** telas, navegação e interação.
 - **Apresentação:** Dashboard, Lançamentos e Mais.
 - **Aplicação:** casos de uso para criar, consultar, editar e cancelar receitas, despesas, investimentos, categorias e períodos.
-- **Domínio:** cálculo da sobra, competência, recorrências, status, validações e regras de auditoria.
+- **Domínio:** cálculo do dinheiro livre, competência, recorrências, status, validações e regras de auditoria.
 - **Repositórios:** contratos de consulta e persistência.
 - **Persistência local:** cópia dos dados necessários ao uso offline e fila de operações pendentes.
 - **Backend remoto:** autenticação, autorização, validação e persistência sincronizada.
@@ -77,7 +77,7 @@ flowchart TD
     U[Usuário] --> APP[Aplicativo Flutter<br/>Android e Web]
     APP --> UI[Dashboard, Lançamentos e Mais]
     UI --> UC[Casos de uso]
-    UC --> DOM[Domínio e cálculo da sobra]
+    UC --> DOM[Domínio e cálculo do dinheiro livre]
     UC --> REP[Repositórios]
     REP --> LOCAL[Persistência local]
     REP --> QUEUE[Fila de sincronização]
@@ -100,7 +100,7 @@ A estrutura aprovada está na seção 17.1.
 
 - **Apresentação:** páginas, formulários, filtros e estados visuais.
 - **Aplicação:** casos de uso e coordenação de fluxos.
-- **Domínio:** entidades, cálculo da sobra, competência e regras financeiras.
+- **Domínio:** entidades, cálculo do dinheiro livre, competência e regras financeiras.
 - **Dados/infraestrutura:** repositórios, banco remoto, armazenamento local, sincronização e notificações.
 
 Riverpod e GoRouter estão aprovados. A seleção de bibliotecas auxiliares permanece sujeita a avaliação técnica.
@@ -109,7 +109,7 @@ Riverpod e GoRouter estão aprovados. A seleção de bibliotecas auxiliares perm
 
 A regra central é:
 
-`Sobra do período = receitas contabilizadas - despesas contabilizadas - investimentos lançados`.
+`Dinheiro livre do período = receitas contabilizadas - despesas contabilizadas - investimentos lançados`.
 
 Competência por tipo de lançamento, efeito do pagamento, edição e cancelamento, ausência de saldo inicial especial e de indicadores de saldo: `docs/regras_negocio.md` (RN004–RN006, RN028–RN030).
 
@@ -187,7 +187,7 @@ Configuração concreta dos ambientes: seção 17.2.
 
 ## 12. Estratégia de testes
 
-- **Unitários:** fórmula da sobra, competência, recorrências, alteração de período, edição e cancelamento.
+- **Unitários:** fórmula do dinheiro livre, competência, recorrências, alteração de período, edição e cancelamento.
 - **Paridade cliente/backend:** mesmos cenários de referência executados localmente e na validação remota.
 - **Integração:** persistência, autenticação, sincronização, auditoria e categorias.
 - **Interface:** Dashboard, Lançamentos, Mais, formulários e estados de conexão.
@@ -213,7 +213,7 @@ O MVP será distribuído para Android e Web. Lojas, hospedagem web, assinatura d
 | DA008 | Riverpod para estado e GoRouter para navegação | APROVADO |
 | DA009 | SQLite com Drift para persistência local | APROVADO |
 | DA010 | Apenas Dashboard, Lançamentos e Mais na navegação principal | APROVADO |
-| DA011 | Sobra do período como único indicador de resultado | APROVADO |
+| DA011 | Dinheiro livre do período como único indicador de resultado | APROVADO |
 
 ## 15. Detalhamentos técnicos pendentes
 
@@ -307,7 +307,7 @@ supabase/
 
 **Fase 6:** `features/investments/` (modelos, serviço, repositórios local e remoto, recorrência de investimento e telas de edição da recorrência). O formulário de despesa (`entries/entry_form_screen.dart`) tem o modo investimento (só valor, data e "Repetir"); a geração local de ocorrências fica em `recurrence/local_recurrence_repository.dart` (junto com receitas e despesas, mesmo identificador determinístico). Celular grava no banco local e na fila; Web chama as RPCs, somente online.
 
-**Implementação (Fases 3 e 4):** além das pastas acima existem `core/domain/` (dinheiro BRL em centavos, data civil, períodos, sobra e relógio `America/Sao_Paulo`, sem acesso a dados), `features/totals/`, `features/attention/` (itens que precisam de atenção) e `features/transactions/` (tela da aba Lançamentos, que usa as regras de `features/entries/`; alinhamento previsto na Entrega 39). Cada funcionalidade com dados tem a interface do repositório, uma implementação local (Drift + fila de envio, celular) e uma remota (Supabase, Web), escolhidas por `dataAccessModeProvider`. Operações da fila declaram dependências (`depends_on` no `payload_json`): uma operação só segue depois que a criação das categorias, subcategorias e períodos de que depende for aplicada (Entrega 35).
+**Implementação (Fases 3 e 4):** além das pastas acima existem `core/domain/` (dinheiro BRL em centavos, data civil, períodos, dinheiro livre e relógio `America/Sao_Paulo`, sem acesso a dados), `features/totals/`, `features/attention/` (itens que precisam de atenção) e `features/transactions/` (tela da aba Lançamentos, que usa as regras de `features/entries/`; alinhamento previsto na Entrega 39). Cada funcionalidade com dados tem a interface do repositório, uma implementação local (Drift + fila de envio, celular) e uma remota (Supabase, Web), escolhidas por `dataAccessModeProvider`. Operações da fila declaram dependências (`depends_on` no `payload_json`): uma operação só segue depois que a criação das categorias, subcategorias e períodos de que depende for aplicada (Entrega 35).
 
 As dependências fluem da apresentação para a aplicação e desta para o domínio. A camada `data` implementa contratos de repositório definidos para os casos de uso. `core` contém mecanismos técnicos compartilhados, sem regras financeiras; cada funcionalidade só cria as camadas de que precisa. Riverpod compõe estado e dependências; GoRouter apresenta apenas Dashboard, Lançamentos e Mais na navegação principal. As regras financeiras permanecem no domínio.
 

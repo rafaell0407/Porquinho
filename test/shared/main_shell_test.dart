@@ -42,6 +42,9 @@ class _NoPending implements PendingSyncCounter {
 
 void main() {
   testWidgets('três abas: Dashboard, Lançamentos e Mais', (tester) async {
+    tester.view.physicalSize = const Size(800, 2400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final auth = _Auth();
     final session = SessionController(auth, _NoPending());
     await session.start();
@@ -58,7 +61,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(NavigationDestination), findsNWidgets(3));
-    expect(find.text('Sobra do período'), findsOneWidget);
+    expect(find.text('Dinheiro livre do período'), findsOneWidget);
 
     await tester.tap(find.text('Lançamentos'));
     await tester.pumpAndSettle();
@@ -73,6 +76,6 @@ void main() {
 
     await tester.tap(find.text('Dashboard'));
     await tester.pumpAndSettle();
-    expect(find.text('Sobra do período'), findsOneWidget);
+    expect(find.text('Dinheiro livre do período'), findsOneWidget);
   });
 }

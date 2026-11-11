@@ -26,7 +26,7 @@ PostgreSQL, Supabase e SQLite com Drift estão APROVADOS (`docs/arquitetura.md` 
 - Manter recorrência-modelo separada de suas ocorrências geradas.
 - Garantir idempotência na sincronização.
 - Não criar entidades ou campos para funcionalidades fora do MVP.
-- O único resultado financeiro calculado é a sobra do período.
+- O único resultado financeiro calculado é o dinheiro livre do período.
 
 ## 4. Entidades conceituais
 
@@ -35,7 +35,7 @@ As entidades abaixo são conceitos aprovados do modelo lógico; as tabelas físi
 | Entidade candidata | Finalidade | Status |
 |---|---|---|
 | Usuário | Identidade e proprietário dos dados | APROVADO (conceito) |
-| Preferência do usuário | Tema, modalidade de período e configurações pessoais | APROVADO (conceito) |
+| Preferência do usuário | Tema, progresso do assistente inicial e zona de calendário (a configuração de período fica em `period_configurations`) | APROVADO (conceito) |
 | Configuração de período | Regra de mês-calendário ou ciclo personalizado, com vigência | APROVADO (conceito) |
 | Período de apuração | Intervalo com início, fim e configuração; sem estado de encerramento manual | APROVADO (conceito) |
 | Categoria | Categoria opcional de Receita ou Despesa criada pelo usuário | APROVADO (conceito) |
@@ -82,13 +82,13 @@ Datas inexistentes e geração ao abrir o app e sincronizar: RN038. `America/Sao
 
 Representa receita avulsa efetivamente recebida ou ocorrência de receita recorrente. Campos conceituais: usuário, descrição, categoria opcional, valor, data efetiva de recebimento, referência opcional ao modelo/ocorrência, status (pendente/recebida/cancelada), período de apuração e metadados de auditoria. Uma ocorrência recorrente ainda pendente não possui data efetiva de recebimento nem competência financeira; associá-la a um período para cálculo somente após a confirmação do recebimento. Receita avulsa e receita recorrente recebida devem pertencer a um período.
 
-Receita recorrente é gerada pendente e só compõe a sobra após confirmação do recebimento. O valor da ocorrência pode ser editado sem alterar o modelo nem futuras ocorrências.
+Receita recorrente é gerada pendente e só compõe o dinheiro livre após confirmação do recebimento. O valor da ocorrência pode ser editado sem alterar o modelo nem futuras ocorrências.
 
 ### 5.7 Despesa
 
 Representa despesa avulsa ou ocorrência de recorrência. Campos conceituais: usuário, descrição, categoria opcional, valor, data de cadastro/geração (competência), vencimento opcional, data efetiva do pagamento, status (pendente/paga/cancelada), referência opcional ao modelo e período de apuração. Toda despesa pertence a um período.
 
-Despesa avulsa entra na sobra no cadastro. Despesa recorrente entra ao ser gerada e ter valor definido. Pagamento não gera dedução adicional. Despesa pendente não é transportada financeiramente para o período seguinte; permanece no histórico do período de origem.
+Despesa avulsa entra no dinheiro livre no cadastro. Despesa recorrente entra ao ser gerada e ter valor definido. Pagamento não gera dedução adicional. Despesa pendente não é transportada financeiramente para o período seguinte; permanece no histórico do período de origem.
 
 ### 5.8 Fatura de cartão
 
@@ -96,7 +96,7 @@ Não existe entidade Cartão ou Fatura. A fatura é representada por uma despesa
 
 ### 5.9 Destinação para investimento
 
-Lançamento simples com usuário, valor, data (informada pelo usuário) e período de apuração. Não possui descrição, categoria de ativo, instituição, quantidade, posição, rentabilidade ou status de pagamento. O valor é deduzido da sobra assim que registrado. Pode ser ocorrência de um modelo de investimento recorrente (`investment_recurrence_templates`: frequência, início, dia de referência, valor padrão fixo, ativo; sem descrição, categoria nem valor variável), com `recurrence_template_id`, `scheduled_for_date` e `scheduled_period_id` e unicidade por modelo + data programada. O total por período é calculado nos relatórios (Fase 7).
+Lançamento simples com usuário, valor, data (informada pelo usuário) e período de apuração. Não possui descrição, categoria de ativo, instituição, quantidade, posição, rentabilidade ou status de pagamento. O valor é deduzido do dinheiro livre assim que registrado. Pode ser ocorrência de um modelo de investimento recorrente (`investment_recurrence_templates`: frequência, início, dia de referência, valor padrão fixo, ativo; sem descrição, categoria nem valor variável), com `recurrence_template_id`, `scheduled_for_date` e `scheduled_period_id` e unicidade por modelo + data programada. O total por período é calculado nos relatórios (Fase 7).
 
 ### 5.10 Evento de auditoria
 
@@ -128,9 +128,9 @@ O diagrama AUD-05 revisado e vigente está na seção 15.5. Ele deve ser lido em
 
 ## 8. Cálculo e representação monetária
 
-- Moeda, escala, rejeições e fórmula da sobra: RN045 e RN005 (`docs/regras_negocio.md`).
+- Moeda, escala, rejeições e fórmula do dinheiro livre: RN045 e RN005 (`docs/regras_negocio.md`).
 - Centavos como inteiros assinados de 64 bits; não usar float/double binário para persistência ou cálculo monetário.
-- Centralizar a fórmula da sobra no domínio.
+- Centralizar a fórmula do dinheiro livre no domínio.
 
 O schema aprovado usa `BIGINT` assinado de 64 bits por valor individual no PostgreSQL (seção 16.8.1); essa faixa é técnica e não constitui limite de produto. Nenhum limite de produto foi definido.
 
@@ -359,6 +359,8 @@ Critérios de aceitação do schema; os itens ainda não executados estão marca
 | 21B | `20261110000100_sync_conflict_resolution_rpc.sql` | `resolve_sync_conflict(operation_id, conflict_id, resolution, request)`: `keep_local`, `keep_remote` ou `edit`; reaplica o pedido escolhido pela RPC da entidade sobre a versão remota atual (nova versão consolidada); conflito vira `resolved`; evento de auditoria `conflict_resolved`; idempotente; conflito de criação e de período só aceitam `keep_remote` | `rpc_sync_conflict_resolution_test.sql` |
 
 Todos os testes usam PostgreSQL 18.6 temporário e `auth.uid()` simulado, o que não comprova configuração ou privilégios do Supabase gerenciado. Execução: `tooling/test_postgres_schema.ps1` (comando em `CLAUDE.md`). Pendente: validação no Supabase gerenciado e resolução de conflito como nova versão.
+
+**Fase 7 (Entregas 59, 62 e 66/67):** `20261112000100_schedule_period_configuration.sql` (RPC `schedule_period_configuration`, teste `rpc_schedule_period_configuration_test.sql`); `20261112000200_period_report_rpc.sql` (RPC de leitura `get_period_report`: somas exatas por período e categoria, devolvidas como texto; teste `rpc_period_report_test.sql`); `20261112000300_user_preferences_write_rpc.sql` (RPCs `set_user_theme` e `set_onboarding_step`, coluna `user_preferences.onboarding`; teste `rpc_user_preferences_test.sql`). Nada aplicado no Supabase gerenciado.
 
 ### 16.10 Schema local Drift (v1 a v4)
 

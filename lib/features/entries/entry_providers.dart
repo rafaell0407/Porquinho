@@ -11,6 +11,7 @@ import '../categories/category_providers.dart';
 import '../investments/investment_providers.dart';
 import '../periods/period_navigation.dart';
 import '../periods/period_providers.dart';
+import '../reports/reports_providers.dart';
 import '../totals/totals_repository.dart';
 import '../recurrence/recurrence_providers.dart';
 import 'entry_models.dart';
@@ -44,7 +45,9 @@ final entryServiceProvider = FutureProvider<EntryService>((ref) async {
 final totalsRepositoryProvider = FutureProvider<TotalsRepository>((ref) async {
   final mode = ref.watch(dataAccessModeProvider);
   if (mode == DataAccessMode.remoteOnly || kIsWeb) {
-    return RemoteTotalsRepository(ref.watch(remoteTableReaderProvider));
+    return RemoteTotalsRepository(
+      await ref.watch(reportsRepositoryProvider.future),
+    );
   }
   final db = (await ref.watch(localDatabaseProvider.future))!;
   return LocalTotalsRepository(db, ref.watch(ownerIdProvider));

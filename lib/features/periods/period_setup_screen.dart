@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/domain/period_calendar.dart';
+import 'period_config_fields.dart';
 import 'period_providers.dart';
 
 /// Primeiro acesso: o usuário escolhe como seus períodos são contados
@@ -55,38 +56,14 @@ class _PeriodSetupScreenState extends ConsumerState<PeriodSetupScreen> {
             'partir do próximo período.',
           ),
           const SizedBox(height: 16),
-          RadioGroup<PeriodMode>(
-            groupValue: _mode,
-            onChanged: (v) => setState(() => _mode = v ?? _mode),
-            child: const Column(
-              children: [
-                RadioListTile<PeriodMode>(
-                  value: PeriodMode.calendarMonth,
-                  title: Text('Mês-calendário'),
-                  subtitle: Text('Do dia 1 ao último dia de cada mês'),
-                ),
-                RadioListTile<PeriodMode>(
-                  value: PeriodMode.customCycle,
-                  title: Text('Ciclo personalizado'),
-                  subtitle: Text('Começa no dia que você escolher'),
-                ),
-              ],
-            ),
+          PeriodConfigFields(
+            mode: _mode,
+            day: _day,
+            onChanged: (m, d) => setState(() {
+              _mode = m;
+              _day = d;
+            }),
           ),
-          if (_mode == PeriodMode.customCycle)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: DropdownButtonFormField<int>(
-                key: const Key('dia-inicial'),
-                initialValue: _day,
-                decoration: const InputDecoration(labelText: 'Dia inicial'),
-                items: [
-                  for (var d = 1; d <= 31; d++)
-                    DropdownMenuItem(value: d, child: Text('Dia $d')),
-                ],
-                onChanged: (v) => setState(() => _day = v ?? _day),
-              ),
-            ),
           const SizedBox(height: 16),
           Card(
             child: Padding(

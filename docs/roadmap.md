@@ -6,14 +6,14 @@
 
 ## 1. Visão geral
 
-O desenvolvimento será incremental. O MVP concentra-se em receitas, despesas, recorrências mensais ou por período, destinações simples para investimentos e cálculo da sobra. A navegação principal possui Dashboard, Lançamentos e Mais.
+O desenvolvimento será incremental. O MVP concentra-se em receitas, despesas, recorrências mensais ou por período, destinações simples para investimentos e cálculo do dinheiro livre. A navegação principal possui Dashboard, Lançamentos e Mais.
 
 O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP — decisão de 10/11/2026). O offline é essencial no celular e deve ser construído desde as primeiras fases financeiras; a Web funciona somente online (decisão de 10/11/2026).
 
 ## 2. Princípios de priorização
 
 1. Não implementar regras financeiras ainda pendentes.
-2. Priorizar integridade de lançamentos, competência e cálculo da sobra.
+2. Priorizar integridade de lançamentos, competência e cálculo do dinheiro livre.
 3. Implementar testes de domínio antes de depender da interface para validar cálculos.
 4. Planejar persistência offline e sincronização desde a arquitetura inicial.
 5. Manter o MVP enxuto; funcionalidades fora do escopo só entram mediante aprovação.
@@ -99,7 +99,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 - Despesa avulsa com status pendente/paga.
 - Registro de data de recebimento e data de pagamento.
 - Edição e cancelamento de qualquer lançamento, preservando auditoria.
-- Cálculo local inicial da sobra.
+- Cálculo local inicial do dinheiro livre.
 - Persistência offline para os fluxos implementados.
 
 **Plano aprovado em 10/11/2026 (detalhe e decisões D1–D13 em `docs/entregas_fase4.md`):**
@@ -111,15 +111,15 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 36. Categorias, com sugestões no primeiro acesso.
 37. Subcategorias.
 22. Itens que precisam de atenção (conflitos e recusas), celular e Web.
-38. Cálculo da sobra no domínio.
+38. Cálculo do dinheiro livre no domínio.
 39. Receita avulsa.
 40. Despesa avulsa (pendente/paga, vencimento, "já paga").
-41. Sobra no Dashboard, navegação entre períodos e filtros período/tipo.
+41. Dinheiro livre no Dashboard, navegação entre períodos e filtros período/tipo.
 42. Fechamento e regressão.
 
 **Dependências:** Fases 2 e 3 (concluídas); regras de competência e auditoria aprovadas na baseline v0.5.
 
-**Testes:** inclusão, edição, cancelamento, alteração de data, categoria, pagamento sem segunda dedução e cálculo da sobra.
+**Testes:** inclusão, edição, cancelamento, alteração de data, categoria, pagamento sem segunda dedução e cálculo do dinheiro livre.
 
 **Prioridade:** Essencial.  
 **Status:** CONCLUÍDA em 11/11/2026 — Entregas 22 e 32–42 implementadas e validadas pelo responsável.
@@ -152,35 +152,35 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 
 **Entregáveis:**
 - "Novo investimento" ao lado de receita e despesa em Lançamentos: só valor e data (informada pelo usuário, passada ou futura), sem categoria, descrição ou status de pagamento (D1, D2, D10).
-- Dedução imediata do valor no cálculo da sobra; editar, mudar a data e cancelar recalculam os períodos afetados.
+- Dedução imediata do valor no cálculo do dinheiro livre; editar, mudar a data e cancelar recalculam os períodos afetados.
 - Investimentos na lista de Lançamentos, com filtro "Investimentos". O total por período fica para o relatório da Fase 7 (D3: sem total no Dashboard na Fase 6).
 - Investimento recorrente (todo mês ou todo período), com valor fixo e valor alterável por ocorrência; gerado ao abrir e sincronizar, sem pendente/pago (D7–D9).
 - Rendimentos efetivamente recebidos continuam sendo receitas comuns; nenhuma tela de rendimento, resgate, projeção automática, taxa fixa ou cálculo CDI (D4, D5).
 
 **Dependências:** Fases 2, 4 e 5.
 
-**Testes:** destinação deduz uma vez, edição/cancelamento recalculam sobra, recorrência idempotente e igual no app e no servidor, rendimento manual é receita, ausência de cálculo automático.
+**Testes:** destinação deduz uma vez, edição/cancelamento recalculam dinheiro livre, recorrência idempotente e igual no app e no servidor, rendimento manual é receita, ausência de cálculo automático.
 
 **Prioridade:** Alta.  
 **Status:** CONCLUÍDA e VALIDADA em 11/11/2026 — Entregas 51–58 (`docs/entregas_fase6.md`; a 54 foi removida por D3).
 
 ### Fase 7 — Períodos, Dashboard e relatórios
 
-**Objetivo:** apresentar a sobra por mês-calendário ou ciclo personalizado.
+**Objetivo:** apresentar o dinheiro livre por mês-calendário ou ciclo personalizado.
 
 **Entregáveis:**
 - Seleção mês-calendário/ciclo personalizado.
 - Configuração do dia inicial e vigência da mudança a partir do próximo período.
 - Preservação da configuração histórica.
-- Dashboard com sobra e composição por receitas, despesas e investimentos.
+- Dashboard com dinheiro livre e composição por receitas, despesas e investimentos.
 - Navegação Dashboard, Lançamentos e Mais.
 - Receitas por categoria e período.
 - Despesas por categoria e período.
 - Total destinado a investimentos por período.
-- Evolução da sobra entre períodos.
+- Evolução do dinheiro livre entre períodos.
 - Comparativo de receitas, despesas e investimentos por período.
 - Tema claro/escuro, salvo na conta por nova função no servidor (`user_preferences` ainda não tem RPC de gravação; nova migration — decisão de 10/11/2026).
-- Onboarding com etapas opcionais.
+- Onboarding com etapas opcionais (Entrega 67 ADIADA em 11/11/2026: aguarda Drift v5).
 
 **Dependências:** Fases 4 a 6 e implementação/testes da regra aprovada de meses curtos.
 
@@ -218,7 +218,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 - Receitas avulsas e recorrentes.
 - Despesas avulsas e recorrentes.
 - Edição e cancelamento com auditoria.
-- Cálculo da sobra do período.
+- Cálculo do dinheiro livre do período.
 - Recorrências mensal e por período.
 - Investimento simples por valor total.
 - Persistência local e cálculo offline desde o início.
@@ -252,7 +252,7 @@ Ver `docs/requisitos.md` §3.2 e §12.
 ## 7. Critérios de conclusão do MVP
 
 - Todos os requisitos aprovados do MVP implementados.
-- Cálculo da sobra coberto por testes unitários e de integração.
+- Cálculo do dinheiro livre coberto por testes unitários e de integração.
 - Receitas, despesas e investimentos atribuídos ao período correto.
 - Pagamento de despesa não gera dedução adicional.
 - Edições e cancelamentos recalculam os períodos afetados e preservam auditoria.

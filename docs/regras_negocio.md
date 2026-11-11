@@ -7,13 +7,13 @@
 ## 1. Princípios gerais
 
 1. O MVP é um controle de receitas, despesas e valores destinados a investimentos por período.
-2. O único indicador de resultado financeiro é a sobra do período.
+2. O único indicador de resultado financeiro é o dinheiro livre do período.
 3. O sistema não controla saldos bancários nem contas financeiras.
-4. O sistema não possui o antigo Porquinho virtual, reservas ou cálculo de dinheiro livre.
+4. O sistema não possui o antigo Porquinho virtual, reservas ou cálculo de saldo disponível. "Dinheiro livre do período" é só o nome do indicador `receitas − despesas − investimentos` (decisão de 11/11/2026).
 5. Receitas são contabilizadas pela data de recebimento: a avulsa aceita data passada ou futura (RN008); a recorrente só após confirmação (RN011).
 6. Despesas são contabilizadas no cadastro ou geração da ocorrência, não no pagamento.
 7. O pagamento de despesa não cria uma segunda dedução.
-8. Investimentos são lançamentos simples de valor total destinado e reduzem a sobra no momento do lançamento.
+8. Investimentos são lançamentos simples de valor total destinado e reduzem o dinheiro livre no momento do lançamento.
 9. Cancelamentos e correções preservam histórico suficiente para auditoria.
 
 ## 2. Períodos de apuração
@@ -32,6 +32,10 @@ O usuário poderá escolher entre:
 Alteração de modalidade ou dia inicial passa a valer somente a partir do próximo período. Períodos históricos preservam a configuração usada na sua criação. Períodos consecutivos não devem ter lacunas nem sobreposição.
 
 **Status:** APROVADO.
+
+**Detalhamento (decisões D2 e D3 da Fase 7, 11/11/2026):** a nova configuração começa quando termina o último período existente (o aplicativo avisa a data antes de confirmar). Enquanto nenhum período a usar, a mudança pode ser trocada ou cancelada. Períodos já criados nunca são alterados.
+
+**Exceção de conflito para o tema (D5, 11/11/2026):** na preferência de tema vale a última gravação enviada, sem tela de conflito; a regra de conflitos por versão continua valendo para todos os dados financeiros.
 
 **Detalhamento de transição — APROVADO pelo responsável em 09/11/2026:** quando a configuração muda, o primeiro período com a nova configuração começa no fim do período anterior e termina na próxima fronteira da nova modalidade/dia inicial que seja posterior ao início. Os períodos seguintes seguem a agenda regular aprovada. Essa regra mantém a continuidade, inclusive quando a nova fronteira mensal não coincide com a fronteira anterior.
 
@@ -58,15 +62,15 @@ A data de pagamento da despesa é armazenada como histórico e não altera o per
 
 **Status:** APROVADO.
 
-## 3. Cálculo da sobra
+## 3. Cálculo do dinheiro livre
 
 ### RN005 — Fórmula única de resultado
 
-A sobra do período é calculada por:
+O dinheiro livre do período é calculado por:
 
-`Sobra = receitas contabilizadas no período - despesas contabilizadas no período - investimentos lançados no período`.
+`Dinheiro livre = receitas contabilizadas no período - despesas contabilizadas no período - investimentos lançados no período`.
 
-Somente a sobra do período será apresentada como indicador de resultado. O MVP não calcula saldo disponível, saldo atual, dinheiro livre ou saldo bancário.
+Somente o dinheiro livre do período será apresentado como indicador de resultado. O MVP não calcula saldo disponível, saldo atual ou saldo bancário; o dinheiro livre do período não considera sobras de períodos anteriores, reservas, compromissos separados nem saldo bancário.
 
 **Status:** APROVADO.
 
@@ -76,7 +80,7 @@ O MVP não possui campo próprio, fotografia bancária, entidade ou lançamento 
 
 - o lançamento segue as regras normais de receita;
 - sua data efetiva determina o período;
-- entra na sobra como qualquer receita;
+- entra no dinheiro livre como qualquer receita;
 - o sistema não identifica a categoria como especial e não detecta duplicidade.
 
 O usuário é responsável por não registrar duas vezes o mesmo recurso.
@@ -93,7 +97,7 @@ Qualquer valor efetivamente recebido que o usuário decida registrar pode ser la
 
 ### RN008 — Receita avulsa
 
-Receita avulsa é registrada com a data de recebimento informada pelo usuário, que pode ser passada ou futura (decisão de 10/11/2026). O aplicativo não verifica se o valor foi de fato recebido. A data de recebimento determina o período em que será somada à sobra.
+Receita avulsa é registrada com a data de recebimento informada pelo usuário, que pode ser passada ou futura (decisão de 10/11/2026). O aplicativo não verifica se o valor foi de fato recebido. A data de recebimento determina o período em que será somada ao dinheiro livre.
 
 **Status:** APROVADO.
 
@@ -116,7 +120,7 @@ Valores podem ser fixos ou variáveis. Não há frequência semanal, quinzenal, 
 
 ### RN011 — Ocorrência de receita recorrente
 
-O sistema gera ocorrência pendente. Uma receita recorrente só entra no cálculo da sobra depois que o usuário confirma que recebeu o valor. Para valor fixo, o modelo fornece um valor padrão; para valor variável, o usuário informa o valor da ocorrência.
+O sistema gera ocorrência pendente. Uma receita recorrente só entra no cálculo do dinheiro livre depois que o usuário confirma que recebeu o valor. Para valor fixo, o modelo fornece um valor padrão; para valor variável, o usuário informa o valor da ocorrência.
 
 O usuário pode editar o valor de uma ocorrência, mesmo quando a recorrência é fixa. A edição da ocorrência não altera o modelo nem outras ocorrências.
 
@@ -132,7 +136,7 @@ A data efetiva de recebimento informada na confirmação determina o período da
 
 ### RN013 — Despesas avulsas
 
-Ao cadastrar uma despesa avulsa, ela entra imediatamente no cálculo da sobra do período de cadastro e recebe status Pendente. Não é necessário aguardar pagamento para contabilizá-la.
+Ao cadastrar uma despesa avulsa, ela entra imediatamente no cálculo do dinheiro livre do período de cadastro e recebe status Pendente. Não é necessário aguardar pagamento para contabilizá-la.
 
 **Status:** APROVADO.
 
@@ -142,7 +146,7 @@ As únicas frequências permitidas no MVP são mensal e por período. O usuário
 
 - Valor fixo: a ocorrência utiliza o valor padrão.
 - Valor variável: o sistema gera a ocorrência e solicita ao usuário o valor daquela ocorrência.
-- A ocorrência entra na sobra quando gerada e com valor definido.
+- A ocorrência entra no dinheiro livre quando gerada e com valor definido.
 - Editar uma ocorrência não altera o modelo nem outras ocorrências.
 
 **Status:** APROVADO.
@@ -203,15 +207,15 @@ O usuário poderá registrar valores destinados a investimentos por lançamentos
 
 **Status:** APROVADO.
 
-### RN022 — Efeito imediato na sobra
+### RN022 — Efeito imediato no dinheiro livre
 
-O valor destinado a investimento é deduzido da sobra do período no momento em que o lançamento é registrado. Não existe status pendente/pago nem confirmação posterior. A ocorrência de um investimento recorrente também entra na sobra assim que é gerada, no período da data programada, sem confirmação.
+O valor destinado a investimento é deduzido do dinheiro livre do período no momento em que o lançamento é registrado. Não existe status pendente/pago nem confirmação posterior. A ocorrência de um investimento recorrente também entra no dinheiro livre assim que é gerada, no período da data programada, sem confirmação.
 
 **Status:** APROVADO.
 
 ### RN023 — Limites do controle de investimentos
 
-O aplicativo não acompanha carteira, ativos, posições, saldo acumulado, rentabilidade, dividendos ou cotações. O total do período é a soma dos lançamentos de destinação não cancelados daquele período. Não existe resgate: o valor investido não volta para a sobra e o aplicativo não orienta lançar resgate como receita. Desfazer um investimento é cancelá-lo, o que devolve o valor à sobra do período original do investimento, não do período atual (decisão de 11/11/2026).
+O aplicativo não acompanha carteira, ativos, posições, saldo acumulado, rentabilidade, dividendos ou cotações. O total do período é a soma dos lançamentos de destinação não cancelados daquele período. Não existe resgate: o valor investido não volta para o dinheiro livre e o aplicativo não orienta lançar resgate como receita. Desfazer um investimento é cancelá-lo, o que devolve o valor ao dinheiro livre do período original do investimento, não do período atual (decisão de 11/11/2026).
 
 **Status:** APROVADO.
 
@@ -253,13 +257,13 @@ O usuário pode editar qualquer lançamento a qualquer momento, independentement
 
 ### RN029 — Cancelamento de qualquer lançamento
 
-O usuário pode cancelar qualquer lançamento a qualquer momento, independentemente do status. Lançamentos cancelados deixam de participar da sobra, mas permanecem no histórico como cancelados. Não apagar fisicamente o registro.
+O usuário pode cancelar qualquer lançamento a qualquer momento, independentemente do status. Lançamentos cancelados deixam de participar do dinheiro livre, mas permanecem no histórico como cancelados. Não apagar fisicamente o registro.
 
 **Status:** APROVADO.
 
 ### RN030 — Recalcular períodos afetados
 
-Após editar ou cancelar um lançamento, o sistema recalcula a sobra dos períodos afetados. Alterações não devem gerar uma segunda contabilização. O histórico deve registrar os valores anteriores e novos, operação, usuário e data/hora.
+Após editar ou cancelar um lançamento, o sistema recalcula o dinheiro livre dos períodos afetados. Alterações não devem gerar uma segunda contabilização. O histórico deve registrar os valores anteriores e novos, operação, usuário e data/hora.
 
 **Status:** APROVADO.
 
@@ -302,7 +306,7 @@ Alertas do MVP serão enviados a dispositivos móveis Android (iOS fora do MVP �
 | ID | Regra | Status |
 |---|---|---|
 | RN001–RN004 | Modalidades, configuração e competência dos períodos | APROVADO |
-| RN005–RN007 | Fórmula da sobra, ausência de saldo inicial especial e receitas | APROVADO |
+| RN005–RN007 | Fórmula do dinheiro livre, ausência de saldo inicial especial e receitas | APROVADO |
 | RN008–RN012 | Receitas avulsas e recorrentes | APROVADO |
 | RN013–RN018 | Despesas, pagamento, virada de período e alertas | APROVADO |
 | RN019–RN020 | Fatura variável e exclusões de cartão | APROVADO/FORA DO ESCOPO |
@@ -337,7 +341,7 @@ O dia originalmente configurado deve ser preservado. Quando não existir no mês
 
 Recorrências mensais mantêm o dia de referência original; se a data não existir, usar o último dia do mês sem alterar a referência dos meses seguintes. A primeira ocorrência mensal é a primeira data de referência igual ou posterior ao início da recorrência (por exemplo, criada em 10 de maio com referência no dia 31, começa em 31 de maio). Recorrências por período geram uma ocorrência no início de cada período; se criadas durante um período, também geram a ocorrência desse período, mesmo que sua data seja anterior à criação. Na abertura do aplicativo e durante a sincronização, verificar ocorrências faltantes e recuperar as atrasadas até a data corrente na zona do usuário, sem depender de agendador em segundo plano. A combinação modelo de recorrência + referência programada/competência identifica unicamente uma ocorrência e deve possuir garantia de unicidade no armazenamento. Edição individual não altera modelo nem ocorrências futuras; desativação impede novas ocorrências e preserva o histórico.
 
-Receitas recorrentes são criadas pendentes e só entram na sobra após confirmação do recebimento (data padrão: hoje; o usuário pode informar outra). Despesas recorrentes entram na sobra quando geradas e com valor definido; pagamento não gera segunda dedução. A zona de calendário por usuário é `America/Sao_Paulo`, decisão de 08/11/2026. A geração ocorre ao abrir o aplicativo e sincronizar, usando a data corrente nessa zona.
+Receitas recorrentes são criadas pendentes e só entram no dinheiro livre após confirmação do recebimento (data padrão: hoje; o usuário pode informar outra). Despesas recorrentes entram no dinheiro livre quando geradas e com valor definido; pagamento não gera segunda dedução. A zona de calendário por usuário é `America/Sao_Paulo`, decisão de 08/11/2026. A geração ocorre ao abrir o aplicativo e sincronizar, usando a data corrente nessa zona.
 
 **Decisões de 11/11/2026 (Fase 5):**
 
@@ -357,13 +361,13 @@ Receitas recorrentes são criadas pendentes e só entram na sobra após confirma
 - **D7:** ao parar de repetir, as ocorrências já geradas ficam como estão.
 - **D8:** a recorrência é ativada no formulário do lançamento (“Repetir”: todo mês ou todo período). O próprio lançamento é a primeira ocorrência; as seguintes seguem o dia dele; data passada gera também as atrasadas até hoje. Em “todo período”, a data da ocorrência é o início do período que contém a data informada. Ao editar uma ocorrência, o usuário escolhe “só esta” ou “a recorrência”. Lista de consulta em Mais → Recorrências.
 
-**Decisões de 11/11/2026 (Fase 6 — investimento recorrente):** o investimento também pode ser recorrente, com as mesmas regras de agenda, identificador determinístico, geração ao abrir e sincronizar, mudança de agenda só para as próximas e "parar de repetir" da despesa recorrente (D1, D2, D4, D7, D8 acima). Diferenças: o valor é sempre fixo (valor padrão do modelo, alterável por ocorrência com "só esta" ou nas próximas com "a recorrência"); não há valor variável, pendente/pago, vencimento nem alertas; a ocorrência entra na sobra quando gerada. Cancelar uma ocorrência não a recria.
+**Decisões de 11/11/2026 (Fase 6 — investimento recorrente):** o investimento também pode ser recorrente, com as mesmas regras de agenda, identificador determinístico, geração ao abrir e sincronizar, mudança de agenda só para as próximas e "parar de repetir" da despesa recorrente (D1, D2, D4, D7, D8 acima). Diferenças: o valor é sempre fixo (valor padrão do modelo, alterável por ocorrência com "só esta" ou nas próximas com "a recorrência"); não há valor variável, pendente/pago, vencimento nem alertas; a ocorrência entra no dinheiro livre quando gerada. Cancelar uma ocorrência não a recria.
 
 **Status:** APROVADO. Primeira data mensal e inclusão do período atual na recorrência por período foram decididas em 09/11/2026.
 
 ### RN039 — Pagamento integral
 
-No MVP, despesa só pode ser paga integralmente. Não existe pagamento parcial, saldo remanescente ou histórico de parcelas de pagamento. Ao pagar, alterar status e registrar data efetiva; não deduzir novamente da sobra.
+No MVP, despesa só pode ser paga integralmente. Não existe pagamento parcial, saldo remanescente ou histórico de parcelas de pagamento. Ao pagar, alterar status e registrar data efetiva; não deduzir novamente do dinheiro livre.
 
 **Status:** APROVADO. Pagamentos parciais: FORA DO MVP.
 
@@ -387,7 +391,7 @@ Não existe fechamento ou arquivamento manual de períodos no MVP. Períodos sã
 
 ### RN043 — Metas iniciais de desempenho
 
-Metas de engenharia: Dashboard com dados locais até 1 s; lista de lançamentos até 1 s; salvar localmente até 500 ms; atualizar cálculo da sobra até 300 ms; sincronizar lote pequeno em conexão normal até 5 s. São metas a validar por testes e medições, não garantias.
+Metas de engenharia: Dashboard com dados locais até 1 s; lista de lançamentos até 1 s; salvar localmente até 500 ms; atualizar cálculo do dinheiro livre até 300 ms; sincronizar lote pequeno em conexão normal até 5 s. São metas a validar por testes e medições, não garantias.
 
 **Status:** APROVADO como metas iniciais, sujeito à validação.
 

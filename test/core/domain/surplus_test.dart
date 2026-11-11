@@ -5,7 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:porquinho/core/domain/surplus.dart';
 import 'package:porquinho/core/local_database/app_database.dart';
-import 'package:porquinho/features/sync/remote_table_reader.dart';
+import 'package:porquinho/features/reports/reports_repository.dart';
 import 'package:porquinho/features/totals/totals_repository.dart';
 
 BigInt c(int v) => BigInt.from(v);
@@ -170,33 +170,31 @@ void main() {
     });
   });
 
-  test('Web usa a mesma regra sobre as linhas do servidor', () async {
-    final reader = _Reader({
-      'income_entries': [
-        {'status': 'received', 'amount_centavos': 100000},
-        {'status': 'pending', 'amount_centavos': null},
+  test('Web usa o total somado pelo servidor (texto exato)', () async {
+    final source = _Source({
+      'periods': [
+        {
+          'period_id': 'p11',
+          'income': '100000',
+          'expense': '25000',
+          'investment': '10000',
+        },
       ],
-      'expense_entries': [
-        {'status': 'paid', 'amount_centavos': 25000},
-      ],
-      'investment_allocations': [
-        {'amount_centavos': 10000, 'cancelled_at': null},
-        {'amount_centavos': 5000, 'cancelled_at': '2026-11-09'},
-      ],
+      'income_by_category': [],
+      'expense_by_category': [],
     });
-    final t = await RemoteTotalsRepository(reader).totalsFor('p11');
+    final repo = RemoteTotalsRepository(RemoteReportsRepository(source));
+    final t = await repo.totalsFor('p11');
     expect(t.surplus, c(65000));
+    // Período sem linha no servidor = zero.
+    expect((await repo.totalsFor('outro')).surplus, BigInt.zero);
   });
 }
 
-class _Reader implements RemoteTableReader {
-  _Reader(this.tables);
-  final Map<String, List<Map<String, dynamic>>> tables;
+class _Source implements RemoteReportSource {
+  _Source(this.json);
+  final Map<String, dynamic> json;
 
   @override
-  Future<List<Map<String, dynamic>>> select(
-    String table, {
-    List<RemoteFilter> filters = const [],
-    String? orderBy,
-  }) async => tables[table] ?? [];
+  Future<Map<String, dynamic>> fetch(List<String> periodIds) async => json;
 }

@@ -2,7 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/domain/surplus.dart';
 import '../../core/local_database/app_database.dart';
-import '../sync/remote_table_reader.dart';
+import '../reports/reports_repository.dart';
 
 /// Totais de um período (sobra) lidos de onde os dados estão.
 abstract interface class TotalsRepository {
@@ -69,40 +69,14 @@ class LocalTotalsRepository implements TotalsRepository {
   }
 }
 
-/// Web: lê do servidor (somente online) e soma no app com a mesma regra.
+/// Web: o servidor soma por período (RPC de leitura agregada, sem o limite de
+/// 1.000 linhas) e o app mostra o resultado (D11).
 class RemoteTotalsRepository implements TotalsRepository {
-  RemoteTotalsRepository(this._reader);
+  RemoteTotalsRepository(this._reports);
 
-  final RemoteTableReader _reader;
+  final ReportsRepository _reports;
 
   @override
-  Future<PeriodTotals> totalsFor(String periodId) async {
-    final filter = [RemoteFilter.eq('accounting_period_id', periodId)];
-    final incomes = await _reader.select('income_entries', filters: filter);
-    final expenses = await _reader.select('expense_entries', filters: filter);
-    final investments = await _reader.select(
-      'investment_allocations',
-      filters: filter,
-    );
-    return computePeriodTotals(
-      incomes: incomes.map(
-        (r) => IncomeLine(
-          status: r['status'] as String,
-          amount: _big(r['amount_centavos']),
-        ),
-      ),
-      expenses: expenses.map(
-        (r) => ExpenseLine(
-          status: r['status'] as String,
-          amount: _big(r['amount_centavos']),
-        ),
-      ),
-      investments: investments.map(
-        (r) => InvestmentLine(
-          amount: _big(r['amount_centavos'])!,
-          cancelled: r['cancelled_at'] != null,
-        ),
-      ),
-    );
-  }
+  Future<PeriodTotals> totalsFor(String periodId) async =>
+      (await _reports.report([periodId])).totalsOf(periodId);
 }

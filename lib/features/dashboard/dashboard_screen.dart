@@ -5,8 +5,10 @@ import '../../core/domain/money.dart';
 import '../entries/entry_providers.dart';
 import '../periods/period_navigation.dart';
 
-/// Dashboard da Fase 4: somente a sobra do período (decisão D9). Nenhum
-/// "saldo": o único indicador é `receitas − despesas − investimentos`.
+/// Dashboard: dinheiro livre do período e sua composição (receitas, despesas
+/// e investimentos; decisão D1 da Fase 7, revisa a D9 da Fase 4). Nenhum
+/// "saldo": o único indicador é `receitas − despesas − investimentos`; as três
+/// linhas vêm do mesmo cálculo do valor principal.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -66,13 +68,13 @@ class _SurplusCard extends ConsumerWidget {
               child: totals.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (e, _) =>
-                    const Text('Não foi possível calcular a sobra.'),
+                    const Text('Não foi possível calcular o dinheiro livre.'),
                 data: (t) {
                   final value = t?.surplus ?? BigInt.zero;
                   return Column(
                     children: [
                       Text(
-                        'Sobra do período',
+                        'Dinheiro livre do período',
                         style: theme.textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
@@ -86,12 +88,57 @@ class _SurplusCard extends ConsumerWidget {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      _CompositionRow(
+                        label: 'Receitas',
+                        valueKey: const Key('valor-receitas'),
+                        value: t?.income ?? BigInt.zero,
+                      ),
+                      _CompositionRow(
+                        label: 'Despesas',
+                        valueKey: const Key('valor-despesas'),
+                        value: t?.expense ?? BigInt.zero,
+                      ),
+                      _CompositionRow(
+                        label: 'Investimentos',
+                        valueKey: const Key('valor-investimentos'),
+                        value: t?.investment ?? BigInt.zero,
+                      ),
                     ],
                   );
                 },
               ),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Uma linha da composição: rótulo e valor em reais.
+class _CompositionRow extends StatelessWidget {
+  const _CompositionRow({
+    required this.label,
+    required this.valueKey,
+    required this.value,
+  });
+
+  final String label;
+  final Key valueKey;
+  final BigInt value;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = Theme.of(context).textTheme.bodyLarge;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: style),
+          Text(formatBrl(value), key: valueKey, style: style),
         ],
       ),
     );

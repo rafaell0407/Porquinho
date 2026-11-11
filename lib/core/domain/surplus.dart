@@ -1,27 +1,41 @@
-/// Cálculo da sobra do período (RN005–RN007, RN022, `AGENTS.md` §4.2).
+/// Cálculo do dinheiro livre do período (RN005–RN007, RN022, `AGENTS.md` §4.2).
 ///
-/// `Sobra = receitas contabilizadas − despesas contabilizadas − investimentos`.
+/// `Dinheiro livre = receitas contabilizadas − despesas contabilizadas − investimentos`.
 /// Funções puras sobre valores em centavos ([BigInt]); sem acesso a dados.
 library;
 
 /// Receita como entra no cálculo. Só a receita **recebida** conta; recorrente
 /// pendente e cancelada ficam de fora.
 class IncomeLine {
-  const IncomeLine({required this.status, required this.amount});
+  const IncomeLine({
+    required this.status,
+    required this.amount,
+    this.categoryId,
+  });
 
   /// `pending`, `received` ou `cancelled`.
   final String status;
   final BigInt? amount;
+
+  /// Categoria (relatórios); `null` = sem categoria.
+  final String? categoryId;
 }
 
 /// Despesa como entra no cálculo. Pendente e paga contam uma única vez
 /// (pagar não deduz de novo); cancelada e variável sem valor não contam.
 class ExpenseLine {
-  const ExpenseLine({required this.status, required this.amount});
+  const ExpenseLine({
+    required this.status,
+    required this.amount,
+    this.categoryId,
+  });
 
   /// `pending`, `paid` ou `cancelled`.
   final String status;
   final BigInt? amount;
+
+  /// Categoria (relatórios); `null` = sem categoria.
+  final String? categoryId;
 }
 
 /// Destinação a investimento; cancelada (com data) não conta.
@@ -49,7 +63,7 @@ class PeriodTotals {
   final BigInt expense;
   final BigInt investment;
 
-  /// Sobra do período. Pode ser negativa.
+  /// Dinheiro livre do período (nome interno: `surplus`). Pode ser negativo.
   BigInt get surplus => income - expense - investment;
 
   @override

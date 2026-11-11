@@ -7,7 +7,7 @@ import '../sync/local_change_recorder.dart';
 import 'period_models.dart';
 import 'period_repository.dart';
 import 'remote_period_repository.dart'
-    show configFromRow, periodParams, periodRpc;
+    show configFromRow, periodParams, periodRpc, scheduleParams, scheduleRpc;
 
 /// Celular: grava primeiro no banco local cifrado (registro, auditoria e fila
 /// na mesma transação) e sincroniza depois.
@@ -97,6 +97,9 @@ class LocalPeriodRepository implements PeriodRepository {
       params: periodParams(draft),
       dependsOn: [
         if (draft.dependsOnPeriodId != null) draft.dependsOnPeriodId!,
+        // Configuração agendada que ainda pode estar na fila (Entrega 59).
+        if (draft.dependsOnConfigurationId != null)
+          draft.dependsOnConfigurationId!,
       ],
       newSnapshot: periodSnapshot,
       extraAudits: [
@@ -139,6 +142,78 @@ class LocalPeriodRepository implements PeriodRepository {
             draft.range.end.toIso(),
           ],
         );
+      },
+    );
+  }
+
+  @override
+  Future<void> scheduleConfiguration(ScheduleDraft draft) async {
+    final now = _clock().toUtc().toIso8601String();
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM period_configurations WHERE owner_id = ? AND id = ?',
+          variables: [
+            Variable.withString(_ownerId),
+            Variable.withString(draft.configurationId),
+          ],
+        )
+        .get();
+    final old = rows.isEmpty ? null : rows.single.data;
+    await _recorder.record(
+      ownerId: _ownerId,
+      entityType: 'period_configuration',
+      entityId: draft.configurationId,
+      operation: draft.isCreate ? 'create' : 'update',
+      expectedVersion: draft.expectedVersion,
+      rpc: scheduleRpc,
+      params: scheduleParams(draft),
+      dependsOn: [draft.lastPeriodId],
+      oldSnapshot: old == null
+          ? null
+          : {
+              'id': old['id'],
+              'mode': old['mode'],
+              'custom_start_day': old['custom_start_day'],
+              'effective_from': old['effective_from'],
+              'version': old['version'],
+            },
+      newSnapshot: {
+        'id': draft.configurationId,
+        'mode': draft.config.mode.dbValue,
+        'custom_start_day': draft.config.customStartDay,
+        'effective_from': draft.effectiveFrom.toIso(),
+        'version': draft.expectedVersion + 1,
+      },
+      apply: () async {
+        if (draft.isCreate) {
+          await _db.customStatement(
+            'INSERT INTO period_configurations (id, owner_id, version, '
+            'created_at, updated_at, mode, custom_start_day, effective_from) '
+            'VALUES (?, ?, 1, ?, ?, ?, ?, ?)',
+            [
+              draft.configurationId,
+              _ownerId,
+              now,
+              now,
+              draft.config.mode.dbValue,
+              draft.config.customStartDay,
+              draft.effectiveFrom.toIso(),
+            ],
+          );
+        } else {
+          await _db.customStatement(
+            'UPDATE period_configurations SET mode = ?, custom_start_day = ?, '
+            'version = ?, updated_at = ? WHERE owner_id = ? AND id = ?',
+            [
+              draft.config.mode.dbValue,
+              draft.config.customStartDay,
+              draft.expectedVersion + 1,
+              now,
+              _ownerId,
+              draft.configurationId,
+            ],
+          );
+        }
       },
     );
   }

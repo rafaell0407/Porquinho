@@ -75,7 +75,7 @@ Não inclua itens sem informação relevante. A comunicação deve ser suficient
 | `docs/requisitos.md` | Escopo e comportamento funcional | O que o aplicativo deve fazer? |
 | `docs/arquitetura.md` | Organização técnica e integração | Como o sistema será construído? |
 | `docs/banco_de_dados.md` | Entidades, persistência e integridade | Como os dados serão organizados? |
-| `docs/regras_negocio.md` | Regras financeiras | Como cada operação afeta a sobra do período? |
+| `docs/regras_negocio.md` | Regras financeiras | Como cada operação afeta o dinheiro livre do período? |
 | `docs/roadmap.md` | Fases, prioridades e dependências | Em qual ordem desenvolver? |
 | `docs/estado_atual.md` | Fase, última entrega, pendências e decisões abertas | Onde o projeto está agora? |
 | `docs/historico/decisoes.md` | Arquivo de entregas, revisões e textos superados (somente consulta) | O que já foi feito ou substituído? |
@@ -127,7 +127,7 @@ O MVP não possui módulo de contas bancárias nem módulo de Porquinho virtual.
 - Cadastro ou manutenção de contas bancárias.
 - Saldos individuais, consolidação automática de saldos ou conciliação bancária.
 - Campo ou entidade especial de saldo inicial por período.
-- Reservas virtuais, compromissos separados ou cálculo de dinheiro livre.
+- Reservas virtuais, compromissos separados ou qualquer cálculo de "dinheiro livre" além da fórmula do §4.2 (o nome "dinheiro livre do período" é o do indicador `receitas − despesas − investimentos`, decisão de 11/11/2026).
 - Carteira de investimentos, ativos, posições, rentabilidade ou categorias por classe de ativo.
 - Compras individuais de cartão, parcelamentos, fechamento ou fatura calculada automaticamente.
 - Cálculos automáticos de rendimento por taxa fixa ou CDI.
@@ -136,11 +136,11 @@ O nome do produto permanece Porquinho; isso não autoriza reintroduzir o antigo 
 
 ### 4.2 Resultado financeiro
 
-O único indicador de resultado financeiro do MVP é a **sobra do período**:
+O único indicador de resultado financeiro do MVP é a **dinheiro livre do período**:
 
-`Sobra do período = receitas contabilizadas - despesas contabilizadas - valores destinados a investimentos`.
+`Dinheiro livre do período = receitas contabilizadas - despesas contabilizadas - valores destinados a investimentos`.
 
-Não criar indicador de saldo disponível, saldo atual, dinheiro livre ou saldo bancário.
+Não criar indicador de saldo disponível, saldo atual ou saldo bancário. "Dinheiro livre do período" é somente o nome do indicador único acima: não considera sobras de períodos anteriores, reservas, compromissos separados nem saldo bancário.
 
 Não existe campo especial de saldo inicial. O usuário pode criar uma categoria de receita chamada, por exemplo, **Saldo inicial**, e registrar um lançamento comum. O sistema não dá tratamento especial a essa categoria, não a reconhece automaticamente e não detecta eventual duplicidade.
 
@@ -154,7 +154,7 @@ Não existe campo especial de saldo inicial. O usuário pode criar uma categoria
 
 ### 4.4 Despesas
 
-- Despesas avulsas entram no cálculo da sobra quando cadastradas.
+- Despesas avulsas entram no cálculo do dinheiro livre quando cadastradas.
 - Despesas recorrentes entram no cálculo quando a ocorrência é gerada e, quando variável, depois de informado o valor.
 - O pagamento altera o status e registra a data, mas não gera uma segunda dedução.
 - Despesas não pagas permanecem no período original como pendentes e não são transportadas financeiramente para o período seguinte.
@@ -164,8 +164,8 @@ Não existe campo especial de saldo inicial. O usuário pode criar uma categoria
 
 - O MVP permite apenas registrar valores totais destinados a investimentos.
 - Cada lançamento registra somente o valor e a data (informada pelo usuário, passada ou futura), sem descrição, categorias por ativo, classe ou instituição. O total por período vem no relatório da Fase 7; o Dashboard não o exibe no MVP.
-- Investimento pode ser recorrente (todo mês ou todo período), com valor fixo e valor alterável por ocorrência; a ocorrência gerada entra na sobra sem confirmação. Não existe resgate: desfazer é cancelar o lançamento.
-- O valor é deduzido da sobra no momento do lançamento.
+- Investimento pode ser recorrente (todo mês ou todo período), com valor fixo e valor alterável por ocorrência; a ocorrência gerada entra no dinheiro livre sem confirmação. Não existe resgate: desfazer é cancelar o lançamento.
+- O valor é deduzido do dinheiro livre no momento do lançamento.
 - Não existe status pendente/pago para destinação de investimento.
 - O aplicativo não acompanha ativos, posições, saldo investido acumulado ou rentabilidade.
 - Rendimentos efetivamente recebidos, quando informados, são receitas comuns. Não há cálculo automático.
@@ -209,7 +209,7 @@ O usuário pode editar ou cancelar qualquer lançamento, mesmo pago ou recebido.
 
 - Nunca utilize ponto flutuante binário como representação persistente de dinheiro.
 - Não invente critérios de arredondamento, juros, impostos ou convenções de datas.
-- Centralize a fórmula da sobra e as regras de competência em componentes de domínio testáveis.
+- Centralize a fórmula do dinheiro livre e as regras de competência em componentes de domínio testáveis.
 - Receita é atribuída pela data efetiva de recebimento; despesa, pela data de cadastro/geração; investimento, pela data do lançamento.
 - A data do pagamento da despesa não altera o período em que ela foi contabilizada.
 - A implementação local e a validação remota devem produzir resultados equivalentes para os mesmos dados e condições. Não é obrigatório compartilhar o mesmo código.
@@ -241,7 +241,7 @@ O usuário pode editar ou cancelar qualquer lançamento, mesmo pago ou recebido.
 Antes de considerar uma tarefa concluída, execute conforme aplicável:
 
 - Formatação e análise estática.
-- Testes unitários das regras da sobra e da competência.
+- Testes unitários das regras do dinheiro livre e da competência.
 - Testes de edição, cancelamento, recorrências e mudanças de período.
 - Testes de equivalência dos cálculos locais e remotos.
 - Testes de sincronização idempotente, falhas e conflitos.

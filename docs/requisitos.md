@@ -7,9 +7,9 @@
 
 ## 1. Visão geral
 
-O Porquinho é um aplicativo de controle financeiro pessoal por períodos. O MVP registra receitas pela data de recebimento, despesas cadastradas/geradas e valores totais destinados a investimentos. O principal e único indicador de resultado é a **sobra do período**.
+O Porquinho é um aplicativo de controle financeiro pessoal por períodos. O MVP registra receitas pela data de recebimento, despesas cadastradas/geradas e valores totais destinados a investimentos. O principal e único indicador de resultado é a **dinheiro livre do período**.
 
-O produto não fará controle de saldos bancários, não manterá módulo de contas e não terá o antigo Porquinho virtual de reservas e dinheiro livre. O nome do aplicativo permanece Porquinho.
+O produto não fará controle de saldos bancários, não manterá módulo de contas e não terá o antigo Porquinho virtual de reservas e compromissos separados. "Dinheiro livre do período" passa a ser apenas o nome do indicador `receitas − despesas − investimentos` do período (decisão de 11/11/2026). O nome do aplicativo permanece Porquinho.
 
 ## 2. Objetivos do produto
 
@@ -17,7 +17,7 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 - Registrar despesas avulsas e recorrentes, com valores fixos ou variáveis.
 - Permitir editar e cancelar lançamentos a qualquer momento, preservando histórico.
 - Registrar o valor total destinado a investimentos, sem acompanhar ativos.
-- Calcular a sobra por mês-calendário ou ciclo personalizado.
+- Calcular o dinheiro livre por mês-calendário ou ciclo personalizado.
 - Permitir categorias de receitas e despesas personalizadas pelo usuário.
 - Disponibilizar Dashboard, Lançamentos e Mais.
 - Operar offline nas funcionalidades financeiras do MVP e sincronizar com segurança (offline somente no aplicativo de celular; a Web exige conexão — decisão de 10/11/2026).
@@ -42,7 +42,7 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 13. Registro simplificado de valores destinados a investimentos, sem categoria de ativo ou controle de carteira.
 14. Registro manual de rendimentos efetivamente recebidos como receitas comuns.
 15. Controle por mês-calendário ou ciclo personalizado recorrente, com dia inicial configurável.
-16. Cálculo e apresentação da sobra do período.
+16. Cálculo e apresentação do dinheiro livre do período.
 17. Edição e cancelamento de qualquer lançamento, independentemente do status, com histórico de auditoria.
 18. Alertas móveis de vencimentos: três dias antes, no dia e diariamente após o vencimento enquanto a despesa estiver pendente, respeitadas as permissões do dispositivo.
 19. Operação offline das funcionalidades financeiras do MVP, no aplicativo de celular (Android). A Web funciona somente online, sem banco local nem fila de envio (decisão de 10/11/2026).
@@ -57,7 +57,7 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 - Cadastro ou manutenção de contas bancárias.
 - Saldos individuais por conta, saldo bancário consolidado automático, conciliação ou integração bancária.
 - Campo ou entidade especial de saldo inicial por período.
-- Porquinho virtual, reservas, compromissos separados e cálculo de dinheiro livre/disponível.
+- Porquinho virtual, reservas, compromissos separados e cálculo de saldo disponível (com reservas ou compromissos separados).
 - Compras individuais no cartão, parcelamentos, fechamento automático, faturas calculadas a partir de compras e controle de limites.
 - Categorias ou detalhamento de investimentos por ativo, classe, instituição ou carteira.
 - Acompanhamento de ativos, posições, cotações, rentabilidade ou dividendos.
@@ -87,7 +87,7 @@ Casais ou famílias poderão compartilhar um planejamento financeiro em versão 
 
 A navegação principal terá somente:
 
-- **Dashboard:** período selecionado, sobra do período e visão resumida de receitas, despesas e investimentos.
+- **Dashboard:** período selecionado, dinheiro livre do período e visão resumida de receitas, despesas e investimentos.
 - **Lançamentos:** inclusão, consulta, edição e cancelamento de receitas, despesas e destinações para investimentos; filtros por período, tipo, categoria e status quando aplicável.
 - **Mais:** categorias, relatórios, configurações, preferências de período, tema, segurança e onboarding.
 
@@ -114,11 +114,11 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF013 | Representar fatura de cartão como despesa recorrente variável | Alta | APROVADO |
 | RF014 | Criar, renomear e desativar categorias de receitas e despesas | Alta | APROVADO |
 | RF015 | Suportar subcategorias opcionais | Média | APROVADO |
-| RF016 | Registrar valor total destinado a investimentos, com dedução imediata da sobra | Alta | APROVADO |
+| RF016 | Registrar valor total destinado a investimentos, com dedução imediata do dinheiro livre | Alta | APROVADO |
 | RF017 | Registrar rendimento efetivamente recebido como receita comum | Média | APROVADO |
 | RF018 | Editar ou cancelar qualquer lançamento, qualquer que seja seu status, preservando auditoria | Alta | APROVADO |
 | RF019 | Permitir controle por mês-calendário ou ciclo personalizado | Essencial | APROVADO |
-| RF020 | Calcular e apresentar somente a sobra do período como indicador de resultado | Essencial | APROVADO |
+| RF020 | Calcular e apresentar somente o dinheiro livre do período como indicador de resultado | Essencial | APROVADO |
 | RF021 | Realizar operações financeiras previstas mesmo sem conexão | Essencial | APROVADO |
 | RF022 | Sincronizar operações pendentes com idempotência e detecção de conflitos | Essencial | APROVADO |
 | RF023 | Alertas móveis de vencimento de despesas | Alta | APROVADO |
@@ -133,13 +133,13 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 - Receita avulsa aceita data de recebimento passada ou futura; o aplicativo não verifica se foi de fato recebida (decisão de 10/11/2026).
 - A data de recebimento determina o período da receita.
 - Uma recorrência mensal ou por período gera uma ocorrência pendente.
-- Uma ocorrência recorrente só entra na sobra quando o usuário confirma o recebimento.
+- Uma ocorrência recorrente só entra no dinheiro livre quando o usuário confirma o recebimento.
 - Se fixa, o valor padrão é preenchido automaticamente; se variável, o usuário informa o valor.
 - O usuário pode alterar o valor da ocorrência, inclusive quando fixa, sem alterar o modelo da recorrência nem ocorrências futuras.
 - O valor confirmado é contabilizado uma única vez.
 
 **RF009–RF013 — Despesas**
-- Despesa avulsa entra no cálculo da sobra no momento do cadastro, no período da data informada (passada ou futura; padrão hoje).
+- Despesa avulsa entra no cálculo do dinheiro livre no momento do cadastro, no período da data informada (passada ou futura; padrão hoje).
 - Despesa recorrente gera uma ocorrência no calendário escolhido (mensal ou por período).
 - Despesa fixa utiliza o valor padrão; despesa variável solicita o valor da ocorrência.
 - O valor da despesa recorrente é contabilizado quando a ocorrência é gerada e o valor está definido.
@@ -156,9 +156,9 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 - No primeiro acesso, o aplicativo sugere categorias desmarcáveis (lista na RN024); o usuário pode criar as suas.
 
 **RF016–RF017 — Investimentos e rendimentos**
-- O usuário registra somente o valor destinado a investimentos e a data (padrão hoje; passada ou futura — decisão de 11/11/2026). O total de investimentos por período é apresentado no relatório da Fase 7, sem discriminação por ativo ou categoria; o Dashboard não exibe esse total no MVP (decisão de 11/11/2026).
-- O valor é deduzido imediatamente da sobra do período da data do investimento.
-- O investimento pode se repetir todo mês ou todo período, com valor fixo e valor alterável por ocorrência; cada ocorrência gerada entra na sobra sem confirmação (decisão de 11/11/2026).
+- O usuário registra somente o valor destinado a investimentos e a data (padrão hoje; passada ou futura — decisão de 11/11/2026). O total de investimentos por período aparece no relatório da Fase 7 e, desde 11/11/2026 (D1 da Fase 7, revisa a D3 da Fase 6), também no Dashboard como parte da composição do dinheiro livre; sem discriminação por ativo ou categoria.
+- O valor é deduzido imediatamente do dinheiro livre do período da data do investimento.
+- O investimento pode se repetir todo mês ou todo período, com valor fixo e valor alterável por ocorrência; cada ocorrência gerada entra no dinheiro livre sem confirmação (decisão de 11/11/2026).
 - O sistema não solicita classe de ativo, instituição, quantidade, posição, status de pagamento ou rentabilidade.
 - Rendimentos efetivamente recebidos podem ser lançados como receitas comuns.
 - Nenhuma estimativa de rendimento é calculada automaticamente.
@@ -169,13 +169,13 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 - Cancelamento exclui o lançamento dos cálculos, mas preserva o registro histórico e o evento de auditoria.
 - O sistema não apaga fisicamente o histórico financeiro.
 
-**RF019–RF020 — Períodos e sobra**
+**RF019–RF020 — Períodos e dinheiro livre**
 - O usuário escolhe mês-calendário ou ciclo personalizado.
 - O ciclo personalizado usa um dia inicial configurável; exemplo: 20/11 a 19/12.
 - Alterações de modalidade ou dia inicial só passam a valer no próximo período.
 - Períodos anteriores mantêm a configuração usada na criação.
-- A sobra é calculada com receitas recebidas no período, despesas cadastradas/geradas no período e investimentos lançados no período.
-- Não há indicador de saldo atual, saldo disponível ou dinheiro livre.
+- O dinheiro livre é calculado com receitas recebidas no período, despesas cadastradas/geradas no período e investimentos lançados no período.
+- Não há indicador de saldo atual ou saldo disponível; o dinheiro livre do período é somente o indicador único do §5.
 - Para ciclos personalizados, preservar o dia original e usar o último dia disponível em meses curtos; retornar ao dia original quando possível no mês seguinte.
 
 **RF021–RF022–RF027 — Offline e sincronização** (offline somente no celular; Web somente online — decisão de 10/11/2026)
@@ -216,7 +216,7 @@ O aplicativo não controla contas bancárias nem saldos bancários. Não há sal
 
 ## 10. Relatórios do MVP
 
-Os cinco relatórios aprovados estão especificados na seção 13.7. Esta seção não define uma lista alternativa. Não incluir relatório de saldo bancário, dinheiro livre, Porquinho virtual ou carteira de investimentos.
+Os cinco relatórios aprovados estão especificados na seção 13.7. Esta seção não define uma lista alternativa. Não incluir relatório de saldo bancário, saldo disponível, Porquinho virtual ou carteira de investimentos.
 
 ## 11. Detalhamentos pendentes
 
@@ -225,7 +225,7 @@ As regras funcionais desta baseline estão aprovadas. Não há decisão pendente
 ## 12. Funcionalidades para versões futuras
 
 - Gestão de contas bancárias e conciliação.
-- Porquinho virtual, reservas e dinheiro livre.
+- Porquinho virtual, reservas e saldo disponível.
 - Compras individuais, parcelas e gestão avançada de cartões.
 - Gestão de carteira e acompanhamento de ativos.
 - Estimativas automáticas de rendimentos.
@@ -253,7 +253,7 @@ As regras funcionais desta baseline estão aprovadas. Não há decisão pendente
 1. Receitas por categoria e período.
 2. Despesas por categoria e período.
 3. Total destinado a investimentos por período.
-4. Evolução da sobra entre períodos.
+4. Evolução do dinheiro livre entre períodos.
 5. Comparativo de receitas, despesas e investimentos por período.
 
-Todos respeitam a configuração de período do usuário. Nos relatórios de receitas e despesas por categoria, lançamentos sem categoria aparecem agrupados em **Sem categoria** e também permanecem nos totais gerais. Não incluem rentabilidade, projeções, saldos bancários, dinheiro livre ou gestão de carteira.
+Todos respeitam a configuração de período do usuário. Nos relatórios de receitas e despesas por categoria, lançamentos sem categoria aparecem agrupados em **Sem categoria** e também permanecem nos totais gerais. Não incluem rentabilidade, projeções, saldos bancários, saldo disponível ou gestão de carteira.

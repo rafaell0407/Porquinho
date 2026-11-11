@@ -89,6 +89,7 @@ String entityLabel(String entityType) => switch (entityType) {
   'income_recurrence_template' => 'Receita recorrente',
   'expense_recurrence_template' => 'Despesa recorrente',
   'investment_recurrence_template' => 'Investimento recorrente',
+  'user_preferences' => 'Preferência da conta',
   _ => 'Item',
 };
 
