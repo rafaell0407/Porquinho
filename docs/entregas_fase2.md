@@ -1,45 +1,32 @@
-# Entregas da Fase 2 — detalhe (somente consulta)
+# Fase 2 — Modelagem física e base técnica (registro compacto)
 
-Detalhe técnico de cada entrega, movido de `docs/estado_atual.md` em 10/11/2026 para manter aquele arquivo curto. Ordem: da mais recente para a mais antiga. O estado vigente e as pendências ficam em `docs/estado_atual.md`. Só consultar quando precisar do detalhe de uma entrega.
+**Status:** CONCLUÍDA em 10/11/2026 (Entregas 1–21). Estado vigente: `docs/estado_atual.md`. Detalhe técnico: `docs/banco_de_dados.md` §16.8–16.10, `docs/arquitetura.md` §16–17 e Git. Entrega 22 está na Fase 4 (`docs/entregas_fase4.md`).
 
-## Entrega 20 (10/11/2026) — PIN/biometria (RF003)
-Decisões do responsável (10/11/2026): PIN de 6 dígitos + biometria opcional como atalho; pedido só ao abrir o app do zero (com sessão ativa); 5 erros → espera crescente (30 s, 1 min, 5 min, 15 min, 1 h) sem apagar dados; ativação em tela provisória "Segurança" (vai para "Mais" na Fase 3). Implementação em `lib/features/app_lock/`: `AppLockService` (PBKDF2-HMAC-SHA256 com sal, 100 mil iterações, no `SecureValueStore`), `AppLockController`, `BiometricAuthenticator` (`local_auth` 3.0.2, BSD-3, oficial do Flutter), `LockScreen`, `SecurityScreen`; rota `/bloqueio` no GoRouter; o PIN é removido no logout (`onSignedOut`); Web sem bloqueio. Android: `MainActivity` passou a `FlutterFragmentActivity`, permissão `USE_BIOMETRIC`, `LaunchTheme` com pai AppCompat. Dependências: `local_auth` e `crypto` (BSD-3, já transitiva). 15 testes novos (70 no total) e `flutter analyze` limpo. Validado no emulador: ativar, pedir ao reabrir, 5 erros → "Tente de novo em 29 s", PIN certo recusado durante a espera e aceito depois. **Não testado:** biometria em aparelho com digital cadastrada.
+## Entregas
+| # | Resultado | Validação |
+|---|---|---|
+| 1–8 | PostgreSQL/Supabase: módulos e testes, schema, migration inicial, RPCs de categorias, períodos, subcategorias, investimentos (7A), lançamentos e modelos recorrentes (7B–7C), ocorrências (8). Migrations `20261109000100`–`000900`, PostgreSQL 18.6, aplicadas no Supabase local `porquinho-dev` | 1, 2, 5, 6 validadas (09/11); 3, 4, 7B–8 sem validação registrada; 7A coberta pela suíte na Fase 6 |
+| 9 | Drift local v1 (14 tabelas) e teste de precisão monetária nativo | 09/11 |
+| 10 | Drift no navegador (SQLite/WASM): centavos até 2^63−1, `BigInt`, datas ISO/UTC. Runner `dart test -p chrome` em `tooling/web_check` | validada |
+| 11 | Prova de criptografia local (SQLite3MultipleCiphers nativo; `sqlite3mc.wasm` + KEK WebCrypto na Web), `tooling/crypto_check` | validada |
+| 12 | Drift cifrado (nativo e Web) e schema v2 (4 índices; ganho de desempenho **não medido**) | 10/11 |
+| 13 | Origem da chave do banco (`flutter_secure_storage`, Android Keystore); pasta `android/` criada | validada |
+| 14–19 | Sessão e logout, Supabase Auth, confirmação de e-mail (RF002), login/cadastro/Google, nova senha, banco local ligado ao app | validadas |
+| 20 | PIN de 6 dígitos + biometria opcional (RF003), `lib/features/app_lock/` | validada; biometria só em testes automáticos |
+| 21 (A–D) | Protocolo de sincronização: estados, RPC `resolve_sync_conflict`, motor de envio, logout com pendências | 10/11 |
 
-## Validação no emulador Android (10/11/2026, Supabase local)
-Login com Google (exige `adb reverse tcp:54321 tcp:54321` para o retorno do OAuth no emulador), sessão mantida ao reabrir, recuperação de senha por link (o deep link abre a tela de nova senha; a nova senha entra no login) e logout sem internet sem pendências.
+## Decisões exclusivas (10/11/2026, APROVADAS)
+- **PIN (E20):** 6 dígitos; pedido só ao abrir o app do zero com sessão ativa; 5 erros → espera crescente (30 s, 1 min, 5 min, 15 min, 1 h) sem apagar dados; PBKDF2-HMAC-SHA256 (100 mil iterações, com sal); removido no logout; Web sem bloqueio.
+- **Chave do banco (E13):** Android/iOS usam `flutter_secure_storage`; Web opção B (KEK exige reautenticação a cada sessão); logout com pendências é **bloqueado com aviso**, sem descarte.
+- **Sessão Web:** sem persistência (opção B). Nenhuma regra de senha local; o servidor decide.
+- **Dependências aprovadas:** `flutter_riverpod` 3.5.0, `go_router` 18.1.4, `supabase_flutter` 2.18.3, `local_auth` 3.0.2, `crypto`, `path_provider`, `sqlite3` com `source: sqlite3mc` (troca o SQLite de todos os builds nativos). Licença do SQLite3MultipleCiphers confirmada; falta registrar texto/versão.
+- Confirmação de e-mail ligada no Supabase local (`enable_confirmations = true`); Google habilitado via `config.toml` + `supabase/.env` (ignorado pelo Git).
 
-## Entrega 19 (10/11/2026)
-Itens (c) e (d) do item 4. **Nova senha:** `SessionPasswordRecovery`, evento `passwordRecovery` no repositório, `NewPasswordScreen` (`/nova-senha`; confirmação de senha, "Agora não"), `SessionController.completePasswordRecovery/skipPasswordRecovery`; trata o evento chegar antes ou depois do usuário. **Banco local ligado ao app (só nativo):** `LocalDatabaseManager` (abre o banco cifrado sob demanda; `closeAndWipe`), `ManagedPendingSyncCounter` (contador real) e `main.dart` passa `onSignedOut: manager.closeAndWipe()`; `ownerIdProvider` expõe o `owner_id` do logado. Logout sem internet agora conclui (a sessão local já é removida; falha de rede do servidor é ignorada). Dependência `path_provider` (BSD-3, equipe Flutter; já era transitiva) tornada direta. Web continua sem banco (depende da KEK com reautenticação). 55 testes e `flutter analyze` aprovados; `flutter build apk --debug` compilou. Nenhuma tela grava ainda com `ownerIdProvider`.
-
-## Entrega 18 (10/11/2026)
-Fechamento técnico do item 4 no que é testável sem dispositivo. Testado contra o Supabase local (`auth_session_security_test.dart`): renovação de token (mesma conta, novo token), restauração de sessão guardada por outro cliente, recuperação de senha completa (e-mail → link → código → nova senha → senha antiga recusada → novo login; novo método `AuthRepository.updatePassword`) e **autorização**: usuário B não lê, nem altera por DML direto, a categoria criada por A, e o acesso anônimo não a lê (RLS e grants via API real). Novo `LocalDataCleaner` (apaga o banco cifrado, `-wal/-shm/-journal` e a chave; 2 testes) para a limpeza local após logout permitido.
-
-## Entrega 17 (10/11/2026)
-Tela de login e ponto de entrada do app. `lib/main.dart` (config por `--dart-define=SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY`; sessão no Keystore no celular e SEM persistência na Web, conforme a opção B), `lib/app/app.dart` (GoRouter: `/login` sem sessão, `/` com sessão; `/` é só um marcador com botão Sair até o Dashboard da Fase 3), `lib/features/auth/login_screen.dart` (e-mail/senha, Entrar com Google, Criar conta, Esqueci minha senha; mensagens em português) e `auth_providers.dart` (Riverpod). Android: permissão INTERNET, deep link `br.com.porquinho.porquinho://login-callback` (também em `additional_redirect_urls` do Supabase local), HTTP liberado só no manifesto de debug. 9 testes de widget; `flutter build apk --debug` compilou. Nenhuma regra de senha local foi inventada: quem decide é o servidor.
-
-## Entrega 16 (10/11/2026)
-Confirmação de e-mail (RF002) ligada no Supabase local (`enable_confirmations = true` em `config.toml`; Supabase local reiniciado) e testada: cadastro não gera sessão, login antes de confirmar falha com `emailNotConfirmed`, o teste lê o e-mail no Mailpit local, abre o link de confirmação e o login passa; senha errada, senha fraca, recuperação e rede fora do ar seguem cobertas. Dependências aprovadas pelo responsável: `flutter_riverpod` 3.5.0 (MIT) e `go_router` 18.1.4 (BSD-3, equipe Flutter).
-
-## Entrega 15 (10/11/2026)
-Adaptador Supabase Auth. Dependência `supabase_flutter` 2.18.3 aprovada pelo responsável (licenças MIT e Apache-2.0 do `app_links`; SDK oficial). Em `lib/features/auth/`: `SupabaseAuthRepository` (login/cadastro e-mail+senha, recuperação, Google via navegador, restauração, mapeamento de erros para `AuthFailure`) e `SecureSessionStorage` (sessão no `SecureValueStore`; passado em `FlutterAuthClientOptions.localStorage`). Google habilitado no Supabase local (`config.toml` + `supabase/.env` ignorado pelo Git; a chave secreta apareceu no chat e deve ser trocada). 5 testes novos (4 contra o Supabase local).
-
-## Entrega 14 (10/11/2026)
-Base de sessão e logout, sem SDK do Supabase. Em `lib/features/auth/`: `AuthRepository` (contrato), `AuthUser`/`AuthFailure`/`SessionState`, `SessionController` (logout **bloqueado com aviso** se houver pendências, sem encerrar sessão nem limpar nada — decisão 3, opção 1) e `DriftPendingSyncCounter` (conta linhas de `sync_outbox` do usuário e conflitos com `state <> 'resolved'`). **Suposições a confirmar (pendência 5):** a outbox não tem estados definidos, então linha presente = pendente; o valor `'resolved'` de conflito é assumido.
-
-## Entrega 13 (10/11/2026)
-Origem da chave do banco. Decisões do responsável em 10/11/2026 (APROVADO): (1) Android/iOS usam `flutter_secure_storage` (BSD-3, v11.2.0; minSdk 24); (2) Web: opção B — a KEK exige reautenticação a cada nova sessão; (3) logout com lançamentos não sincronizados: opção 1 — bloquear a saída e avisar, sem descarte. Entregue: `SecureValueStore`, `InMemorySecureValueStore`, `StoredDatabaseKeyProvider` (gera 256 bits com `Random.secure()`, persiste, reutiliza, serializa concorrência, `StateError` se a chave guardada for inválida) e `FlutterSecureValueStore` (Android Keystore) em `lib/core/local_database/`; 6 testes do provedor. Criada só a pasta `android/` (`flutter create --platforms=android`, org `br.com.porquinho`; `minSdk` no mínimo 24). iOS sem projeto; múltiplas abas Web sem teste; `applicationId` provisório `br.com.porquinho.porquinho` a confirmar.
-
-## Entrega 12 (10/11/2026)
-Drift sobre banco cifrado, nativo e Web, com o schema real do app e migração. Licença do SQLite3MultipleCiphers confirmada pelo responsável em 10/11/2026 (pendente só o registro do texto/versão). Novos: `database_key.dart` (`DatabaseKeyProvider`, `buildKeyPragma` valida 64 hex), `encrypted_connection{,_native,_web}.dart` (`openEncryptedExecutor(location, keys)`; Web abre `sqlite3mc.wasm` sobre IndexedDB com VFS `multipleciphers-*` via `WasmDatabase.opened` e grava o IndexedDB após cada escrita/commit). **Schema Drift v2** (`schemaVersion` 2, snapshot `drift_schema_v2.json`, `schema_versions.dart`, `test/generated_migrations/`): 4 índices (`income_entries_period_idx`, `expense_entries_period_idx`, `investment_allocations_period_idx`, `sync_outbox_state_idx`), sem mudar colunas; ganho de desempenho NÃO medido (pendência 9). `pubspec.yaml`: `sqlite3 ^3.9.1` e `hooks.user_defines.sqlite3.source: sqlite3mc` (troca o SQLite de todos os builds nativos). Testes: nativo (contrato sobre arquivo cifrado, arquivo sem texto puro, chave errada falha, migração v1→v2 cifrada com 2^63−1, `SchemaVerifier`) e Web `dart test -p chrome` em `tooling/web_check` (12 testes). Validada pelo responsável em 10/11/2026, incluindo a troca do SQLite nativo.
-
-## Entrega 11 (10/11/2026)
-Prova técnica de criptografia local em `tooling/crypto_check` (10 testes `dart test`): SQLite3MultipleCiphers (chacha20) nativo no Windows e `sqlite3mc.wasm` sobre IndexedDB na Web; arquivo ilegível sem a chave, chave errada falha, `rekey` funciona, Drift nativo lê centavos 2^63−1; KEK WebCrypto não extraível em IndexedDB recupera a chave do banco. Detalhes em `arquitetura.md` §17.5. Corrigida também a divergência de §17.8 (Entrega 6 validada em 09/11/2026).
-
-## Entrega 10 (10/11/2026)
-Drift validado no navegador sobre SQLite/WASM (`dart test -p chrome` em `tooling/web_check/`, 5 testes): centavos de 0 a 2^63−1 (incluindo 2^53±n) com igualdade exata, soma em `BigInt`, datas ISO e instantes UTC (limites de período, bissexto, `.999999Z`) e persistência após fechar/reabrir. O mesmo contrato (`test/core/local_database/database_contract.dart`) roda em SQLite nativo. `flutter test --platform chrome` não inicia o navegador headless nesta máquina (Chrome 156 e Edge), por isso o runner é `dart test`. Dependências de desenvolvimento `test_api` e `matcher` e o subprojeto `tooling/web_check`; `sqlite3.wasm` do release sqlite3-3.9.1. O responsável não conseguiu reproduzir a execução Web na própria máquina; a validação se apoia na execução registrada.
-
-## Entrega 9 (09/11/2026)
-Schema Drift local v1 (`lib/core/local_database/app_database.dart`, 14 tabelas, snapshot em `drift_schemas/porquinho/`) e teste de precisão monetária em SQLite nativo.
-
-## Entregas 1 a 8
-Módulos e testes (1), schema físico (2), migration inicial (3), RPCs de categorias (4), períodos (5), subcategorias (6), investimentos, lançamentos avulsos e modelos recorrentes (7A–7C), ocorrências recorrentes (8). Migrations `20261109000100` a `20261109000900` passaram em PostgreSQL 18.6 local e estão aplicadas no Supabase local (`porquinho-dev`).
+## Limitações e pendências
+- Biometria não testada em aparelho com digital cadastrada.
+- Chave secreta do Google apareceu no chat: trocar.
+- `flutter test --platform chrome` não abre nesta máquina (Chrome 156 e Edge); usa-se `dart test -p chrome` em `tooling/web_check`. O responsável não reproduziu a execução Web; a validação se apoia na execução registrada.
+- Web não tem banco local (depende da KEK com reautenticação); múltiplas abas Web sem teste; iOS sem projeto (fora do MVP).
+- `applicationId` provisório `br.com.porquinho.porquinho`, a confirmar.
+- Teste manual no emulador (Supabase local): login com Google exige `adb reverse tcp:54321 tcp:54321`; sessão mantida, recuperação de senha por link e logout sem internet funcionaram.
+- Autorização testada via API real: usuário B não lê nem altera registros de A; acesso anônimo não lê (RLS e grants).
