@@ -96,6 +96,18 @@ const _specs = [
     ..._templateColumns,
     ..._common,
   ]),
+  _TableSpec(
+    'investment_recurrence_templates',
+    'investment_recurrence_template',
+    [
+      _Col('frequency'),
+      _Col('starts_on'),
+      _Col('monthly_reference_day', _Kind.integer),
+      _Col('default_amount_centavos', _Kind.amount),
+      _Col('is_active', _Kind.boolean),
+      ..._common,
+    ],
+  ),
   _TableSpec('income_entries', 'income_entry', [
     _Col('description'),
     _Col('amount_centavos', _Kind.amount),
@@ -129,6 +141,9 @@ const _specs = [
     _Col('allocated_on'),
     _Col('accounting_period_id'),
     _Col('cancelled_at'),
+    _Col('recurrence_template_id'),
+    _Col('scheduled_for_date'),
+    _Col('scheduled_period_id'),
     ..._common,
   ]),
 ];
@@ -296,6 +311,7 @@ class DownloadService {
         ('expense_entries', 'accounting_period_id'),
         ('expense_entries', 'scheduled_period_id'),
         ('investment_allocations', 'accounting_period_id'),
+        ('investment_allocations', 'scheduled_period_id'),
       ],
       'period_configurations': [('accounting_periods', 'configuration_id')],
     };

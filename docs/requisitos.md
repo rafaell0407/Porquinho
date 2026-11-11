@@ -156,8 +156,9 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 - No primeiro acesso, o aplicativo sugere categorias desmarcáveis (lista na RN024); o usuário pode criar as suas.
 
 **RF016–RF017 — Investimentos e rendimentos**
-- O usuário registra somente o valor destinado a investimentos; a data do lançamento é registrada pelo sistema. O Dashboard apresenta um único total de investimentos do período, sem discriminação por ativo ou categoria.
-- O valor é deduzido imediatamente da sobra do período.
+- O usuário registra somente o valor destinado a investimentos e a data (padrão hoje; passada ou futura — decisão de 11/11/2026). O total de investimentos por período é apresentado no relatório da Fase 7, sem discriminação por ativo ou categoria; o Dashboard não exibe esse total no MVP (decisão de 11/11/2026).
+- O valor é deduzido imediatamente da sobra do período da data do investimento.
+- O investimento pode se repetir todo mês ou todo período, com valor fixo e valor alterável por ocorrência; cada ocorrência gerada entra na sobra sem confirmação (decisão de 11/11/2026).
 - O sistema não solicita classe de ativo, instituição, quantidade, posição, status de pagamento ou rentabilidade.
 - Rendimentos efetivamente recebidos podem ser lançados como receitas comuns.
 - Nenhuma estimativa de rendimento é calculada automaticamente.

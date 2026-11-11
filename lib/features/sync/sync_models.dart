@@ -72,14 +72,18 @@ class OutboxOperation {
   /// operação ser aplicada. A criação da recorrência cria também o modelo.
   List<String> get createdIds => [
     if (isCreate) entityId,
-    if (rpc == 'create_recurrence_from_entry')
-      params['p_template_id'] as String,
+    if (isRecurrenceCreation) params['p_template_id'] as String,
   ];
+
+  /// Criação de recorrência a partir de um lançamento (receita, despesa ou
+  /// investimento): cria o modelo e transforma o lançamento em ocorrência.
+  bool get isRecurrenceCreation =>
+      rpc == 'create_recurrence_from_entry' ||
+      rpc == 'create_investment_recurrence_from_entry';
 
   /// Operação que cria o registro (as demais apenas o alteram).
   bool get isCreate =>
-      (rpc == 'create_recurrence_from_entry' &&
-          params['p_expected_entry_version'] == 0) ||
+      (isRecurrenceCreation && params['p_expected_entry_version'] == 0) ||
       rpc == 'create_accounting_period' ||
       rpc == 'create_earlier_accounting_period' ||
       params['p_action'] == 'create';

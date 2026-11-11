@@ -4141,6 +4141,648 @@ class ExpenseRecurrenceTemplatesCompanion
   }
 }
 
+class $InvestmentRecurrenceTemplatesTable extends InvestmentRecurrenceTemplates
+    with
+        TableInfo<
+          $InvestmentRecurrenceTemplatesTable,
+          InvestmentRecurrenceTemplate
+        > {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $InvestmentRecurrenceTemplatesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(1),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
+    'updatedAt',
+  );
+  @override
+  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
+    'updated_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _frequencyMeta = const VerificationMeta(
+    'frequency',
+  );
+  @override
+  late final GeneratedColumn<String> frequency = GeneratedColumn<String>(
+    'frequency',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startsOnMeta = const VerificationMeta(
+    'startsOn',
+  );
+  @override
+  late final GeneratedColumn<String> startsOn = GeneratedColumn<String>(
+    'starts_on',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _monthlyReferenceDayMeta =
+      const VerificationMeta('monthlyReferenceDay');
+  @override
+  late final GeneratedColumn<int> monthlyReferenceDay = GeneratedColumn<int>(
+    'monthly_reference_day',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<BigInt, String>
+  defaultAmountCentavos =
+      GeneratedColumn<String>(
+        'default_amount_centavos',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<BigInt>(
+        $InvestmentRecurrenceTemplatesTable.$converterdefaultAmountCentavos,
+      );
+  static const VerificationMeta _isActiveMeta = const VerificationMeta(
+    'isActive',
+  );
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+    'is_active',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_active" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    ownerId,
+    version,
+    createdAt,
+    updatedAt,
+    frequency,
+    startsOn,
+    monthlyReferenceDay,
+    defaultAmountCentavos,
+    isActive,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'investment_recurrence_templates';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<InvestmentRecurrenceTemplate> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(
+        _updatedAtMeta,
+        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_updatedAtMeta);
+    }
+    if (data.containsKey('frequency')) {
+      context.handle(
+        _frequencyMeta,
+        frequency.isAcceptableOrUnknown(data['frequency']!, _frequencyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_frequencyMeta);
+    }
+    if (data.containsKey('starts_on')) {
+      context.handle(
+        _startsOnMeta,
+        startsOn.isAcceptableOrUnknown(data['starts_on']!, _startsOnMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startsOnMeta);
+    }
+    if (data.containsKey('monthly_reference_day')) {
+      context.handle(
+        _monthlyReferenceDayMeta,
+        monthlyReferenceDay.isAcceptableOrUnknown(
+          data['monthly_reference_day']!,
+          _monthlyReferenceDayMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(
+        _isActiveMeta,
+        isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ownerId, id};
+  @override
+  InvestmentRecurrenceTemplate map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return InvestmentRecurrenceTemplate(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}created_at'],
+      )!,
+      updatedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}updated_at'],
+      )!,
+      frequency: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}frequency'],
+      )!,
+      startsOn: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}starts_on'],
+      )!,
+      monthlyReferenceDay: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}monthly_reference_day'],
+      ),
+      defaultAmountCentavos: $InvestmentRecurrenceTemplatesTable
+          .$converterdefaultAmountCentavos
+          .fromSql(
+            attachedDatabase.typeMapping.read(
+              DriftSqlType.string,
+              data['${effectivePrefix}default_amount_centavos'],
+            )!,
+          ),
+      isActive: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_active'],
+      )!,
+    );
+  }
+
+  @override
+  $InvestmentRecurrenceTemplatesTable createAlias(String alias) {
+    return $InvestmentRecurrenceTemplatesTable(attachedDatabase, alias);
+  }
+
+  static TypeConverter<BigInt, String> $converterdefaultAmountCentavos =
+      const BigIntTextConverter();
+}
+
+class InvestmentRecurrenceTemplate extends DataClass
+    implements Insertable<InvestmentRecurrenceTemplate> {
+  final String id;
+  final String ownerId;
+  final int version;
+  final String createdAt;
+  final String updatedAt;
+  final String frequency;
+  final String startsOn;
+  final int? monthlyReferenceDay;
+  final BigInt defaultAmountCentavos;
+  final bool isActive;
+  const InvestmentRecurrenceTemplate({
+    required this.id,
+    required this.ownerId,
+    required this.version,
+    required this.createdAt,
+    required this.updatedAt,
+    required this.frequency,
+    required this.startsOn,
+    this.monthlyReferenceDay,
+    required this.defaultAmountCentavos,
+    required this.isActive,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['owner_id'] = Variable<String>(ownerId);
+    map['version'] = Variable<int>(version);
+    map['created_at'] = Variable<String>(createdAt);
+    map['updated_at'] = Variable<String>(updatedAt);
+    map['frequency'] = Variable<String>(frequency);
+    map['starts_on'] = Variable<String>(startsOn);
+    if (!nullToAbsent || monthlyReferenceDay != null) {
+      map['monthly_reference_day'] = Variable<int>(monthlyReferenceDay);
+    }
+    {
+      map['default_amount_centavos'] = Variable<String>(
+        $InvestmentRecurrenceTemplatesTable.$converterdefaultAmountCentavos
+            .toSql(defaultAmountCentavos),
+      );
+    }
+    map['is_active'] = Variable<bool>(isActive);
+    return map;
+  }
+
+  InvestmentRecurrenceTemplatesCompanion toCompanion(bool nullToAbsent) {
+    return InvestmentRecurrenceTemplatesCompanion(
+      id: Value(id),
+      ownerId: Value(ownerId),
+      version: Value(version),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+      frequency: Value(frequency),
+      startsOn: Value(startsOn),
+      monthlyReferenceDay: monthlyReferenceDay == null && nullToAbsent
+          ? const Value.absent()
+          : Value(monthlyReferenceDay),
+      defaultAmountCentavos: Value(defaultAmountCentavos),
+      isActive: Value(isActive),
+    );
+  }
+
+  factory InvestmentRecurrenceTemplate.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return InvestmentRecurrenceTemplate(
+      id: serializer.fromJson<String>(json['id']),
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      version: serializer.fromJson<int>(json['version']),
+      createdAt: serializer.fromJson<String>(json['createdAt']),
+      updatedAt: serializer.fromJson<String>(json['updatedAt']),
+      frequency: serializer.fromJson<String>(json['frequency']),
+      startsOn: serializer.fromJson<String>(json['startsOn']),
+      monthlyReferenceDay: serializer.fromJson<int?>(
+        json['monthlyReferenceDay'],
+      ),
+      defaultAmountCentavos: serializer.fromJson<BigInt>(
+        json['defaultAmountCentavos'],
+      ),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'ownerId': serializer.toJson<String>(ownerId),
+      'version': serializer.toJson<int>(version),
+      'createdAt': serializer.toJson<String>(createdAt),
+      'updatedAt': serializer.toJson<String>(updatedAt),
+      'frequency': serializer.toJson<String>(frequency),
+      'startsOn': serializer.toJson<String>(startsOn),
+      'monthlyReferenceDay': serializer.toJson<int?>(monthlyReferenceDay),
+      'defaultAmountCentavos': serializer.toJson<BigInt>(defaultAmountCentavos),
+      'isActive': serializer.toJson<bool>(isActive),
+    };
+  }
+
+  InvestmentRecurrenceTemplate copyWith({
+    String? id,
+    String? ownerId,
+    int? version,
+    String? createdAt,
+    String? updatedAt,
+    String? frequency,
+    String? startsOn,
+    Value<int?> monthlyReferenceDay = const Value.absent(),
+    BigInt? defaultAmountCentavos,
+    bool? isActive,
+  }) => InvestmentRecurrenceTemplate(
+    id: id ?? this.id,
+    ownerId: ownerId ?? this.ownerId,
+    version: version ?? this.version,
+    createdAt: createdAt ?? this.createdAt,
+    updatedAt: updatedAt ?? this.updatedAt,
+    frequency: frequency ?? this.frequency,
+    startsOn: startsOn ?? this.startsOn,
+    monthlyReferenceDay: monthlyReferenceDay.present
+        ? monthlyReferenceDay.value
+        : this.monthlyReferenceDay,
+    defaultAmountCentavos: defaultAmountCentavos ?? this.defaultAmountCentavos,
+    isActive: isActive ?? this.isActive,
+  );
+  InvestmentRecurrenceTemplate copyWithCompanion(
+    InvestmentRecurrenceTemplatesCompanion data,
+  ) {
+    return InvestmentRecurrenceTemplate(
+      id: data.id.present ? data.id.value : this.id,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      version: data.version.present ? data.version.value : this.version,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+      frequency: data.frequency.present ? data.frequency.value : this.frequency,
+      startsOn: data.startsOn.present ? data.startsOn.value : this.startsOn,
+      monthlyReferenceDay: data.monthlyReferenceDay.present
+          ? data.monthlyReferenceDay.value
+          : this.monthlyReferenceDay,
+      defaultAmountCentavos: data.defaultAmountCentavos.present
+          ? data.defaultAmountCentavos.value
+          : this.defaultAmountCentavos,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InvestmentRecurrenceTemplate(')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('frequency: $frequency, ')
+          ..write('startsOn: $startsOn, ')
+          ..write('monthlyReferenceDay: $monthlyReferenceDay, ')
+          ..write('defaultAmountCentavos: $defaultAmountCentavos, ')
+          ..write('isActive: $isActive')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    ownerId,
+    version,
+    createdAt,
+    updatedAt,
+    frequency,
+    startsOn,
+    monthlyReferenceDay,
+    defaultAmountCentavos,
+    isActive,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is InvestmentRecurrenceTemplate &&
+          other.id == this.id &&
+          other.ownerId == this.ownerId &&
+          other.version == this.version &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt &&
+          other.frequency == this.frequency &&
+          other.startsOn == this.startsOn &&
+          other.monthlyReferenceDay == this.monthlyReferenceDay &&
+          other.defaultAmountCentavos == this.defaultAmountCentavos &&
+          other.isActive == this.isActive);
+}
+
+class InvestmentRecurrenceTemplatesCompanion
+    extends UpdateCompanion<InvestmentRecurrenceTemplate> {
+  final Value<String> id;
+  final Value<String> ownerId;
+  final Value<int> version;
+  final Value<String> createdAt;
+  final Value<String> updatedAt;
+  final Value<String> frequency;
+  final Value<String> startsOn;
+  final Value<int?> monthlyReferenceDay;
+  final Value<BigInt> defaultAmountCentavos;
+  final Value<bool> isActive;
+  final Value<int> rowid;
+  const InvestmentRecurrenceTemplatesCompanion({
+    this.id = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.version = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+    this.frequency = const Value.absent(),
+    this.startsOn = const Value.absent(),
+    this.monthlyReferenceDay = const Value.absent(),
+    this.defaultAmountCentavos = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  InvestmentRecurrenceTemplatesCompanion.insert({
+    required String id,
+    required String ownerId,
+    this.version = const Value.absent(),
+    required String createdAt,
+    required String updatedAt,
+    required String frequency,
+    required String startsOn,
+    this.monthlyReferenceDay = const Value.absent(),
+    required BigInt defaultAmountCentavos,
+    this.isActive = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       ownerId = Value(ownerId),
+       createdAt = Value(createdAt),
+       updatedAt = Value(updatedAt),
+       frequency = Value(frequency),
+       startsOn = Value(startsOn),
+       defaultAmountCentavos = Value(defaultAmountCentavos);
+  static Insertable<InvestmentRecurrenceTemplate> custom({
+    Expression<String>? id,
+    Expression<String>? ownerId,
+    Expression<int>? version,
+    Expression<String>? createdAt,
+    Expression<String>? updatedAt,
+    Expression<String>? frequency,
+    Expression<String>? startsOn,
+    Expression<int>? monthlyReferenceDay,
+    Expression<String>? defaultAmountCentavos,
+    Expression<bool>? isActive,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (version != null) 'version': version,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+      if (frequency != null) 'frequency': frequency,
+      if (startsOn != null) 'starts_on': startsOn,
+      if (monthlyReferenceDay != null)
+        'monthly_reference_day': monthlyReferenceDay,
+      if (defaultAmountCentavos != null)
+        'default_amount_centavos': defaultAmountCentavos,
+      if (isActive != null) 'is_active': isActive,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  InvestmentRecurrenceTemplatesCompanion copyWith({
+    Value<String>? id,
+    Value<String>? ownerId,
+    Value<int>? version,
+    Value<String>? createdAt,
+    Value<String>? updatedAt,
+    Value<String>? frequency,
+    Value<String>? startsOn,
+    Value<int?>? monthlyReferenceDay,
+    Value<BigInt>? defaultAmountCentavos,
+    Value<bool>? isActive,
+    Value<int>? rowid,
+  }) {
+    return InvestmentRecurrenceTemplatesCompanion(
+      id: id ?? this.id,
+      ownerId: ownerId ?? this.ownerId,
+      version: version ?? this.version,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      frequency: frequency ?? this.frequency,
+      startsOn: startsOn ?? this.startsOn,
+      monthlyReferenceDay: monthlyReferenceDay ?? this.monthlyReferenceDay,
+      defaultAmountCentavos:
+          defaultAmountCentavos ?? this.defaultAmountCentavos,
+      isActive: isActive ?? this.isActive,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<String>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<String>(updatedAt.value);
+    }
+    if (frequency.present) {
+      map['frequency'] = Variable<String>(frequency.value);
+    }
+    if (startsOn.present) {
+      map['starts_on'] = Variable<String>(startsOn.value);
+    }
+    if (monthlyReferenceDay.present) {
+      map['monthly_reference_day'] = Variable<int>(monthlyReferenceDay.value);
+    }
+    if (defaultAmountCentavos.present) {
+      map['default_amount_centavos'] = Variable<String>(
+        $InvestmentRecurrenceTemplatesTable.$converterdefaultAmountCentavos
+            .toSql(defaultAmountCentavos.value),
+      );
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('InvestmentRecurrenceTemplatesCompanion(')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('version: $version, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt, ')
+          ..write('frequency: $frequency, ')
+          ..write('startsOn: $startsOn, ')
+          ..write('monthlyReferenceDay: $monthlyReferenceDay, ')
+          ..write('defaultAmountCentavos: $defaultAmountCentavos, ')
+          ..write('isActive: $isActive, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $IncomeEntriesTable extends IncomeEntries
     with TableInfo<$IncomeEntriesTable, IncomeEntry> {
   @override
@@ -6172,6 +6814,40 @@ class $InvestmentAllocationsTable extends InvestmentAllocations
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _recurrenceTemplateIdMeta =
+      const VerificationMeta('recurrenceTemplateId');
+  @override
+  late final GeneratedColumn<String> recurrenceTemplateId =
+      GeneratedColumn<String>(
+        'recurrence_template_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _scheduledForDateMeta = const VerificationMeta(
+    'scheduledForDate',
+  );
+  @override
+  late final GeneratedColumn<String> scheduledForDate = GeneratedColumn<String>(
+    'scheduled_for_date',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _scheduledPeriodIdMeta = const VerificationMeta(
+    'scheduledPeriodId',
+  );
+  @override
+  late final GeneratedColumn<String> scheduledPeriodId =
+      GeneratedColumn<String>(
+        'scheduled_period_id',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -6183,6 +6859,9 @@ class $InvestmentAllocationsTable extends InvestmentAllocations
     allocatedOn,
     accountingPeriodId,
     cancelledAt,
+    recurrenceTemplateId,
+    scheduledForDate,
+    scheduledPeriodId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -6262,6 +6941,33 @@ class $InvestmentAllocationsTable extends InvestmentAllocations
         ),
       );
     }
+    if (data.containsKey('recurrence_template_id')) {
+      context.handle(
+        _recurrenceTemplateIdMeta,
+        recurrenceTemplateId.isAcceptableOrUnknown(
+          data['recurrence_template_id']!,
+          _recurrenceTemplateIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('scheduled_for_date')) {
+      context.handle(
+        _scheduledForDateMeta,
+        scheduledForDate.isAcceptableOrUnknown(
+          data['scheduled_for_date']!,
+          _scheduledForDateMeta,
+        ),
+      );
+    }
+    if (data.containsKey('scheduled_period_id')) {
+      context.handle(
+        _scheduledPeriodIdMeta,
+        scheduledPeriodId.isAcceptableOrUnknown(
+          data['scheduled_period_id']!,
+          _scheduledPeriodIdMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -6310,6 +7016,18 @@ class $InvestmentAllocationsTable extends InvestmentAllocations
         DriftSqlType.string,
         data['${effectivePrefix}cancelled_at'],
       ),
+      recurrenceTemplateId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}recurrence_template_id'],
+      ),
+      scheduledForDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scheduled_for_date'],
+      ),
+      scheduledPeriodId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}scheduled_period_id'],
+      ),
     );
   }
 
@@ -6333,6 +7051,9 @@ class InvestmentAllocation extends DataClass
   final String allocatedOn;
   final String accountingPeriodId;
   final String? cancelledAt;
+  final String? recurrenceTemplateId;
+  final String? scheduledForDate;
+  final String? scheduledPeriodId;
   const InvestmentAllocation({
     required this.id,
     required this.ownerId,
@@ -6343,6 +7064,9 @@ class InvestmentAllocation extends DataClass
     required this.allocatedOn,
     required this.accountingPeriodId,
     this.cancelledAt,
+    this.recurrenceTemplateId,
+    this.scheduledForDate,
+    this.scheduledPeriodId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -6364,6 +7088,15 @@ class InvestmentAllocation extends DataClass
     if (!nullToAbsent || cancelledAt != null) {
       map['cancelled_at'] = Variable<String>(cancelledAt);
     }
+    if (!nullToAbsent || recurrenceTemplateId != null) {
+      map['recurrence_template_id'] = Variable<String>(recurrenceTemplateId);
+    }
+    if (!nullToAbsent || scheduledForDate != null) {
+      map['scheduled_for_date'] = Variable<String>(scheduledForDate);
+    }
+    if (!nullToAbsent || scheduledPeriodId != null) {
+      map['scheduled_period_id'] = Variable<String>(scheduledPeriodId);
+    }
     return map;
   }
 
@@ -6380,6 +7113,15 @@ class InvestmentAllocation extends DataClass
       cancelledAt: cancelledAt == null && nullToAbsent
           ? const Value.absent()
           : Value(cancelledAt),
+      recurrenceTemplateId: recurrenceTemplateId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(recurrenceTemplateId),
+      scheduledForDate: scheduledForDate == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scheduledForDate),
+      scheduledPeriodId: scheduledPeriodId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(scheduledPeriodId),
     );
   }
 
@@ -6400,6 +7142,13 @@ class InvestmentAllocation extends DataClass
         json['accountingPeriodId'],
       ),
       cancelledAt: serializer.fromJson<String?>(json['cancelledAt']),
+      recurrenceTemplateId: serializer.fromJson<String?>(
+        json['recurrenceTemplateId'],
+      ),
+      scheduledForDate: serializer.fromJson<String?>(json['scheduledForDate']),
+      scheduledPeriodId: serializer.fromJson<String?>(
+        json['scheduledPeriodId'],
+      ),
     );
   }
   @override
@@ -6415,6 +7164,9 @@ class InvestmentAllocation extends DataClass
       'allocatedOn': serializer.toJson<String>(allocatedOn),
       'accountingPeriodId': serializer.toJson<String>(accountingPeriodId),
       'cancelledAt': serializer.toJson<String?>(cancelledAt),
+      'recurrenceTemplateId': serializer.toJson<String?>(recurrenceTemplateId),
+      'scheduledForDate': serializer.toJson<String?>(scheduledForDate),
+      'scheduledPeriodId': serializer.toJson<String?>(scheduledPeriodId),
     };
   }
 
@@ -6428,6 +7180,9 @@ class InvestmentAllocation extends DataClass
     String? allocatedOn,
     String? accountingPeriodId,
     Value<String?> cancelledAt = const Value.absent(),
+    Value<String?> recurrenceTemplateId = const Value.absent(),
+    Value<String?> scheduledForDate = const Value.absent(),
+    Value<String?> scheduledPeriodId = const Value.absent(),
   }) => InvestmentAllocation(
     id: id ?? this.id,
     ownerId: ownerId ?? this.ownerId,
@@ -6438,6 +7193,15 @@ class InvestmentAllocation extends DataClass
     allocatedOn: allocatedOn ?? this.allocatedOn,
     accountingPeriodId: accountingPeriodId ?? this.accountingPeriodId,
     cancelledAt: cancelledAt.present ? cancelledAt.value : this.cancelledAt,
+    recurrenceTemplateId: recurrenceTemplateId.present
+        ? recurrenceTemplateId.value
+        : this.recurrenceTemplateId,
+    scheduledForDate: scheduledForDate.present
+        ? scheduledForDate.value
+        : this.scheduledForDate,
+    scheduledPeriodId: scheduledPeriodId.present
+        ? scheduledPeriodId.value
+        : this.scheduledPeriodId,
   );
   InvestmentAllocation copyWithCompanion(InvestmentAllocationsCompanion data) {
     return InvestmentAllocation(
@@ -6458,6 +7222,15 @@ class InvestmentAllocation extends DataClass
       cancelledAt: data.cancelledAt.present
           ? data.cancelledAt.value
           : this.cancelledAt,
+      recurrenceTemplateId: data.recurrenceTemplateId.present
+          ? data.recurrenceTemplateId.value
+          : this.recurrenceTemplateId,
+      scheduledForDate: data.scheduledForDate.present
+          ? data.scheduledForDate.value
+          : this.scheduledForDate,
+      scheduledPeriodId: data.scheduledPeriodId.present
+          ? data.scheduledPeriodId.value
+          : this.scheduledPeriodId,
     );
   }
 
@@ -6472,7 +7245,10 @@ class InvestmentAllocation extends DataClass
           ..write('amountCentavos: $amountCentavos, ')
           ..write('allocatedOn: $allocatedOn, ')
           ..write('accountingPeriodId: $accountingPeriodId, ')
-          ..write('cancelledAt: $cancelledAt')
+          ..write('cancelledAt: $cancelledAt, ')
+          ..write('recurrenceTemplateId: $recurrenceTemplateId, ')
+          ..write('scheduledForDate: $scheduledForDate, ')
+          ..write('scheduledPeriodId: $scheduledPeriodId')
           ..write(')'))
         .toString();
   }
@@ -6488,6 +7264,9 @@ class InvestmentAllocation extends DataClass
     allocatedOn,
     accountingPeriodId,
     cancelledAt,
+    recurrenceTemplateId,
+    scheduledForDate,
+    scheduledPeriodId,
   );
   @override
   bool operator ==(Object other) =>
@@ -6501,7 +7280,10 @@ class InvestmentAllocation extends DataClass
           other.amountCentavos == this.amountCentavos &&
           other.allocatedOn == this.allocatedOn &&
           other.accountingPeriodId == this.accountingPeriodId &&
-          other.cancelledAt == this.cancelledAt);
+          other.cancelledAt == this.cancelledAt &&
+          other.recurrenceTemplateId == this.recurrenceTemplateId &&
+          other.scheduledForDate == this.scheduledForDate &&
+          other.scheduledPeriodId == this.scheduledPeriodId);
 }
 
 class InvestmentAllocationsCompanion
@@ -6515,6 +7297,9 @@ class InvestmentAllocationsCompanion
   final Value<String> allocatedOn;
   final Value<String> accountingPeriodId;
   final Value<String?> cancelledAt;
+  final Value<String?> recurrenceTemplateId;
+  final Value<String?> scheduledForDate;
+  final Value<String?> scheduledPeriodId;
   final Value<int> rowid;
   const InvestmentAllocationsCompanion({
     this.id = const Value.absent(),
@@ -6526,6 +7311,9 @@ class InvestmentAllocationsCompanion
     this.allocatedOn = const Value.absent(),
     this.accountingPeriodId = const Value.absent(),
     this.cancelledAt = const Value.absent(),
+    this.recurrenceTemplateId = const Value.absent(),
+    this.scheduledForDate = const Value.absent(),
+    this.scheduledPeriodId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   InvestmentAllocationsCompanion.insert({
@@ -6538,6 +7326,9 @@ class InvestmentAllocationsCompanion
     required String allocatedOn,
     required String accountingPeriodId,
     this.cancelledAt = const Value.absent(),
+    this.recurrenceTemplateId = const Value.absent(),
+    this.scheduledForDate = const Value.absent(),
+    this.scheduledPeriodId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        ownerId = Value(ownerId),
@@ -6556,6 +7347,9 @@ class InvestmentAllocationsCompanion
     Expression<String>? allocatedOn,
     Expression<String>? accountingPeriodId,
     Expression<String>? cancelledAt,
+    Expression<String>? recurrenceTemplateId,
+    Expression<String>? scheduledForDate,
+    Expression<String>? scheduledPeriodId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -6569,6 +7363,10 @@ class InvestmentAllocationsCompanion
       if (accountingPeriodId != null)
         'accounting_period_id': accountingPeriodId,
       if (cancelledAt != null) 'cancelled_at': cancelledAt,
+      if (recurrenceTemplateId != null)
+        'recurrence_template_id': recurrenceTemplateId,
+      if (scheduledForDate != null) 'scheduled_for_date': scheduledForDate,
+      if (scheduledPeriodId != null) 'scheduled_period_id': scheduledPeriodId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -6583,6 +7381,9 @@ class InvestmentAllocationsCompanion
     Value<String>? allocatedOn,
     Value<String>? accountingPeriodId,
     Value<String?>? cancelledAt,
+    Value<String?>? recurrenceTemplateId,
+    Value<String?>? scheduledForDate,
+    Value<String?>? scheduledPeriodId,
     Value<int>? rowid,
   }) {
     return InvestmentAllocationsCompanion(
@@ -6595,6 +7396,9 @@ class InvestmentAllocationsCompanion
       allocatedOn: allocatedOn ?? this.allocatedOn,
       accountingPeriodId: accountingPeriodId ?? this.accountingPeriodId,
       cancelledAt: cancelledAt ?? this.cancelledAt,
+      recurrenceTemplateId: recurrenceTemplateId ?? this.recurrenceTemplateId,
+      scheduledForDate: scheduledForDate ?? this.scheduledForDate,
+      scheduledPeriodId: scheduledPeriodId ?? this.scheduledPeriodId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -6633,6 +7437,17 @@ class InvestmentAllocationsCompanion
     if (cancelledAt.present) {
       map['cancelled_at'] = Variable<String>(cancelledAt.value);
     }
+    if (recurrenceTemplateId.present) {
+      map['recurrence_template_id'] = Variable<String>(
+        recurrenceTemplateId.value,
+      );
+    }
+    if (scheduledForDate.present) {
+      map['scheduled_for_date'] = Variable<String>(scheduledForDate.value);
+    }
+    if (scheduledPeriodId.present) {
+      map['scheduled_period_id'] = Variable<String>(scheduledPeriodId.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -6651,6 +7466,9 @@ class InvestmentAllocationsCompanion
           ..write('allocatedOn: $allocatedOn, ')
           ..write('accountingPeriodId: $accountingPeriodId, ')
           ..write('cancelledAt: $cancelledAt, ')
+          ..write('recurrenceTemplateId: $recurrenceTemplateId, ')
+          ..write('scheduledForDate: $scheduledForDate, ')
+          ..write('scheduledPeriodId: $scheduledPeriodId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -9575,6 +10393,8 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
       $IncomeRecurrenceTemplatesTable(this);
   late final $ExpenseRecurrenceTemplatesTable expenseRecurrenceTemplates =
       $ExpenseRecurrenceTemplatesTable(this);
+  late final $InvestmentRecurrenceTemplatesTable investmentRecurrenceTemplates =
+      $InvestmentRecurrenceTemplatesTable(this);
   late final $IncomeEntriesTable incomeEntries = $IncomeEntriesTable(this);
   late final $ExpenseEntriesTable expenseEntries = $ExpenseEntriesTable(this);
   late final $InvestmentAllocationsTable investmentAllocations =
@@ -9601,6 +10421,10 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
     'expense_entries_period_idx',
     'CREATE INDEX expense_entries_period_idx ON expense_entries (owner_id, accounting_period_id)',
   );
+  late final Index uniqueInvestmentOccurrenceSchedule = Index(
+    'unique_investment_occurrence_schedule',
+    'CREATE UNIQUE INDEX unique_investment_occurrence_schedule ON investment_allocations (owner_id, recurrence_template_id, scheduled_for_date) WHERE recurrence_template_id IS NOT NULL',
+  );
   late final Index investmentAllocationsPeriodIdx = Index(
     'investment_allocations_period_idx',
     'CREATE INDEX investment_allocations_period_idx ON investment_allocations (owner_id, accounting_period_id)',
@@ -9621,6 +10445,7 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
     subcategories,
     incomeRecurrenceTemplates,
     expenseRecurrenceTemplates,
+    investmentRecurrenceTemplates,
     incomeEntries,
     expenseEntries,
     investmentAllocations,
@@ -9633,6 +10458,7 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
     incomeEntriesPeriodIdx,
     uniqueExpenseOccurrenceSchedule,
     expenseEntriesPeriodIdx,
+    uniqueInvestmentOccurrenceSchedule,
     investmentAllocationsPeriodIdx,
     syncOutboxStateIdx,
   ];
@@ -11796,6 +12622,338 @@ typedef $$ExpenseRecurrenceTemplatesTableProcessedTableManager =
       ExpenseRecurrenceTemplate,
       PrefetchHooks Function()
     >;
+typedef $$InvestmentRecurrenceTemplatesTableCreateCompanionBuilder =
+    InvestmentRecurrenceTemplatesCompanion Function({
+      required String id,
+      required String ownerId,
+      Value<int> version,
+      required String createdAt,
+      required String updatedAt,
+      required String frequency,
+      required String startsOn,
+      Value<int?> monthlyReferenceDay,
+      required BigInt defaultAmountCentavos,
+      Value<bool> isActive,
+      Value<int> rowid,
+    });
+typedef $$InvestmentRecurrenceTemplatesTableUpdateCompanionBuilder =
+    InvestmentRecurrenceTemplatesCompanion Function({
+      Value<String> id,
+      Value<String> ownerId,
+      Value<int> version,
+      Value<String> createdAt,
+      Value<String> updatedAt,
+      Value<String> frequency,
+      Value<String> startsOn,
+      Value<int?> monthlyReferenceDay,
+      Value<BigInt> defaultAmountCentavos,
+      Value<bool> isActive,
+      Value<int> rowid,
+    });
+
+class $$InvestmentRecurrenceTemplatesTableFilterComposer
+    extends Composer<_$PorquinhoDatabase, $InvestmentRecurrenceTemplatesTable> {
+  $$InvestmentRecurrenceTemplatesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get frequency => $composableBuilder(
+    column: $table.frequency,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get startsOn => $composableBuilder(
+    column: $table.startsOn,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get monthlyReferenceDay => $composableBuilder(
+    column: $table.monthlyReferenceDay,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<BigInt, BigInt, String>
+  get defaultAmountCentavos => $composableBuilder(
+    column: $table.defaultAmountCentavos,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$InvestmentRecurrenceTemplatesTableOrderingComposer
+    extends Composer<_$PorquinhoDatabase, $InvestmentRecurrenceTemplatesTable> {
+  $$InvestmentRecurrenceTemplatesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get updatedAt => $composableBuilder(
+    column: $table.updatedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get frequency => $composableBuilder(
+    column: $table.frequency,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get startsOn => $composableBuilder(
+    column: $table.startsOn,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get monthlyReferenceDay => $composableBuilder(
+    column: $table.monthlyReferenceDay,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get defaultAmountCentavos => $composableBuilder(
+    column: $table.defaultAmountCentavos,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+    column: $table.isActive,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$InvestmentRecurrenceTemplatesTableAnnotationComposer
+    extends Composer<_$PorquinhoDatabase, $InvestmentRecurrenceTemplatesTable> {
+  $$InvestmentRecurrenceTemplatesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<String> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  GeneratedColumn<String> get frequency =>
+      $composableBuilder(column: $table.frequency, builder: (column) => column);
+
+  GeneratedColumn<String> get startsOn =>
+      $composableBuilder(column: $table.startsOn, builder: (column) => column);
+
+  GeneratedColumn<int> get monthlyReferenceDay => $composableBuilder(
+    column: $table.monthlyReferenceDay,
+    builder: (column) => column,
+  );
+
+  GeneratedColumnWithTypeConverter<BigInt, String> get defaultAmountCentavos =>
+      $composableBuilder(
+        column: $table.defaultAmountCentavos,
+        builder: (column) => column,
+      );
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+}
+
+class $$InvestmentRecurrenceTemplatesTableTableManager
+    extends
+        RootTableManager<
+          _$PorquinhoDatabase,
+          $InvestmentRecurrenceTemplatesTable,
+          InvestmentRecurrenceTemplate,
+          $$InvestmentRecurrenceTemplatesTableFilterComposer,
+          $$InvestmentRecurrenceTemplatesTableOrderingComposer,
+          $$InvestmentRecurrenceTemplatesTableAnnotationComposer,
+          $$InvestmentRecurrenceTemplatesTableCreateCompanionBuilder,
+          $$InvestmentRecurrenceTemplatesTableUpdateCompanionBuilder,
+          (
+            InvestmentRecurrenceTemplate,
+            BaseReferences<
+              _$PorquinhoDatabase,
+              $InvestmentRecurrenceTemplatesTable,
+              InvestmentRecurrenceTemplate
+            >,
+          ),
+          InvestmentRecurrenceTemplate,
+          PrefetchHooks Function()
+        > {
+  $$InvestmentRecurrenceTemplatesTableTableManager(
+    _$PorquinhoDatabase db,
+    $InvestmentRecurrenceTemplatesTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$InvestmentRecurrenceTemplatesTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$InvestmentRecurrenceTemplatesTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$InvestmentRecurrenceTemplatesTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> ownerId = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<String> createdAt = const Value.absent(),
+                Value<String> updatedAt = const Value.absent(),
+                Value<String> frequency = const Value.absent(),
+                Value<String> startsOn = const Value.absent(),
+                Value<int?> monthlyReferenceDay = const Value.absent(),
+                Value<BigInt> defaultAmountCentavos = const Value.absent(),
+                Value<bool> isActive = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => InvestmentRecurrenceTemplatesCompanion(
+                id: id,
+                ownerId: ownerId,
+                version: version,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                frequency: frequency,
+                startsOn: startsOn,
+                monthlyReferenceDay: monthlyReferenceDay,
+                defaultAmountCentavos: defaultAmountCentavos,
+                isActive: isActive,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String ownerId,
+                Value<int> version = const Value.absent(),
+                required String createdAt,
+                required String updatedAt,
+                required String frequency,
+                required String startsOn,
+                Value<int?> monthlyReferenceDay = const Value.absent(),
+                required BigInt defaultAmountCentavos,
+                Value<bool> isActive = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => InvestmentRecurrenceTemplatesCompanion.insert(
+                id: id,
+                ownerId: ownerId,
+                version: version,
+                createdAt: createdAt,
+                updatedAt: updatedAt,
+                frequency: frequency,
+                startsOn: startsOn,
+                monthlyReferenceDay: monthlyReferenceDay,
+                defaultAmountCentavos: defaultAmountCentavos,
+                isActive: isActive,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable<
+                    $InvestmentRecurrenceTemplatesTable,
+                    InvestmentRecurrenceTemplate
+                  >(table),
+                  BaseReferences<
+                    _$PorquinhoDatabase,
+                    $InvestmentRecurrenceTemplatesTable,
+                    InvestmentRecurrenceTemplate
+                  >(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$InvestmentRecurrenceTemplatesTableProcessedTableManager =
+    ProcessedTableManager<
+      _$PorquinhoDatabase,
+      $InvestmentRecurrenceTemplatesTable,
+      InvestmentRecurrenceTemplate,
+      $$InvestmentRecurrenceTemplatesTableFilterComposer,
+      $$InvestmentRecurrenceTemplatesTableOrderingComposer,
+      $$InvestmentRecurrenceTemplatesTableAnnotationComposer,
+      $$InvestmentRecurrenceTemplatesTableCreateCompanionBuilder,
+      $$InvestmentRecurrenceTemplatesTableUpdateCompanionBuilder,
+      (
+        InvestmentRecurrenceTemplate,
+        BaseReferences<
+          _$PorquinhoDatabase,
+          $InvestmentRecurrenceTemplatesTable,
+          InvestmentRecurrenceTemplate
+        >,
+      ),
+      InvestmentRecurrenceTemplate,
+      PrefetchHooks Function()
+    >;
 typedef $$IncomeEntriesTableCreateCompanionBuilder =
     IncomeEntriesCompanion Function({
       Value<String?> description,
@@ -12695,6 +13853,9 @@ typedef $$InvestmentAllocationsTableCreateCompanionBuilder =
       required String allocatedOn,
       required String accountingPeriodId,
       Value<String?> cancelledAt,
+      Value<String?> recurrenceTemplateId,
+      Value<String?> scheduledForDate,
+      Value<String?> scheduledPeriodId,
       Value<int> rowid,
     });
 typedef $$InvestmentAllocationsTableUpdateCompanionBuilder =
@@ -12708,6 +13869,9 @@ typedef $$InvestmentAllocationsTableUpdateCompanionBuilder =
       Value<String> allocatedOn,
       Value<String> accountingPeriodId,
       Value<String?> cancelledAt,
+      Value<String?> recurrenceTemplateId,
+      Value<String?> scheduledForDate,
+      Value<String?> scheduledPeriodId,
       Value<int> rowid,
     });
 
@@ -12765,6 +13929,21 @@ class $$InvestmentAllocationsTableFilterComposer
     column: $table.cancelledAt,
     builder: (column) => ColumnFilters(column),
   );
+
+  ColumnFilters<String> get recurrenceTemplateId => $composableBuilder(
+    column: $table.recurrenceTemplateId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get scheduledForDate => $composableBuilder(
+    column: $table.scheduledForDate,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get scheduledPeriodId => $composableBuilder(
+    column: $table.scheduledPeriodId,
+    builder: (column) => ColumnFilters(column),
+  );
 }
 
 class $$InvestmentAllocationsTableOrderingComposer
@@ -12820,6 +13999,21 @@ class $$InvestmentAllocationsTableOrderingComposer
     column: $table.cancelledAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get recurrenceTemplateId => $composableBuilder(
+    column: $table.recurrenceTemplateId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get scheduledForDate => $composableBuilder(
+    column: $table.scheduledForDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get scheduledPeriodId => $composableBuilder(
+    column: $table.scheduledPeriodId,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$InvestmentAllocationsTableAnnotationComposer
@@ -12864,6 +14058,21 @@ class $$InvestmentAllocationsTableAnnotationComposer
 
   GeneratedColumn<String> get cancelledAt => $composableBuilder(
     column: $table.cancelledAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get recurrenceTemplateId => $composableBuilder(
+    column: $table.recurrenceTemplateId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get scheduledForDate => $composableBuilder(
+    column: $table.scheduledForDate,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get scheduledPeriodId => $composableBuilder(
+    column: $table.scheduledPeriodId,
     builder: (column) => column,
   );
 }
@@ -12923,6 +14132,9 @@ class $$InvestmentAllocationsTableTableManager
                 Value<String> allocatedOn = const Value.absent(),
                 Value<String> accountingPeriodId = const Value.absent(),
                 Value<String?> cancelledAt = const Value.absent(),
+                Value<String?> recurrenceTemplateId = const Value.absent(),
+                Value<String?> scheduledForDate = const Value.absent(),
+                Value<String?> scheduledPeriodId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvestmentAllocationsCompanion(
                 id: id,
@@ -12934,6 +14146,9 @@ class $$InvestmentAllocationsTableTableManager
                 allocatedOn: allocatedOn,
                 accountingPeriodId: accountingPeriodId,
                 cancelledAt: cancelledAt,
+                recurrenceTemplateId: recurrenceTemplateId,
+                scheduledForDate: scheduledForDate,
+                scheduledPeriodId: scheduledPeriodId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -12947,6 +14162,9 @@ class $$InvestmentAllocationsTableTableManager
                 required String allocatedOn,
                 required String accountingPeriodId,
                 Value<String?> cancelledAt = const Value.absent(),
+                Value<String?> recurrenceTemplateId = const Value.absent(),
+                Value<String?> scheduledForDate = const Value.absent(),
+                Value<String?> scheduledPeriodId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvestmentAllocationsCompanion.insert(
                 id: id,
@@ -12958,6 +14176,9 @@ class $$InvestmentAllocationsTableTableManager
                 allocatedOn: allocatedOn,
                 accountingPeriodId: accountingPeriodId,
                 cancelledAt: cancelledAt,
+                recurrenceTemplateId: recurrenceTemplateId,
+                scheduledForDate: scheduledForDate,
+                scheduledPeriodId: scheduledPeriodId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -14528,6 +15749,12 @@ class $PorquinhoDatabaseManager {
       $$ExpenseRecurrenceTemplatesTableTableManager(
         _db,
         _db.expenseRecurrenceTemplates,
+      );
+  $$InvestmentRecurrenceTemplatesTableTableManager
+  get investmentRecurrenceTemplates =>
+      $$InvestmentRecurrenceTemplatesTableTableManager(
+        _db,
+        _db.investmentRecurrenceTemplates,
       );
   $$IncomeEntriesTableTableManager get incomeEntries =>
       $$IncomeEntriesTableTableManager(_db, _db.incomeEntries);

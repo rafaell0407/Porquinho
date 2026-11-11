@@ -248,6 +248,37 @@ class ExpenseEntries extends CashEntry {
   ];
 }
 
+/// Modelo de investimento recorrente (Fase 6, D7–D9): só agenda e valor padrão
+/// fixo; sem descrição, categoria nem valor variável.
+class InvestmentRecurrenceTemplates extends OwnedRecord {
+  TextColumn get frequency => text()();
+  TextColumn get startsOn => text()();
+  IntColumn get monthlyReferenceDay => integer().nullable()();
+  TextColumn get defaultAmountCentavos =>
+      text().map(const BigIntTextConverter())();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+
+  @override
+  List<String> get customConstraints => [
+    '''CHECK ((frequency = 'monthly' AND monthly_reference_day BETWEEN 1 AND 31) OR
+            (frequency = 'by_period' AND monthly_reference_day IS NULL))''',
+    "CHECK (frequency IN ('monthly', 'by_period'))",
+    '''CHECK (
+      length(default_amount_centavos) BETWEEN 1 AND 19
+      AND default_amount_centavos NOT GLOB '*[^0-9]*'
+      AND (default_amount_centavos = '0' OR
+          substr(default_amount_centavos, 1, 1) BETWEEN '1' AND '9')
+      AND (length(default_amount_centavos) < 19 OR
+          default_amount_centavos <= '9223372036854775807')
+    )''',
+  ];
+}
+
+@TableIndex.sql('''
+  CREATE UNIQUE INDEX unique_investment_occurrence_schedule
+  ON investment_allocations (owner_id, recurrence_template_id, scheduled_for_date)
+  WHERE recurrence_template_id IS NOT NULL
+''')
 @TableIndex(
   name: 'investment_allocations_period_idx',
   columns: {#ownerId, #accountingPeriodId},
@@ -257,6 +288,9 @@ class InvestmentAllocations extends OwnedRecord {
   TextColumn get allocatedOn => text()();
   TextColumn get accountingPeriodId => text()();
   TextColumn get cancelledAt => text().nullable()();
+  TextColumn get recurrenceTemplateId => text().nullable()();
+  TextColumn get scheduledForDate => text().nullable()();
+  TextColumn get scheduledPeriodId => text().nullable()();
 
   @override
   List<String> get customConstraints => [
@@ -272,6 +306,16 @@ class InvestmentAllocations extends OwnedRecord {
     )''',
     'FOREIGN KEY (owner_id, accounting_period_id) '
         'REFERENCES accounting_periods (owner_id, id) ON DELETE RESTRICT',
+    'FOREIGN KEY (owner_id, recurrence_template_id) '
+        'REFERENCES investment_recurrence_templates (owner_id, id) '
+        'ON DELETE RESTRICT',
+    'FOREIGN KEY (owner_id, scheduled_period_id) '
+        'REFERENCES accounting_periods (owner_id, id) ON DELETE RESTRICT',
+    '''CHECK (
+      (recurrence_template_id IS NULL AND scheduled_for_date IS NULL
+        AND scheduled_period_id IS NULL)
+      OR (recurrence_template_id IS NOT NULL AND scheduled_for_date IS NOT NULL)
+    )''',
   ];
 }
 
@@ -347,6 +391,7 @@ class SyncCursors extends Table {
     Subcategories,
     IncomeRecurrenceTemplates,
     ExpenseRecurrenceTemplates,
+    InvestmentRecurrenceTemplates,
     IncomeEntries,
     ExpenseEntries,
     InvestmentAllocations,
@@ -363,7 +408,7 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
   PorquinhoDatabase(super.executor);
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -409,6 +454,22 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
         await migrator.alterTable(TableMigration(schema.incomeEntries));
         await migrator.alterTable(TableMigration(schema.expenseEntries));
         await migrator.create(schema.syncCursors);
+      },
+      // v4 (Fase 6, Entrega 56): recorrência de investimento — tabela do
+      // modelo e campos de ocorrência (opcionais) em investment_allocations.
+      from3To4: (migrator, schema) async {
+        await migrator.create(schema.investmentRecurrenceTemplates);
+        await migrator.alterTable(
+          TableMigration(
+            schema.investmentAllocations,
+            newColumns: [
+              schema.investmentAllocations.recurrenceTemplateId,
+              schema.investmentAllocations.scheduledForDate,
+              schema.investmentAllocations.scheduledPeriodId,
+            ],
+          ),
+        );
+        await migrator.create(schema.uniqueInvestmentOccurrenceSchedule);
       },
     ),
     beforeOpen: (_) async => customStatement('PRAGMA foreign_keys = ON'),

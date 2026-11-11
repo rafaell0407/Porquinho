@@ -151,18 +151,18 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 **Objetivo:** registrar o valor total destinado a investimentos sem administrar ativos.
 
 **Entregáveis:**
-- Lançamento simples de valor destinado a investimentos, com data registrada pelo sistema e sem categoria ou detalhamento por ativo.
-- Dedução imediata do valor no cálculo da sobra.
-- Exibição do total destinado no período.
-- Registro de rendimentos efetivamente recebidos como receitas comuns.
-- Nenhuma projeção automática, taxa fixa ou cálculo CDI.
+- "Novo investimento" ao lado de receita e despesa em Lançamentos: só valor e data (informada pelo usuário, passada ou futura), sem categoria, descrição ou status de pagamento (D1, D2, D10).
+- Dedução imediata do valor no cálculo da sobra; editar, mudar a data e cancelar recalculam os períodos afetados.
+- Investimentos na lista de Lançamentos, com filtro "Investimentos". O total por período fica para o relatório da Fase 7 (D3: sem total no Dashboard na Fase 6).
+- Investimento recorrente (todo mês ou todo período), com valor fixo e valor alterável por ocorrência; gerado ao abrir e sincronizar, sem pendente/pago (D7–D9).
+- Rendimentos efetivamente recebidos continuam sendo receitas comuns; nenhuma tela de rendimento, resgate, projeção automática, taxa fixa ou cálculo CDI (D4, D5).
 
-**Dependências:** Fases 2 e 4.
+**Dependências:** Fases 2, 4 e 5.
 
-**Testes:** destinação deduz uma vez, edição/cancelamento recalculam sobra, rendimento manual é receita, ausência de cálculo automático.
+**Testes:** destinação deduz uma vez, edição/cancelamento recalculam sobra, recorrência idempotente e igual no app e no servidor, rendimento manual é receita, ausência de cálculo automático.
 
 **Prioridade:** Alta.  
-**Status:** NÃO INICIADO.
+**Status:** CONCLUÍDA e VALIDADA em 11/11/2026 — Entregas 51–58 (`docs/entregas_fase6.md`; a 54 foi removida por D3).
 
 ### Fase 7 — Períodos, Dashboard e relatórios
 

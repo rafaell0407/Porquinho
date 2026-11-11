@@ -16,6 +16,9 @@ import 'package:porquinho/features/entries/entry_models.dart';
 import 'package:porquinho/features/entries/entry_providers.dart';
 import 'package:porquinho/features/entries/entry_service.dart';
 import 'package:porquinho/features/entries/local_entry_repository.dart';
+import 'package:porquinho/features/investments/investment_providers.dart';
+import 'package:porquinho/features/investments/investment_service.dart';
+import 'package:porquinho/features/investments/local_investment_repository.dart';
 import 'package:porquinho/features/periods/local_period_repository.dart';
 import 'package:porquinho/features/periods/period_providers.dart';
 import 'package:porquinho/features/periods/period_service.dart';
@@ -29,6 +32,7 @@ void main() {
   late PeriodService periods;
   late EntryService service;
   late CategoryService categories;
+  late InvestmentService investments;
   var ids = 0;
 
   setUp(() async {
@@ -42,6 +46,11 @@ void main() {
     final catRepo = LocalCategoryRepository(db, 'u1', recorder);
     categories = CategoryService(catRepo, newId: () => 'c${++ids}');
     entries = LocalEntryRepository(db, 'u1', recorder);
+    investments = InvestmentService(
+      LocalInvestmentRepository(db, 'u1', recorder),
+      periods,
+      newId: () => 'i${++ids}',
+    );
     service = EntryService(entries, catRepo, periods, newId: () => 'e${++ids}');
     await periods.setup(
       PeriodConfig.calendarMonth(),
@@ -63,6 +72,7 @@ void main() {
           ),
           periodServiceProvider.overrideWith((ref) async => periods),
           entryServiceProvider.overrideWith((ref) async => service),
+          investmentServiceProvider.overrideWith((ref) async => investments),
           categoryServiceProvider.overrideWith((ref) async => categories),
           totalsRepositoryProvider.overrideWith(
             (ref) async => LocalTotalsRepository(db, 'u1'),
@@ -235,5 +245,119 @@ void main() {
         .customSelect('SELECT COUNT(*) AS n FROM accounting_periods')
         .getSingle();
     expect(p.read<int>('n'), 3);
+  });
+
+  testWidgets('investimento: criar, filtrar, editar a data, cancelar (D10)', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    Future<BigInt> surplusNow() async {
+      final periodId = (await periods.periodFor(
+        CalendarDate(2026, 11, 10),
+      ))!.id;
+      return (await LocalTotalsRepository(
+        db,
+        'u1',
+      ).totalsFor(periodId)).surplus;
+    }
+
+    // Formulário só com valor e data.
+    await tester.tap(find.byKey(const Key('novo-lancamento')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('novo-investimento')));
+    await tester.pumpAndSettle();
+    expect(find.text('Novo investimento'), findsOneWidget);
+    expect(find.text('Valor investido'), findsOneWidget);
+    expect(find.text('Data do investimento'), findsOneWidget);
+    expect(find.byKey(const Key('campo-descricao')), findsNothing);
+    expect(find.byKey(const Key('campo-categoria')), findsNothing);
+    expect(find.byKey(const Key('campo-vencimento')), findsNothing);
+    expect(find.byKey(const Key('ja-paga')), findsNothing);
+    expect(find.byKey(const Key('repetir')), findsOneWidget);
+    expect(find.byKey(const Key('valor-variavel')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('salvar-lancamento')));
+    await tester.pumpAndSettle();
+    expect(find.text('Informe um valor.'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('campo-valor')), '300,50');
+    await tester.tap(find.text('Salvar investimento'));
+    await tester.pumpAndSettle();
+    expect(find.text('- R\$ 300,50'), findsOneWidget);
+    expect(find.text('Investimento'), findsOneWidget);
+    expect(await surplusNow(), BigInt.from(-30050));
+
+    // Filtros.
+    await tester.tap(find.byKey(const Key('filtro-expense')));
+    await tester.pumpAndSettle();
+    expect(find.text('- R\$ 300,50'), findsNothing);
+    await tester.tap(find.byKey(const Key('filtro-investment')));
+    await tester.pumpAndSettle();
+    expect(find.text('- R\$ 300,50'), findsOneWidget);
+
+    // Editar o valor.
+    await tester.tap(find.text('Investimento'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('acao-editar')));
+    await tester.pumpAndSettle();
+    expect(find.text('Editar investimento'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('campo-valor')), '500');
+    await tester.tap(find.byKey(const Key('salvar-lancamento')));
+    await tester.pumpAndSettle();
+    expect(find.text('- R\$ 500,00'), findsOneWidget);
+    expect(await surplusNow(), BigInt.from(-50000));
+
+    // Cancelar: confirma, fica no histórico e sai da sobra.
+    await tester.tap(find.text('Investimento'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('acao-cancelar')));
+    await tester.pumpAndSettle();
+    expect(find.text('Cancelar este investimento?'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('confirmar-cancelar')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Cancelado'), findsOneWidget);
+    expect(await surplusNow(), BigInt.zero);
+  });
+
+  testWidgets('investimento: lista vazia e data em período inexistente', (
+    tester,
+  ) async {
+    await pumpScreen(tester);
+    await tester.tap(find.byKey(const Key('filtro-investment')));
+    await tester.pumpAndSettle();
+    expect(find.text('Nenhum investimento neste período.'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('novo-lancamento')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('novo-investimento')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('campo-valor')), '100');
+    await tester.tap(find.byKey(const Key('campo-data')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.chevron_left));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(Icons.chevron_left));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('15'));
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('salvar-lancamento')));
+    await tester.pumpAndSettle();
+    expect(find.text('Período ainda não existe'), findsOneWidget);
+    expect(
+      (await db
+              .customSelect('SELECT COUNT(*) AS n FROM investment_allocations')
+              .getSingle())
+          .read<int>('n'),
+      0,
+    );
+    await tester.tap(find.byKey(const Key('confirmar-periodos')));
+    await tester.pumpAndSettle();
+    expect(
+      (await db
+              .customSelect('SELECT COUNT(*) AS n FROM investment_allocations')
+              .getSingle())
+          .read<int>('n'),
+      1,
+    );
   });
 }

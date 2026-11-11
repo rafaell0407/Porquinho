@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/data_access.dart';
 import '../../core/domain/money.dart';
 import '../categories/category_providers.dart';
+import '../categories/category_service.dart';
 import '../entries/entry_models.dart';
+import '../investments/investment_models.dart';
+import '../investments/investment_providers.dart';
+import '../investments/investment_recurrence_edit_screen.dart';
 import 'recurrence_edit_screen.dart';
 import 'recurrence_models.dart';
 import 'recurrence_providers.dart';
@@ -17,41 +21,65 @@ class RecurrencesScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final templates = ref.watch(recurringTemplatesProvider);
+    final investments = ref.watch(investmentTemplatesProvider);
     final cats = ref.watch(categoryDataProvider).value;
     return Scaffold(
       appBar: AppBar(title: const Text('Recorrências')),
-      body: templates.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) =>
-            const Center(child: Text('Não foi possível carregar.')),
-        data: (list) {
-          if (list.isEmpty) {
-            return const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(
-                child: Text(
-                  'Nenhuma recorrência ainda. Ao cadastrar uma receita ou '
-                  'despesa, ligue "Repetir" para ela se repetir sozinha.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          }
-          return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(recurringTemplatesProvider),
-            child: ListView.separated(
-              itemCount: list.length,
-              separatorBuilder: (_, _) => const Divider(height: 1),
-              itemBuilder: (context, i) {
-                final t = list[i];
-                final category = cats?.categories
-                    .where((c) => c.id == t.categoryId)
-                    .firstOrNull;
-                return _TemplateTile(template: t, categoryName: category?.name);
-              },
-            ),
-          );
-        },
+      body: templates.hasError || investments.hasError
+          ? const Center(child: Text('Não foi possível carregar.'))
+          : !templates.hasValue || !investments.hasValue
+          ? const Center(child: CircularProgressIndicator())
+          : _list(ref, cats, templates.requireValue, investments.requireValue),
+    );
+  }
+
+  Widget _list(
+    WidgetRef ref,
+    CategoryData? cats,
+    List<RecurringTemplate> list,
+    List<InvestmentTemplate> investments,
+  ) {
+    if (list.isEmpty && investments.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            'Nenhuma recorrência ainda. Ao cadastrar uma receita, despesa ou '
+            'investimento, ligue "Repetir" para ela se repetir sozinha.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    // Ativas primeiro; a ordem entre elas se mantém.
+    final tiles = <({bool active, Widget tile})>[
+      for (final t in list)
+        (
+          active: t.isActive,
+          tile: _TemplateTile(
+            template: t,
+            categoryName: cats?.categories
+                .where((c) => c.id == t.categoryId)
+                .firstOrNull
+                ?.name,
+          ),
+        ),
+      for (final t in investments)
+        (active: t.isActive, tile: _InvestmentTemplateTile(template: t)),
+    ];
+    final ordered = [
+      ...tiles.where((e) => e.active),
+      ...tiles.where((e) => !e.active),
+    ];
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.invalidate(recurringTemplatesProvider);
+        ref.invalidate(investmentTemplatesProvider);
+      },
+      child: ListView.separated(
+        itemCount: ordered.length,
+        separatorBuilder: (_, _) => const Divider(height: 1),
+        itemBuilder: (context, i) => ordered[i].tile,
       ),
     );
   }
@@ -174,5 +202,76 @@ Future<void> confirmStopRecurrence(
     ref.invalidate(recurringTemplatesProvider);
   } on Object catch (e) {
     messenger.showSnackBar(SnackBar(content: Text(e.toString())));
+  }
+}
+
+/// Investimento recorrente na lista: valor fixo, sem categoria, pagamento nem
+/// vencimento (D8, D9).
+class _InvestmentTemplateTile extends ConsumerWidget {
+  const _InvestmentTemplateTile({required this.template});
+
+  final InvestmentTemplate template;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = template;
+    return ListTile(
+      key: Key('recorrencia-${t.id}'),
+      leading: Icon(
+        Icons.savings_outlined,
+        color: Theme.of(context).colorScheme.tertiary,
+      ),
+      title: Text(
+        'Investimento',
+        style: t.isActive
+            ? null
+            : const TextStyle(decoration: TextDecoration.lineThrough),
+      ),
+      subtitle: Text(
+        [
+          'Investimento',
+          t.scheduleLabel,
+          formatBrl(t.defaultAmount),
+          if (!t.isActive) 'Interrompida',
+        ].join(' · '),
+      ),
+      onTap: t.isActive ? () => _actions(context, ref) : null,
+    );
+  }
+
+  Future<void> _actions(BuildContext context, WidgetRef ref) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              key: const Key('acao-editar-recorrencia'),
+              leading: const Icon(Icons.edit_outlined),
+              title: const Text('Editar a recorrência'),
+              onTap: () {
+                Navigator.pop(sheet);
+                Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        InvestmentRecurrenceEditScreen(template: template),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              key: const Key('acao-parar-recorrencia'),
+              leading: const Icon(Icons.stop_circle_outlined),
+              title: const Text('Parar de repetir'),
+              onTap: () {
+                Navigator.pop(sheet);
+                confirmStopInvestmentRecurrence(context, ref, template);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -271,8 +271,118 @@ class LocalRecurrenceRepository implements RecurrenceRepository {
         }
       }
     }
+    created += await _generateInvestments(periods, today, now);
     return created;
   });
+
+  /// Investimentos recorrentes (D7): mesma agenda e mesmo identificador das
+  /// outras recorrências; entram na sobra do período da data programada, sem
+  /// confirmação (D9). Sem período para a data, fica para a próxima rodada.
+  Future<int> _generateInvestments(
+    List<({String id, PeriodRange range})> periods,
+    CalendarDate today,
+    String now,
+  ) async {
+    final rows = await _db
+        .customSelect(
+          'SELECT * FROM investment_recurrence_templates '
+          'WHERE owner_id = ? AND is_active = 1 ORDER BY id',
+          variables: [Variable.withString(_ownerId)],
+        )
+        .get();
+    var created = 0;
+    for (final row in rows) {
+      final d = row.data;
+      final templateId = d['id']! as String;
+      final startsOn = CalendarDate.parse(d['starts_on']! as String);
+      final amount = d['default_amount_centavos']! as String;
+      final monthly = d['frequency'] == 'monthly';
+      final schedule = monthly
+          ? RecurrenceSchedule.monthly(
+              startsOn: startsOn,
+              day: d['monthly_reference_day']! as int,
+            )
+          : RecurrenceSchedule.byPeriod(startsOn: startsOn);
+      if (monthly) {
+        for (final date in RecurrenceCalendar.monthlyUntil(schedule, today)) {
+          final period = periods
+              .where((p) => p.range.contains(date))
+              .firstOrNull;
+          if (period == null) continue;
+          if (await _insertInvestment(
+            templateId,
+            amount,
+            date,
+            now,
+            period.id,
+          )) {
+            created++;
+          }
+        }
+      } else {
+        final due = RecurrenceCalendar.periodsUntil(
+          startsOn,
+          periods.map((p) => p.range),
+          today,
+        );
+        for (final range in due) {
+          final period = periods.firstWhere((p) => p.range == range);
+          if (await _insertInvestment(
+            templateId,
+            amount,
+            range.start,
+            now,
+            period.id,
+            scheduledPeriodId: period.id,
+          )) {
+            created++;
+          }
+        }
+      }
+    }
+    return created;
+  }
+
+  Future<bool> _insertInvestment(
+    String templateId,
+    String amount,
+    CalendarDate date,
+    String now,
+    String periodId, {
+    String? scheduledPeriodId,
+  }) async {
+    final exists = await _db
+        .customSelect(
+          'SELECT 1 FROM investment_allocations WHERE owner_id = ? '
+          'AND recurrence_template_id = ? AND scheduled_for_date = ?',
+          variables: [
+            Variable.withString(_ownerId),
+            Variable.withString(templateId),
+            Variable.withString(date.toIso()),
+          ],
+        )
+        .get();
+    if (exists.isNotEmpty) return false;
+    await _db.customStatement(
+      'INSERT INTO investment_allocations (id, owner_id, version, created_at, '
+      'updated_at, amount_centavos, allocated_on, accounting_period_id, '
+      'recurrence_template_id, scheduled_for_date, scheduled_period_id) '
+      'VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)',
+      [
+        RecurrenceCalendar.occurrenceId(templateId, date),
+        _ownerId,
+        now,
+        now,
+        amount,
+        date.toIso(),
+        periodId,
+        templateId,
+        date.toIso(),
+        scheduledPeriodId,
+      ],
+    );
+    return true;
+  }
 
   /// `true` se criou. Despesa sem período para a data não é criada agora (o
   /// período é criado ao abrir o app; a geração roda de novo a cada abertura).

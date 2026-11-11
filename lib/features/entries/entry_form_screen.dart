@@ -7,6 +7,8 @@ import '../../core/domain/money.dart';
 import '../../core/domain/recurrence_schedule.dart';
 import '../categories/category_models.dart';
 import '../categories/category_providers.dart';
+import '../investments/investment_models.dart';
+import '../investments/investment_providers.dart';
 import '../periods/period_providers.dart';
 import 'entry_models.dart';
 import 'entry_providers.dart';
@@ -17,11 +19,23 @@ import 'entry_service.dart';
 /// A data é do usuário (padrão: hoje) e pode ser passada ou futura (RN004,
 /// RN008); ela define o período. Se o período não existir, o usuário confirma
 /// a criação antes de salvar (RN002).
+///
+/// No modo investimento (D10) é o mesmo formulário da despesa, só com os campos
+/// que se aplicam: valor e data (D2).
 class EntryFormScreen extends ConsumerStatefulWidget {
-  const EntryFormScreen({required this.kind, this.existing, super.key});
+  const EntryFormScreen({required this.kind, this.existing, super.key})
+    : existingInvestment = null,
+      isInvestment = false;
+
+  const EntryFormScreen.investment({this.existingInvestment, super.key})
+    : kind = EntryKind.expense,
+      existing = null,
+      isInvestment = true;
 
   final EntryKind kind;
   final EntryRecord? existing;
+  final bool isInvestment;
+  final InvestmentRecord? existingInvestment;
 
   @override
   ConsumerState<EntryFormScreen> createState() => _EntryFormScreenState();
@@ -45,7 +59,9 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   String? _error;
 
   bool get _isIncome => widget.kind == EntryKind.income;
-  bool get _editing => widget.existing != null;
+  bool get _isInvestment => widget.isInvestment;
+  bool get _editing =>
+      widget.existing != null || widget.existingInvestment != null;
 
   /// Ocorrência de recorrência que está sendo editada (só esta, D8).
   bool get _occurrence => widget.existing?.isRecurring ?? false;
@@ -54,7 +70,8 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   bool get _pendingIncome => widget.existing?.isPendingIncome ?? false;
 
   /// "Repetir" só em lançamento novo ou avulso (D8).
-  bool get _canRepeat => !_occurrence;
+  bool get _canRepeat =>
+      !_occurrence && !(widget.existingInvestment?.isRecurring ?? false);
 
   /// O valor pode ficar em branco: recorrência de valor variável (a
   /// ocorrência recebe o valor depois) ou ocorrência já existente.
@@ -64,14 +81,14 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   void initState() {
     super.initState();
     final e = widget.existing;
+    final inv = widget.existingInvestment;
     final today = ref.read(userClockProvider).today();
+    final amount = e?.amount ?? inv?.amount;
     _amount = TextEditingController(
-      text: e?.amount == null
-          ? ''
-          : formatBrl(e!.amount!).replaceFirst('R\$ ', ''),
+      text: amount == null ? '' : formatBrl(amount).replaceFirst('R\$ ', ''),
     );
     _description = TextEditingController(text: e?.description ?? '');
-    _date = e?.date ?? today;
+    _date = e?.date ?? inv?.date ?? today;
     _dueOn = e?.dueOn;
     _paidOn = today;
     _categoryId = e?.categoryId;
@@ -108,6 +125,10 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
       _saving = true;
       _error = null;
     });
+    if (_isInvestment) {
+      await _saveInvestment();
+      return;
+    }
     final draft = EntryDraft(
       kind: widget.kind,
       amount: _amount.text.trim().isEmpty
@@ -134,6 +155,70 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     }
   }
 
+  Future<void> _saveInvestment() async {
+    try {
+      final service = await ref.read(investmentServiceProvider.future);
+      final draft = InvestmentDraft(
+        amount: parseBrlToCentavos(_amount.text),
+        date: _date,
+      );
+      final repeat = _repeat && _canRepeat ? _frequency : null;
+      await _confirmingPeriods(
+        service.createMissingPeriods,
+        () => _editing
+            ? service.update(widget.existingInvestment!, draft, repeat: repeat)
+            : service.create(draft, repeat: repeat),
+      );
+      refreshFinanceData(ref);
+      if (mounted) Navigator.of(context).pop(true);
+    } on Object catch (e) {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = e.toString();
+        });
+      }
+    }
+  }
+
+  /// Tenta gravar; se o período não existe, pergunta antes de criá-lo (RN002).
+  Future<void> _confirmingPeriods(
+    Future<void> Function(CalendarDate) createPeriods,
+    Future<void> Function() attempt,
+  ) async {
+    try {
+      await attempt();
+    } on PeriodMissingException catch (missing) {
+      if (!mounted) return;
+      final ok = await _askCreatePeriods(missing);
+      if (ok != true) {
+        throw const ChangeRejectedException('Nada foi salvo.');
+      }
+      await createPeriods(missing.date);
+      await attempt();
+    }
+  }
+
+  Future<bool?> _askCreatePeriods(PeriodMissingException missing) =>
+      showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Período ainda não existe'),
+          content: Text(missing.plan.question),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Voltar'),
+            ),
+            FilledButton(
+              key: const Key('confirmar-periodos'),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Criar e salvar'),
+            ),
+          ],
+        ),
+      );
+
   Future<void> _write(EntryService service, EntryDraft draft) async {
     final repeat = _repeat && _canRepeat
         ? RepeatChoice(frequency: _frequency, variableValue: _variable)
@@ -153,34 +238,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
       }
     }
 
-    try {
-      await attempt();
-    } on PeriodMissingException catch (missing) {
-      if (!mounted) return;
-      final ok = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Período ainda não existe'),
-          content: Text(missing.plan.question),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Voltar'),
-            ),
-            FilledButton(
-              key: const Key('confirmar-periodos'),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Criar e salvar'),
-            ),
-          ],
-        ),
-      );
-      if (ok != true) {
-        throw const ChangeRejectedException('Nada foi salvo.');
-      }
-      await service.createMissingPeriods(missing.date);
-      await attempt();
-    }
+    await _confirmingPeriods(service.createMissingPeriods, attempt);
   }
 
   /// "Repetir" (D8): o lançamento vira a primeira ocorrência; as próximas
@@ -192,9 +250,9 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
       title: const Text('Repetir'),
       subtitle: Text(
         _repeat
-            ? 'Este lançamento é o primeiro; os próximos são criados '
-                  'automaticamente'
-            : 'Lançamento único',
+            ? 'Este ${_isInvestment ? 'investimento' : 'lançamento'} é o '
+                  'primeiro; os próximos são criados automaticamente'
+            : (_isInvestment ? 'Investimento único' : 'Lançamento único'),
       ),
       value: _repeat,
       onChanged: (v) => setState(() => _repeat = v),
@@ -219,14 +277,24 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
           style: Theme.of(context).textTheme.bodySmall,
         ),
       ),
-      SwitchListTile(
-        key: const Key('valor-variavel'),
-        contentPadding: EdgeInsets.zero,
-        title: const Text('O valor muda todo mês'),
-        subtitle: const Text('Informe o valor de cada ocorrência depois'),
-        value: _variable,
-        onChanged: (v) => setState(() => _variable = v),
-      ),
+      if (_isInvestment)
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            'Cada ocorrência nasce com este valor e entra na sobra do período '
+            'da sua data. Você pode mudar o valor de um mês depois.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        )
+      else
+        SwitchListTile(
+          key: const Key('valor-variavel'),
+          contentPadding: EdgeInsets.zero,
+          title: const Text('O valor muda todo mês'),
+          subtitle: const Text('Informe o valor de cada ocorrência depois'),
+          value: _variable,
+          onChanged: (v) => setState(() => _variable = v),
+        ),
       if (_isIncome)
         SwitchListTile(
           key: const Key('ja-recebi'),
@@ -264,7 +332,9 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                     (s.isActive || s.id == widget.existing?.subcategoryId),
               )
               .toList();
-    final title = _editing
+    final title = _isInvestment
+        ? (_editing ? 'Editar investimento' : 'Novo investimento')
+        : _editing
         ? (_isIncome ? 'Editar receita' : 'Editar despesa')
         : (_isIncome ? 'Nova receita' : 'Nova despesa');
     return Scaffold(
@@ -280,8 +350,8 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
-              decoration: const InputDecoration(
-                labelText: 'Valor',
+              decoration: InputDecoration(
+                labelText: _isInvestment ? 'Valor investido' : 'Valor',
                 prefixText: 'R\$ ',
                 hintText: '0,00',
               ),
@@ -311,7 +381,11 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                 key: const Key('campo-data'),
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  _isIncome ? 'Data do recebimento' : 'Data da despesa',
+                  _isInvestment
+                      ? 'Data do investimento'
+                      : _isIncome
+                      ? 'Data do recebimento'
+                      : 'Data da despesa',
                 ),
                 subtitle: Text(_date.toBr()),
                 trailing: const Icon(Icons.calendar_today),
@@ -320,81 +394,88 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                   if (picked != null) setState(() => _date = picked);
                 },
               ),
-            TextFormField(
-              key: const Key('campo-descricao'),
-              controller: _description,
-              maxLength: EntryService.maxDescriptionLength,
-              decoration: const InputDecoration(
-                labelText: 'Descrição (opcional)',
-              ),
-            ),
-            DropdownButtonFormField<String?>(
-              key: const Key('campo-categoria'),
-              initialValue: _categoryId,
-              decoration: const InputDecoration(
-                labelText: 'Categoria (opcional)',
-              ),
-              items: [
-                const DropdownMenuItem<String?>(
-                  value: null,
-                  child: Text('Sem categoria'),
-                ),
-                for (final c in categories)
-                  DropdownMenuItem<String?>(
-                    value: c.id,
-                    child: Text(c.isActive ? c.name : '${c.name} (desativada)'),
-                  ),
-              ],
-              onChanged: (v) => setState(() {
-                _categoryId = v;
-                _subcategoryId = null;
-              }),
-            ),
-            if (subs.isNotEmpty)
-              DropdownButtonFormField<String?>(
-                key: const Key('campo-subcategoria'),
-                initialValue: _subcategoryId,
+            if (!_isInvestment) ...[
+              TextFormField(
+                key: const Key('campo-descricao'),
+                controller: _description,
+                maxLength: EntryService.maxDescriptionLength,
                 decoration: const InputDecoration(
-                  labelText: 'Subcategoria (opcional)',
+                  labelText: 'Descrição (opcional)',
+                ),
+              ),
+              DropdownButtonFormField<String?>(
+                key: const Key('campo-categoria'),
+                initialValue: _categoryId,
+                decoration: const InputDecoration(
+                  labelText: 'Categoria (opcional)',
                 ),
                 items: [
                   const DropdownMenuItem<String?>(
                     value: null,
-                    child: Text('Nenhuma'),
+                    child: Text('Sem categoria'),
                   ),
-                  for (final s in subs)
-                    DropdownMenuItem<String?>(value: s.id, child: Text(s.name)),
-                ],
-                onChanged: (v) => setState(() => _subcategoryId = v),
-              ),
-            if (!_isIncome) ...[
-              ListTile(
-                key: const Key('campo-vencimento'),
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Vencimento (opcional)'),
-                subtitle: Text(_dueOn?.toBr() ?? 'Sem vencimento'),
-                trailing: _dueOn == null
-                    ? const Icon(Icons.event)
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () => setState(() => _dueOn = null),
+                  for (final c in categories)
+                    DropdownMenuItem<String?>(
+                      value: c.id,
+                      child: Text(
+                        c.isActive ? c.name : '${c.name} (desativada)',
                       ),
-                onTap: () async {
-                  final picked = await _pick(_dueOn ?? _date);
-                  if (picked != null) setState(() => _dueOn = picked);
-                },
+                    ),
+                ],
+                onChanged: (v) => setState(() {
+                  _categoryId = v;
+                  _subcategoryId = null;
+                }),
               ),
-              if (!_editing)
-                SwitchListTile(
-                  key: const Key('ja-paga'),
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Já está paga'),
-                  subtitle: _alreadyPaid
-                      ? Text('Paga em ${_paidOn.toBr()}')
-                      : const Text('Nasce como pendente'),
-                  value: _alreadyPaid,
-                  onChanged: (v) => setState(() => _alreadyPaid = v),
+              if (subs.isNotEmpty)
+                DropdownButtonFormField<String?>(
+                  key: const Key('campo-subcategoria'),
+                  initialValue: _subcategoryId,
+                  decoration: const InputDecoration(
+                    labelText: 'Subcategoria (opcional)',
+                  ),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Nenhuma'),
+                    ),
+                    for (final s in subs)
+                      DropdownMenuItem<String?>(
+                        value: s.id,
+                        child: Text(s.name),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => _subcategoryId = v),
                 ),
+              if (!_isIncome) ...[
+                ListTile(
+                  key: const Key('campo-vencimento'),
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Vencimento (opcional)'),
+                  subtitle: Text(_dueOn?.toBr() ?? 'Sem vencimento'),
+                  trailing: _dueOn == null
+                      ? const Icon(Icons.event)
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () => setState(() => _dueOn = null),
+                        ),
+                  onTap: () async {
+                    final picked = await _pick(_dueOn ?? _date);
+                    if (picked != null) setState(() => _dueOn = picked);
+                  },
+                ),
+                if (!_editing)
+                  SwitchListTile(
+                    key: const Key('ja-paga'),
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Já está paga'),
+                    subtitle: _alreadyPaid
+                        ? Text('Paga em ${_paidOn.toBr()}')
+                        : const Text('Nasce como pendente'),
+                    value: _alreadyPaid,
+                    onChanged: (v) => setState(() => _alreadyPaid = v),
+                  ),
+              ],
             ],
             if (_canRepeat) ..._repeatSection(),
             if (_error != null)
@@ -410,7 +491,11 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
             FilledButton(
               key: const Key('salvar-lancamento'),
               onPressed: _saving ? null : _save,
-              child: Text(_saving ? 'Salvando…' : 'Salvar'),
+              child: Text(
+                _saving
+                    ? 'Salvando…'
+                    : (_isInvestment ? 'Salvar investimento' : 'Salvar'),
+              ),
             ),
           ],
         ),

@@ -163,7 +163,8 @@ Não existe campo especial de saldo inicial. O usuário pode criar uma categoria
 ### 4.5 Investimentos
 
 - O MVP permite apenas registrar valores totais destinados a investimentos.
-- Cada lançamento registra somente o valor e a data. O aplicativo apresenta um único total destinado a investimentos no período, sem descrição obrigatória, categorias por ativo, classe ou instituição.
+- Cada lançamento registra somente o valor e a data (informada pelo usuário, passada ou futura), sem descrição, categorias por ativo, classe ou instituição. O total por período vem no relatório da Fase 7; o Dashboard não o exibe no MVP.
+- Investimento pode ser recorrente (todo mês ou todo período), com valor fixo e valor alterável por ocorrência; a ocorrência gerada entra na sobra sem confirmação. Não existe resgate: desfazer é cancelar o lançamento.
 - O valor é deduzido da sobra no momento do lançamento.
 - Não existe status pendente/pago para destinação de investimento.
 - O aplicativo não acompanha ativos, posições, saldo investido acumulado ou rentabilidade.

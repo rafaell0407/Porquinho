@@ -1,13 +1,14 @@
 # Estado atual — Porquinho
 
-**Atualizado em:** 11/11/2026. Ponto de partida de cada sessão. Detalhe das entregas: `docs/entregas_fase2.md` a `docs/entregas_fase5.md`. Histórico de decisões: `docs/historico/decisoes.md`.
+**Atualizado em:** 11/11/2026. Ponto de partida de cada sessão. Detalhe das entregas: `docs/entregas_fase2.md` a `docs/entregas_fase6.md`. Histórico de decisões: `docs/historico/decisoes.md`.
 
 ## Fase
 - Fase 1 (documentação): CONCLUÍDA em 08/11/2026.
 - Fase 2 (modelagem física e base técnica): CONCLUÍDA em 10/11/2026 (Entregas 1–21).
 - Fase 3 (estrutura Flutter e base offline): CONCLUÍDA em 10/11/2026 (Entregas 23–31 validadas pelo responsável).
 - Fase 4 (categorias e lançamentos avulsos): CONCLUÍDA em 11/11/2026 (Entregas 32–42, `docs/entregas_fase4.md`, validadas pelo responsável).
-- Fase 5 (recorrências): CONCLUÍDA em 11/11/2026 (Entregas 43–50, `docs/entregas_fase5.md`, validadas pelo responsável). Fases 6 a 8: NÃO INICIADAS.
+- Fase 5 (recorrências): CONCLUÍDA em 11/11/2026 (Entregas 43–50, `docs/entregas_fase5.md`, validadas pelo responsável). 
+- Fase 6 (investimentos simples e rendimentos manuais): IMPLEMENTADA em 11/11/2026 (Entregas 51–58, `docs/entregas_fase6.md`; a 54 foi removida por D3). **VALIDADA pelo responsável em 11/11/2026.** Fases 7 e 8: NÃO INICIADAS.
 - Plataformas do MVP: Android e Web (iOS fora do MVP — decisão de 10/11/2026). Web somente online.
 
 ## Entregas
@@ -32,6 +33,7 @@
 | 31 | Fechamento da Fase 3 | validada (10/11/2026) |
 | 32–42 | Fase 4: domínio (dinheiro, períodos, sobra), fila com dependências, primeiro acesso, períodos sob demanda, categorias e subcategorias, receita e despesa avulsas, Dashboard e Lançamentos | validadas (11/11/2026) |
 | 43–50 | Fase 5: domínio da agenda, migration de geração determinística e conversão, "Repetir" no formulário, geração local e no servidor, receitas e despesas recorrentes, alertas Android, fechamento | validadas (11/11/2026; detalhe em `docs/entregas_fase5.md`) |
+| 51–58 | Fase 6: investimento avulso (domínio, sincronização e atenção, "Novo investimento" em Lançamentos), investimento recorrente (migration do servidor, Drift v4, "Repetir" e Mais → Recorrências), rendimento como receita comum e regressão | implementadas e validadas (11/11/2026) |
 
 ## Lacunas encontradas (diagnóstico da Fase 3)
 - Contrato de dados Web × celular só tem a porta de gravação e o modo (`lib/core/data_access.dart`); os repositórios local e remoto nascem com cada funcionalidade (Fase 4+).
@@ -62,4 +64,5 @@ Emulador `Medium_Phone_API_37.0`, aberto sem flags gráficas; app com `--dart-de
 D1–D13 registradas em `docs/entregas_fase4.md`. Destaques: datas passadas e futuras aceitas em receitas e despesas (RN004, RN008); períodos anteriores/futuros sob demanda com confirmação (RN002); desfazer pagamento, reativar categoria e desfazer cancelamento fora do MVP; sugestões de categorias no primeiro acesso (RN024).
 
 ## Próximo passo
-Fase 6 (investimentos simples e rendimentos manuais), mediante autorização do responsável. Há alterações da Fase 5 ainda sem commit; commit só quando você pedir.
+Fase 7 (períodos, Dashboard e relatórios), mediante autorização. A Fase 6 está validada. As alterações da Fase 6 estão sem commit; commit só quando você pedir.
+Divergências V4 e V5 (`docs/entregas_fase6.md`): resolvidas — o commit `1f97003` registra a Fase 5 como concluída e validada.

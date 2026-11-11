@@ -18,6 +18,12 @@ import 'package:porquinho/features/entries/entry_models.dart';
 import 'package:porquinho/features/entries/entry_providers.dart';
 import 'package:porquinho/features/entries/entry_service.dart';
 import 'package:porquinho/features/entries/local_entry_repository.dart';
+import 'package:porquinho/features/investments/investment_models.dart';
+import 'package:porquinho/features/investments/investment_providers.dart';
+import 'package:porquinho/features/investments/investment_recurrence_service.dart';
+import 'package:porquinho/features/investments/local_investment_recurrence_repository.dart';
+import 'package:porquinho/features/investments/investment_service.dart';
+import 'package:porquinho/features/investments/local_investment_repository.dart';
 import 'package:porquinho/features/periods/local_period_repository.dart';
 import 'package:porquinho/features/periods/period_providers.dart';
 import 'package:porquinho/features/periods/period_service.dart';
@@ -35,6 +41,8 @@ void main() {
   late EntryService service;
   late CategoryService categories;
   late RecurrenceService recurrences;
+  late InvestmentService investments;
+  late LocalInvestmentRecurrenceRepository investmentTemplates;
   late LocalRecurrenceRepository recurrenceRepo;
   var ids = 0;
 
@@ -57,6 +65,16 @@ void main() {
       recurrences: recurrenceRepo,
       newId: () => 'e${++ids}',
     );
+    investmentTemplates = LocalInvestmentRecurrenceRepository(
+      db,
+      'u1',
+      recorder,
+    );
+    investments = InvestmentService(
+      LocalInvestmentRepository(db, 'u1', recorder),
+      periods,
+      newId: () => 'i${++ids}',
+    );
     await periods.setup(
       PeriodConfig.calendarMonth(),
       CalendarDate(2026, 11, 10),
@@ -71,6 +89,10 @@ void main() {
     ),
     periodServiceProvider.overrideWith((ref) async => periods),
     entryServiceProvider.overrideWith((ref) async => service),
+    investmentServiceProvider.overrideWith((ref) async => investments),
+    investmentRecurrenceServiceProvider.overrideWith(
+      (ref) async => InvestmentRecurrenceService(investmentTemplates),
+    ),
     categoryServiceProvider.overrideWith((ref) async => categories),
     recurrenceServiceProvider.overrideWith((ref) async => recurrences),
     recurrenceRepositoryProvider.overrideWith((ref) async => recurrenceRepo),
@@ -178,6 +200,86 @@ void main() {
     await tester.tap(find.byKey(const Key('confirmar-parar')));
     await tester.pumpAndSettle();
     expect(find.textContaining('Interrompida'), findsOneWidget);
+  });
+
+  testWidgets('Repetir no investimento: sem pagar/vencimento, lista, edita o '
+      'valor de um mês e das próximas, para de repetir', (tester) async {
+    await pump(tester, const TransactionsScreen());
+
+    await tester.tap(find.byKey(const Key('novo-lancamento')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('novo-investimento')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('campo-valor')), '300');
+    await tester.tap(find.byKey(const Key('repetir')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('frequencia')), findsOneWidget);
+    expect(find.byKey(const Key('valor-variavel')), findsNothing);
+    expect(find.byKey(const Key('ja-recebi')), findsNothing);
+    expect(find.byKey(const Key('ja-paga')), findsNothing);
+    expect(find.byKey(const Key('campo-vencimento')), findsNothing);
+    await tester.tap(find.byKey(const Key('salvar-lancamento')));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Recorrente'), findsOneWidget);
+    expect(find.text('- R\$ 300,00'), findsOneWidget);
+    final period = (await periods.periodFor(CalendarDate(2026, 11, 10)))!;
+    final totals = LocalTotalsRepository(db, 'u1');
+    expect((await totals.totalsFor(period.id)).surplus, BigInt.from(-30000));
+
+    // "Editar só esta": muda o valor deste mês; o modelo não muda.
+    await tester.tap(find.text('Investimento'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('acao-pagar')), findsNothing);
+    expect(find.text('Editar só esta'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('acao-editar')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('repetir')), findsNothing);
+    await tester.enterText(find.byKey(const Key('campo-valor')), '450');
+    await tester.tap(find.byKey(const Key('salvar-lancamento')));
+    await tester.pumpAndSettle();
+    expect(find.text('- R\$ 450,00'), findsOneWidget);
+    expect((await totals.totalsFor(period.id)).surplus, BigInt.from(-45000));
+    final template = (await investmentTemplates.templates()).single;
+    expect(template.defaultAmount, BigInt.from(30000));
+
+    // "Editar a recorrência": muda o valor das próximas, não o deste mês.
+    await tester.tap(find.text('Investimento'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('acao-editar-recorrencia')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('campo-valor')), '600');
+    await tester.tap(find.byKey(const Key('salvar-recorrencia')));
+    await tester.pumpAndSettle();
+    expect(
+      (await investmentTemplates.templates()).single.defaultAmount,
+      BigInt.from(60000),
+    );
+    expect((await totals.totalsFor(period.id)).surplus, BigInt.from(-45000));
+  });
+
+  testWidgets('Mais → Recorrências lista investimento recorrente e permite '
+      'parar de repetir', (tester) async {
+    await investments.create(
+      InvestmentDraft(
+        amount: BigInt.from(25000),
+        date: CalendarDate(2026, 11, 5),
+      ),
+      repeat: RecurrenceFrequency.monthly,
+    );
+    await pump(tester, const RecurrencesScreen());
+    expect(find.textContaining('Todo dia 5'), findsOneWidget);
+    expect(find.textContaining('R\$ 250,00'), findsOneWidget);
+
+    await tester.tap(find.textContaining('Todo dia 5'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('acao-editar-recorrencia')), findsOneWidget);
+    await tester.tap(find.byKey(const Key('acao-parar-recorrencia')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirmar-parar')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Interrompida'), findsOneWidget);
+    expect((await investmentTemplates.templates()).single.isActive, isFalse);
   });
 }
 

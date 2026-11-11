@@ -6,6 +6,7 @@ import '../alerts/alert_providers.dart';
 import '../auth/auth_providers.dart';
 import '../categories/category_providers.dart';
 import '../entries/entry_providers.dart';
+import '../investments/investment_providers.dart';
 import '../periods/period_navigation.dart';
 import '../periods/period_providers.dart';
 import 'local_recurrence_repository.dart';
@@ -60,6 +61,8 @@ final recurrenceGenerationProvider = FutureProvider<int>((ref) async {
     if (created > 0) {
       ref.invalidate(selectedPeriodProvider);
       ref.invalidate(periodEntriesProvider);
+      ref.invalidate(periodInvestmentsProvider);
+      ref.invalidate(investmentTemplatesProvider);
       ref.invalidate(periodTotalsProvider);
       ref.invalidate(recurringTemplatesProvider);
     }

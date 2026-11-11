@@ -305,6 +305,8 @@ supabase/
   tests/
 ```
 
+**Fase 6:** `features/investments/` (modelos, serviço, repositórios local e remoto, recorrência de investimento e telas de edição da recorrência). O formulário de despesa (`entries/entry_form_screen.dart`) tem o modo investimento (só valor, data e "Repetir"); a geração local de ocorrências fica em `recurrence/local_recurrence_repository.dart` (junto com receitas e despesas, mesmo identificador determinístico). Celular grava no banco local e na fila; Web chama as RPCs, somente online.
+
 **Implementação (Fases 3 e 4):** além das pastas acima existem `core/domain/` (dinheiro BRL em centavos, data civil, períodos, sobra e relógio `America/Sao_Paulo`, sem acesso a dados), `features/totals/`, `features/attention/` (itens que precisam de atenção) e `features/transactions/` (tela da aba Lançamentos, que usa as regras de `features/entries/`; alinhamento previsto na Entrega 39). Cada funcionalidade com dados tem a interface do repositório, uma implementação local (Drift + fila de envio, celular) e uma remota (Supabase, Web), escolhidas por `dataAccessModeProvider`. Operações da fila declaram dependências (`depends_on` no `payload_json`): uma operação só segue depois que a criação das categorias, subcategorias e períodos de que depende for aplicada (Entrega 35).
 
 As dependências fluem da apresentação para a aplicação e desta para o domínio. A camada `data` implementa contratos de repositório definidos para os casos de uso. `core` contém mecanismos técnicos compartilhados, sem regras financeiras; cada funcionalidade só cria as camadas de que precisa. Riverpod compõe estado e dependências; GoRouter apresenta apenas Dashboard, Lançamentos e Mais na navegação principal. As regras financeiras permanecem no domínio.

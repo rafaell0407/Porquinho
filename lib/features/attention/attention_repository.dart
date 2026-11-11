@@ -1,3 +1,4 @@
+import '../../core/domain/calendar_date.dart';
 import '../sync/sync_models.dart';
 import 'attention_models.dart';
 
@@ -21,17 +22,27 @@ abstract interface class AttentionRepository {
 }
 
 /// Monta o pedido editado a partir da alteração original. Só [name] (categorias)
-/// e [description]/[amountCentavos] (lançamentos) podem ser trocados.
+/// e [description]/[amountCentavos] (lançamentos) podem ser trocados; em
+/// investimento, [amountCentavos] e [allocatedOn] (valor e data).
 Map<String, dynamic> buildEditedRequest(
   AttentionItem item, {
   String? name,
   String? description,
   BigInt? amountCentavos,
+  CalendarDate? allocatedOn,
 }) {
   final base = Map<String, dynamic>.from(item.request)
     ..remove('expected_version');
   if (item.entityType == 'category' || item.entityType == 'subcategory') {
     return {'action': item.action, 'name': name ?? base['name']};
+  }
+  if (item.isInvestment) {
+    return {
+      'action': item.action,
+      'amount_centavos': (amountCentavos ?? base['amount_centavos'])
+          ?.toString(),
+      'allocated_on': allocatedOn?.toIso() ?? base['allocated_on'],
+    };
   }
   final payload = Map<String, dynamic>.from((base['payload'] as Map?) ?? {});
   if (description != null) payload['description'] = description;

@@ -146,7 +146,8 @@ class RemoteRecurrenceRepository implements RecurrenceRepository {
         {'p_operation_id': _newId()},
       );
       return ((response['income_created'] as num?) ?? 0).toInt() +
-          ((response['expense_created'] as num?) ?? 0).toInt();
+          ((response['expense_created'] as num?) ?? 0).toInt() +
+          ((response['investment_created'] as num?) ?? 0).toInt();
     } on SyncRejectedError catch (e) {
       throw ChangeRejectedException(e.message);
     }

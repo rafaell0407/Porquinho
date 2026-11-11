@@ -340,7 +340,7 @@ class SyncService {
     if (op == null || op.state != OutboxState.rejected) return;
     final table = _tableByEntity[op.entityType];
     await _db.transaction(() async {
-      if (op.rpc == 'create_recurrence_from_entry') {
+      if (op.isRecurrenceCreation) {
         await _revertRecurrenceCreation(ownerId, op, table!);
       } else if (table != null) {
         if (op.isCreate) {
@@ -387,9 +387,11 @@ class SyncService {
     String entryTable,
   ) async {
     final templateId = op.params['p_template_id']! as String;
-    final templateTable = entryTable == 'income_entries'
-        ? 'income_recurrence_templates'
-        : 'expense_recurrence_templates';
+    final templateTable = switch (entryTable) {
+      'income_entries' => 'income_recurrence_templates',
+      'investment_allocations' => 'investment_recurrence_templates',
+      _ => 'expense_recurrence_templates',
+    };
     for (final id in [op.entityId, templateId]) {
       await _db.customStatement(
         'DELETE FROM sync_outbox WHERE owner_id = ? AND entity_id = ?',
@@ -447,4 +449,5 @@ const _tableByEntity = {
   'investment_allocation': 'investment_allocations',
   'income_recurrence_template': 'income_recurrence_templates',
   'expense_recurrence_template': 'expense_recurrence_templates',
+  'investment_recurrence_template': 'investment_recurrence_templates',
 };

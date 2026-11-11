@@ -3,6 +3,7 @@ import 'package:porquinho/core/domain/calendar_date.dart';
 import 'package:porquinho/core/domain/period_calendar.dart';
 import 'package:porquinho/core/domain/surplus.dart';
 import 'package:porquinho/features/entries/entry_providers.dart';
+import 'package:porquinho/features/investments/investment_providers.dart';
 import 'package:porquinho/features/periods/period_models.dart';
 import 'package:porquinho/features/periods/period_navigation.dart';
 import 'package:porquinho/features/periods/period_providers.dart';
@@ -33,4 +34,5 @@ List<Override> readyFinanceOverrides() => [
   ),
   periodTotalsProvider.overrideWith((ref) async => PeriodTotals.zero),
   periodEntriesProvider.overrideWith((ref) async => const []),
+  periodInvestmentsProvider.overrideWith((ref) async => const []),
 ];

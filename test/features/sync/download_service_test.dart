@@ -182,6 +182,16 @@ void main() {
         'scheduled_period_id': null,
       },
     ];
+    reader.tables['investment_recurrence_templates'] = [
+      {
+        ..._base('itpl1', _t(6)),
+        'frequency': 'monthly',
+        'starts_on': '2026-01-20',
+        'monthly_reference_day': 20,
+        'default_amount_centavos': 20000,
+        'is_active': true,
+      },
+    ];
     reader.tables['investment_allocations'] = [
       {
         ..._base('inv1', _t(8)),
@@ -189,6 +199,9 @@ void main() {
         'allocated_on': '2026-01-20',
         'accounting_period_id': 'per0',
         'cancelled_at': null,
+        'recurrence_template_id': 'itpl1',
+        'scheduled_for_date': '2026-01-20',
+        'scheduled_period_id': null,
       },
     ];
     reader.tables['audit_events'] = [
@@ -220,8 +233,20 @@ void main() {
     expect(await count('income_entries'), 1);
     expect(await count('expense_entries'), 1);
     expect(await count('investment_allocations'), 1);
+    expect(await count('investment_recurrence_templates'), 1);
     expect(await count('audit_events'), 1);
     expect(await count('user_preferences'), 1);
+
+    final occurrence = await db
+        .customSelect('SELECT * FROM investment_allocations')
+        .getSingle();
+    expect(occurrence.read<String>('recurrence_template_id'), 'itpl1');
+    expect(occurrence.read<String>('scheduled_for_date'), '2026-01-20');
+    final itpl = await db
+        .customSelect('SELECT * FROM investment_recurrence_templates')
+        .getSingle();
+    expect(itpl.read<String>('default_amount_centavos'), '20000');
+    expect(itpl.read<int>('monthly_reference_day'), 20);
 
     final inc = await db
         .customSelect('SELECT * FROM income_entries')

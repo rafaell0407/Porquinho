@@ -8,6 +8,9 @@ import '../categories/category_providers.dart';
 import '../entries/entry_form_screen.dart';
 import '../entries/entry_models.dart';
 import '../entries/entry_providers.dart';
+import '../investments/investment_models.dart';
+import '../investments/investment_providers.dart';
+import '../investments/investment_recurrence_edit_screen.dart';
 import '../periods/period_navigation.dart';
 import '../periods/period_providers.dart';
 import '../recurrence/recurrence_edit_screen.dart';
@@ -18,11 +21,14 @@ import '../recurrence/recurrences_screen.dart';
 enum EntryFilter {
   all('Todos'),
   income('Receitas'),
-  expense('Despesas');
+  expense('Despesas'),
+  investment('Investimentos');
 
   const EntryFilter(this.label);
   final String label;
 }
+
+enum _NewItem { income, expense, investment }
 
 class EntryFilterNotifier extends Notifier<EntryFilter> {
   @override
@@ -93,7 +99,7 @@ class TransactionsScreen extends ConsumerWidget {
   }
 
   Future<void> _chooseKind(BuildContext context, WidgetRef ref) async {
-    final kind = await showModalBottomSheet<EntryKind>(
+    final kind = await showModalBottomSheet<_NewItem>(
       context: context,
       builder: (sheet) => SafeArea(
         child: Column(
@@ -103,19 +109,36 @@ class TransactionsScreen extends ConsumerWidget {
               key: const Key('nova-receita'),
               leading: const Icon(Icons.arrow_downward),
               title: const Text('Nova receita'),
-              onTap: () => Navigator.pop(sheet, EntryKind.income),
+              onTap: () => Navigator.pop(sheet, _NewItem.income),
             ),
             ListTile(
               key: const Key('nova-despesa'),
               leading: const Icon(Icons.arrow_upward),
               title: const Text('Nova despesa'),
-              onTap: () => Navigator.pop(sheet, EntryKind.expense),
+              onTap: () => Navigator.pop(sheet, _NewItem.expense),
+            ),
+            ListTile(
+              key: const Key('novo-investimento'),
+              leading: const Icon(Icons.savings_outlined),
+              title: const Text('Novo investimento'),
+              onTap: () => Navigator.pop(sheet, _NewItem.investment),
             ),
           ],
         ),
       ),
     );
-    if (kind != null && context.mounted) await _openForm(context, ref, kind);
+    if (kind == null || !context.mounted) return;
+    if (kind == _NewItem.investment) {
+      await Navigator.of(context).push<bool>(
+        MaterialPageRoute(builder: (_) => const EntryFormScreen.investment()),
+      );
+      return;
+    }
+    await _openForm(
+      context,
+      ref,
+      kind == _NewItem.income ? EntryKind.income : EntryKind.expense,
+    );
   }
 
   Future<void> _openForm(
@@ -129,6 +152,17 @@ class TransactionsScreen extends ConsumerWidget {
   }
 }
 
+/// Linha da lista mista: lançamento (receita/despesa) ou investimento.
+class _Row {
+  const _Row.entry(EntryRecord this.entry) : investment = null;
+  const _Row.investment(InvestmentRecord this.investment) : entry = null;
+
+  final EntryRecord? entry;
+  final InvestmentRecord? investment;
+
+  CalendarDate get date => entry?.date ?? investment!.date;
+}
+
 class _EntryList extends ConsumerWidget {
   const _EntryList({required this.filter});
 
@@ -137,43 +171,233 @@ class _EntryList extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = ref.watch(periodEntriesProvider);
+    final investments = ref.watch(periodInvestmentsProvider);
     final cats = ref.watch(categoryDataProvider).value;
-    return entries.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (e, _) => const Center(
-        child: Text('Não foi possível carregar os lançamentos.'),
+    if (entries.hasError || investments.hasError) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Não foi possível carregar os lançamentos.'),
+            TextButton(
+              key: const Key('tentar-de-novo'),
+              onPressed: () => refreshFinanceData(ref),
+              child: const Text('Tentar de novo'),
+            ),
+          ],
+        ),
+      );
+    }
+    if (!entries.hasValue || !investments.hasValue) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    final rows = <_Row>[
+      for (final e in entries.requireValue)
+        if (filter == EntryFilter.all ||
+            (filter == EntryFilter.income && e.kind == EntryKind.income) ||
+            (filter == EntryFilter.expense && e.kind == EntryKind.expense))
+          _Row.entry(e),
+      if (filter == EntryFilter.all || filter == EntryFilter.investment)
+        for (final i in investments.requireValue) _Row.investment(i),
+    ]..sort((a, b) => b.date.compareTo(a.date));
+    if (rows.isEmpty) {
+      return Center(
+        child: Text(
+          filter == EntryFilter.investment
+              ? 'Nenhum investimento neste período.'
+              : 'Nenhum lançamento neste período.',
+        ),
+      );
+    }
+    return RefreshIndicator(
+      onRefresh: () async => refreshFinanceData(ref),
+      child: ListView.separated(
+        padding: const EdgeInsets.only(bottom: 88),
+        itemCount: rows.length,
+        separatorBuilder: (_, _) => const Divider(height: 1),
+        itemBuilder: (context, i) {
+          final row = rows[i];
+          if (row.investment != null) {
+            return _InvestmentTile(investment: row.investment!);
+          }
+          final e = row.entry!;
+          final category = cats?.categories
+              .where((c) => c.id == e.categoryId)
+              .firstOrNull;
+          return _EntryTile(entry: e, categoryName: category?.name);
+        },
       ),
-      data: (all) {
-        final list = all
-            .where(
-              (e) =>
-                  filter == EntryFilter.all ||
-                  (filter == EntryFilter.income &&
-                      e.kind == EntryKind.income) ||
-                  (filter == EntryFilter.expense &&
-                      e.kind == EntryKind.expense),
-            )
-            .toList();
-        if (list.isEmpty) {
-          return const Center(child: Text('Nenhum lançamento neste período.'));
-        }
-        return RefreshIndicator(
-          onRefresh: () async => refreshFinanceData(ref),
-          child: ListView.separated(
-            padding: const EdgeInsets.only(bottom: 88),
-            itemCount: list.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, i) {
-              final e = list[i];
-              final category = cats?.categories
-                  .where((c) => c.id == e.categoryId)
-                  .firstOrNull;
-              return _EntryTile(entry: e, categoryName: category?.name);
-            },
-          ),
-        );
-      },
     );
+  }
+}
+
+/// Investimento na lista: só valor e data, sem status de pagamento (D2).
+class _InvestmentTile extends ConsumerWidget {
+  const _InvestmentTile({required this.investment});
+
+  final InvestmentRecord investment;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final strike = investment.cancelled
+        ? const TextStyle(decoration: TextDecoration.lineThrough)
+        : null;
+    return ListTile(
+      key: Key('investimento-${investment.id}'),
+      leading: Icon(
+        Icons.savings_outlined,
+        color: Theme.of(context).colorScheme.tertiary,
+      ),
+      title: Text('Investimento', style: strike),
+      subtitle: Text(
+        [
+          investment.date.toBr(),
+          if (investment.cancelled) 'Cancelado',
+          if (investment.isRecurring) 'Recorrente',
+        ].join(' · '),
+      ),
+      trailing: Text(
+        '- ${formatBrl(investment.amount)}',
+        style: (strike ?? const TextStyle()).copyWith(
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      onTap: () => _showActions(context, ref),
+    );
+  }
+
+  Future<void> _showActions(BuildContext context, WidgetRef ref) async {
+    await showModalBottomSheet<void>(
+      context: context,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!investment.cancelled) ...[
+              ListTile(
+                key: const Key('acao-editar'),
+                leading: const Icon(Icons.edit_outlined),
+                title: Text(
+                  investment.isRecurring ? 'Editar só esta' : 'Editar',
+                ),
+                onTap: () async {
+                  Navigator.pop(sheet);
+                  await Navigator.of(context).push<bool>(
+                    MaterialPageRoute(
+                      builder: (_) => EntryFormScreen.investment(
+                        existingInvestment: investment,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              if (investment.isRecurring) ...[
+                ListTile(
+                  key: const Key('acao-editar-recorrencia'),
+                  leading: const Icon(Icons.repeat),
+                  title: const Text('Editar a recorrência'),
+                  onTap: () {
+                    Navigator.pop(sheet);
+                    _withTemplate(
+                      context,
+                      ref,
+                      (t) => Navigator.of(context).push<bool>(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              InvestmentRecurrenceEditScreen(template: t),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                ListTile(
+                  key: const Key('acao-parar-recorrencia'),
+                  leading: const Icon(Icons.stop_circle_outlined),
+                  title: const Text('Parar de repetir'),
+                  onTap: () {
+                    Navigator.pop(sheet);
+                    _withTemplate(
+                      context,
+                      ref,
+                      (t) => confirmStopInvestmentRecurrence(context, ref, t),
+                    );
+                  },
+                ),
+              ],
+              ListTile(
+                key: const Key('acao-cancelar'),
+                leading: const Icon(Icons.cancel_outlined),
+                title: const Text('Cancelar investimento'),
+                onTap: () {
+                  Navigator.pop(sheet);
+                  _cancel(context, ref);
+                },
+              ),
+            ] else
+              const ListTile(
+                title: Text('Investimento cancelado'),
+                subtitle: Text('Fica no histórico e não entra na sobra.'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _withTemplate(
+    BuildContext context,
+    WidgetRef ref,
+    Future<void> Function(InvestmentTemplate template) action,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final service = await ref.read(investmentRecurrenceServiceProvider.future);
+    final template = await service.template(investment.templateId!);
+    if (template == null) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Recorrência não encontrada.')),
+      );
+      return;
+    }
+    if (context.mounted) await action(template);
+  }
+
+  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cancelar este investimento?'),
+        content: const Text(
+          'O valor volta para a sobra do período em que foi investido e o '
+          'registro continua no histórico como cancelado. Não é possível '
+          'desfazer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Voltar'),
+          ),
+          FilledButton(
+            key: const Key('confirmar-cancelar'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Cancelar investimento'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final blocked = await ref.read(writeGateProvider).blockedReason();
+      if (blocked != null) {
+        messenger.showSnackBar(SnackBar(content: Text(blocked)));
+        return;
+      }
+      final service = await ref.read(investmentServiceProvider.future);
+      await service.cancel(investment);
+      refreshFinanceData(ref);
+    } on Object catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
+    }
   }
 }
 

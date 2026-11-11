@@ -199,19 +199,19 @@ Não haverá cadastro técnico de cartões, compras individuais, parcelas, fecha
 
 ### RN021 — Destinação simples para investimentos
 
-O usuário poderá registrar valores destinados a investimentos por lançamentos simples que registram somente valor e data. O aplicativo apresenta um único total destinado a investimentos no período, sem descrição, categoria por ativo, classe, instituição ou tipo de investimento.
+O usuário poderá registrar valores destinados a investimentos por lançamentos simples que registram somente valor e data. A data é informada pelo usuário (padrão hoje; passada ou futura) e define o período (decisão de 11/11/2026). Não há descrição, categoria por ativo, classe, instituição ou tipo de investimento. O total destinado no período consta do relatório da Fase 7; o Dashboard do MVP não o exibe.
 
 **Status:** APROVADO.
 
 ### RN022 — Efeito imediato na sobra
 
-O valor destinado a investimento é deduzido da sobra do período no momento em que o lançamento é registrado. Não existe status pendente/pago nem confirmação posterior.
+O valor destinado a investimento é deduzido da sobra do período no momento em que o lançamento é registrado. Não existe status pendente/pago nem confirmação posterior. A ocorrência de um investimento recorrente também entra na sobra assim que é gerada, no período da data programada, sem confirmação.
 
 **Status:** APROVADO.
 
 ### RN023 — Limites do controle de investimentos
 
-O aplicativo não acompanha carteira, ativos, posições, saldo acumulado, rentabilidade, dividendos ou cotações. O total exibido para o período é a soma dos lançamentos de destinação não cancelados daquele período.
+O aplicativo não acompanha carteira, ativos, posições, saldo acumulado, rentabilidade, dividendos ou cotações. O total do período é a soma dos lançamentos de destinação não cancelados daquele período. Não existe resgate: o valor investido não volta para a sobra e o aplicativo não orienta lançar resgate como receita. Desfazer um investimento é cancelá-lo, o que devolve o valor à sobra do período original do investimento, não do período atual (decisão de 11/11/2026).
 
 **Status:** APROVADO.
 
@@ -239,7 +239,7 @@ Categorias usadas ou não podem ser desativadas, mas nunca excluídas fisicament
 
 ### RN027 — Investimentos sem categorias
 
-Destinações para investimento não usam categorias personalizáveis; cada registro contém somente valor e data, e o Dashboard apresenta o total agregado do período.
+Destinações para investimento não usam categorias personalizáveis; cada registro contém somente valor e data (o total agregado do período consta do relatório da Fase 7).
 
 **Status:** APROVADO.
 
@@ -356,6 +356,8 @@ Receitas recorrentes são criadas pendentes e só entram na sobra após confirma
 - **D6:** o lançamento avulso só se repete se o usuário marcar a recorrência. A confirmação de recebimento usa hoje como padrão e aceita outra data.
 - **D7:** ao parar de repetir, as ocorrências já geradas ficam como estão.
 - **D8:** a recorrência é ativada no formulário do lançamento (“Repetir”: todo mês ou todo período). O próprio lançamento é a primeira ocorrência; as seguintes seguem o dia dele; data passada gera também as atrasadas até hoje. Em “todo período”, a data da ocorrência é o início do período que contém a data informada. Ao editar uma ocorrência, o usuário escolhe “só esta” ou “a recorrência”. Lista de consulta em Mais → Recorrências.
+
+**Decisões de 11/11/2026 (Fase 6 — investimento recorrente):** o investimento também pode ser recorrente, com as mesmas regras de agenda, identificador determinístico, geração ao abrir e sincronizar, mudança de agenda só para as próximas e "parar de repetir" da despesa recorrente (D1, D2, D4, D7, D8 acima). Diferenças: o valor é sempre fixo (valor padrão do modelo, alterável por ocorrência com "só esta" ou nas próximas com "a recorrência"); não há valor variável, pendente/pago, vencimento nem alertas; a ocorrência entra na sobra quando gerada. Cancelar uma ocorrência não a recria.
 
 **Status:** APROVADO. Primeira data mensal e inclusão do período atual na recorrência por período foram decididas em 09/11/2026.
 

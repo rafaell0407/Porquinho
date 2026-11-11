@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:porquinho/core/domain/calendar_date.dart';
 import 'package:porquinho/core/local_database/app_database.dart';
 import 'package:porquinho/features/attention/attention_models.dart';
 import 'package:porquinho/features/attention/attention_providers.dart';
@@ -127,6 +128,76 @@ void main() {
         'action': 'rename',
         'name': 'Final',
       });
+    });
+  });
+
+  group('investimento (Entrega 52, D6, V7)', () {
+    test('textos com valor e data; editar valor e data', () {
+      final item = AttentionItem(
+        kind: AttentionKind.conflict,
+        id: 'i1',
+        entityType: 'investment_allocation',
+        entityId: 'a1',
+        request: normalizeRequest({
+          'p_action': 'update',
+          'p_allocation_id': 'a1',
+          'p_expected_version': 1,
+          'p_amount_centavos': '123456',
+          'p_allocated_on': '2026-11-10',
+        }),
+        remote: {
+          'amount_centavos': 100000,
+          'allocated_on': '2026-11-09',
+          'cancelled_at': null,
+          'version': 2,
+        },
+      );
+      expect(item.canKeepLocal, isTrue);
+      expect(item.canEdit, isTrue);
+      expect(item.mineSummary, 'Alterar: R\$ 1.234,56 · 10/11/2026');
+      expect(item.serverSummary, 'R\$ 1.000,00 · 09/11/2026');
+      expect(buildEditedRequest(item, amountCentavos: BigInt.from(5000)), {
+        'action': 'update',
+        'amount_centavos': '5000',
+        'allocated_on': '2026-11-10',
+      });
+      expect(buildEditedRequest(item, allocatedOn: CalendarDate(2026, 12, 1)), {
+        'action': 'update',
+        'amount_centavos': '123456',
+        'allocated_on': '2026-12-01',
+      });
+    });
+
+    test('cancelamento e servidor cancelado; criação só aceita servidor', () {
+      final cancel = AttentionItem(
+        kind: AttentionKind.conflict,
+        id: 'i2',
+        entityType: 'investment_allocation',
+        entityId: 'a1',
+        request: {'action': 'cancel'},
+        remote: {
+          'amount_centavos': 2500,
+          'allocated_on': '2026-11-09',
+          'cancelled_at': '2026-11-10T00:00:00Z',
+        },
+      );
+      expect(cancel.mineSummary, 'Cancelar o investimento');
+      expect(cancel.serverSummary, 'R\$ 25,00 · 09/11/2026 (cancelado)');
+      expect(cancel.canEdit, isFalse);
+      final create = AttentionItem(
+        kind: AttentionKind.conflict,
+        id: 'i3',
+        entityType: 'investment_allocation',
+        entityId: 'a1',
+        request: {
+          'action': 'create',
+          'amount_centavos': '100',
+          'allocated_on': '2026-11-09',
+        },
+      );
+      expect(create.canKeepLocal, isFalse);
+      expect(create.canEdit, isFalse);
+      expect(create.mineSummary, 'Criar: R\$ 1,00 · 09/11/2026');
     });
   });
 
@@ -283,6 +354,96 @@ void main() {
       });
       expect(await localName(), 'Final');
     });
+
+    test(
+      'conflito de investimento: editar valor e data gera nova versão',
+      () async {
+        await db.customStatement('PRAGMA foreign_keys = OFF');
+        await db.customStatement(
+          'INSERT INTO accounting_periods (id, owner_id, version, created_at, '
+          "updated_at, configuration_id, start_date, end_date) VALUES ('p1', 'u1', "
+          "1, 'x', 'x', 'cfg', '2026-11-01', '2026-12-01')",
+        );
+        await db.customStatement(
+          'INSERT INTO investment_allocations (id, owner_id, version, created_at, '
+          "updated_at, amount_centavos, allocated_on, accounting_period_id) "
+          "VALUES ('a1', 'u1', 2, 'x', 'x', '100000', '2026-11-05', 'p1')",
+        );
+        await sync.enqueue(
+          OutboxOperation(
+            ownerId: 'u1',
+            idempotencyKey: 'k9',
+            entityType: 'investment_allocation',
+            entityId: 'a1',
+            expectedVersion: 1,
+            rpc: 'apply_investment_allocation_change',
+            params: {
+              'p_action': 'update',
+              'p_allocation_id': 'a1',
+              'p_expected_version': 1,
+              'p_amount_centavos': '150000',
+              'p_allocated_on': '2026-11-06',
+            },
+          ),
+        );
+        gateway.handlers['apply_investment_allocation_change'] = (_) async => {
+          'status': 'conflict',
+          'conflict_id': 'cf9',
+          'remote_allocation': {
+            'id': 'a1',
+            'amount_centavos': 100000,
+            'allocated_on': '2026-11-05',
+            'cancelled_at': null,
+            'version': 2,
+          },
+        };
+        await sync.syncOnce('u1');
+        final item = (await repo.items()).single;
+        expect(item.mineSummary, 'Alterar: R\$ 1.500,00 · 06/11/2026');
+        expect(item.serverSummary, 'R\$ 1.000,00 · 05/11/2026');
+
+        gateway.handlers['resolve_sync_conflict'] = (_) async => {
+          'status': 'resolved',
+          'result': {
+            'status': 'applied',
+            'allocation': {
+              'id': 'a1',
+              'amount_centavos': 120000,
+              'allocated_on': '2026-11-07',
+              'accounting_period_id': 'p1',
+              'cancelled_at': null,
+              'version': 3,
+              'created_at': 'x',
+              'updated_at': 'z',
+            },
+          },
+        };
+        await repo.resolve(
+          item,
+          ConflictResolution.edit,
+          editedRequest: buildEditedRequest(
+            item,
+            amountCentavos: BigInt.from(120000),
+            allocatedOn: CalendarDate(2026, 11, 7),
+          ),
+        );
+        expect(gateway.calls.last.$2['p_request'], {
+          'action': 'update',
+          'amount_centavos': '120000',
+          'allocated_on': '2026-11-07',
+        });
+        final row = await db
+            .customSelect(
+              "SELECT version, amount_centavos, allocated_on "
+              "FROM investment_allocations WHERE id = 'a1'",
+            )
+            .getSingle();
+        expect(row.read<int>('version'), 3);
+        expect(row.read<String>('amount_centavos'), '120000');
+        expect(row.read<String>('allocated_on'), '2026-11-07');
+        expect(await repo.items(), isEmpty);
+      },
+    );
 
     test(
       'recusa vira item com motivo; descartar edição restaura o servidor',

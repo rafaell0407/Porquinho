@@ -50,7 +50,10 @@ class AttentionItem {
       (((entityType == 'category' || entityType == 'subcategory') &&
               action == 'rename') ||
           ((entityType == 'income_entry' || entityType == 'expense_entry') &&
-              action == 'update'));
+              action == 'update') ||
+          (isInvestment && action == 'update'));
+
+  bool get isInvestment => entityType == 'investment_allocation';
 
   bool get isEntry =>
       entityType == 'income_entry' || entityType == 'expense_entry';
@@ -71,6 +74,7 @@ class AttentionItem {
     'investment_allocation',
     'income_recurrence_template',
     'expense_recurrence_template',
+    'investment_recurrence_template',
   };
 }
 
@@ -84,6 +88,7 @@ String entityLabel(String entityType) => switch (entityType) {
   'investment_allocation' => 'Investimento',
   'income_recurrence_template' => 'Receita recorrente',
   'expense_recurrence_template' => 'Despesa recorrente',
+  'investment_recurrence_template' => 'Investimento recorrente',
   _ => 'Item',
 };
 
@@ -140,6 +145,15 @@ String describeRequest(String entityType, Map<String, dynamic> request) {
       ];
       final verb = action == 'create' ? 'Criar' : 'Alterar';
       return parts.isEmpty ? verb : '$verb: ${parts.join(' · ')}';
+    case 'investment_allocation':
+      if (action == 'cancel') return 'Cancelar o investimento';
+      final parts = <String>[
+        if (request['amount_centavos'] != null)
+          _amount(request['amount_centavos']),
+        if (request['allocated_on'] != null) _date(request['allocated_on']),
+      ];
+      final verb = action == 'create' ? 'Criar' : 'Alterar';
+      return parts.isEmpty ? verb : '$verb: ${parts.join(' · ')}';
     case 'accounting_period':
       return 'Criar o período a partir de ${_date(request['start_date'])}';
     case 'period_configuration':
@@ -171,6 +185,10 @@ String describeRecord(String entityType, Map<String, dynamic> record) {
         if (date != null) _date(date),
       ];
       return '${parts.join(' · ')}$cancelled';
+    case 'investment_allocation':
+      final cancelled = record['cancelled_at'] != null ? ' (cancelado)' : '';
+      return '${_amount(record['amount_centavos'])} · '
+          '${_date(record['allocated_on'])}$cancelled';
     case 'accounting_period':
       return 'Período de ${_date(record['start_date'])} a '
           '${_date(record['end_date'])} (fim exclusivo)';

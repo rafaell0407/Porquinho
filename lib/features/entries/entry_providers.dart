@@ -8,6 +8,7 @@ import '../../core/domain/surplus.dart';
 import '../alerts/alert_providers.dart';
 import '../auth/auth_providers.dart';
 import '../categories/category_providers.dart';
+import '../investments/investment_providers.dart';
 import '../periods/period_navigation.dart';
 import '../periods/period_providers.dart';
 import '../totals/totals_repository.dart';
@@ -71,6 +72,7 @@ final periodTotalsProvider = FutureProvider<PeriodTotals?>((ref) async {
 void refreshFinanceData(WidgetRef ref) {
   ref.invalidate(selectedPeriodProvider);
   ref.invalidate(periodEntriesProvider);
+  ref.invalidate(periodInvestmentsProvider);
   ref.invalidate(periodTotalsProvider);
   // Vencimentos mudaram (nova despesa, pagamento, edição): reagenda os alertas.
   unawaited(ref.read(alertsRefreshProvider)());

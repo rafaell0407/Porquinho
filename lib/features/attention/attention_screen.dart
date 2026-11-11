@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/domain/calendar_date.dart';
 import '../../core/domain/money.dart';
 import '../auth/auth_providers.dart';
 import '../sync/sync_models.dart';
@@ -237,6 +238,7 @@ class _EditDialogState extends State<_EditDialog> {
   late final TextEditingController _name;
   late final TextEditingController _description;
   late final TextEditingController _amount;
+  CalendarDate? _date;
   String? _error;
 
   @override
@@ -248,7 +250,9 @@ class _EditDialogState extends State<_EditDialog> {
     _description = TextEditingController(
       text: '${payload['description'] ?? ''}',
     );
-    final cents = payload['amount_centavos'];
+    final allocatedOn = r['allocated_on'];
+    if (allocatedOn != null) _date = CalendarDate.parse('$allocatedOn');
+    final cents = payload['amount_centavos'] ?? r['amount_centavos'];
     _amount = TextEditingController(
       text: cents == null
           ? ''
@@ -256,9 +260,36 @@ class _EditDialogState extends State<_EditDialog> {
     );
   }
 
+  Future<void> _pickDate() async {
+    final current = _date ?? CalendarDate.parse('2026-01-01');
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(current.year, current.month, current.day),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked != null) {
+      setState(
+        () => _date = CalendarDate(picked.year, picked.month, picked.day),
+      );
+    }
+  }
+
   void _save() {
     final item = widget.item;
-    if (item.isEntry) {
+    if (item.isInvestment) {
+      BigInt? amount;
+      try {
+        amount = parseBrlToCentavos(_amount.text);
+      } on MoneyFormatException catch (e) {
+        setState(() => _error = e.message);
+        return;
+      }
+      Navigator.pop(
+        context,
+        buildEditedRequest(item, amountCentavos: amount, allocatedOn: _date),
+      );
+    } else if (item.isEntry) {
       BigInt? amount;
       if (_amount.text.trim().isNotEmpty) {
         try {
@@ -294,7 +325,27 @@ class _EditDialogState extends State<_EditDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (widget.item.isEntry) ...[
+          if (widget.item.isInvestment) ...[
+            TextField(
+              key: const Key('editar-valor'),
+              controller: _amount,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: 'Valor investido (R\$)',
+                errorText: _error,
+              ),
+            ),
+            TextButton.icon(
+              key: const Key('editar-data'),
+              onPressed: _pickDate,
+              icon: const Icon(Icons.event),
+              label: Text(
+                _date == null
+                    ? 'Escolher a data'
+                    : 'Data do investimento: ${_date!.toBr()}',
+              ),
+            ),
+          ] else if (widget.item.isEntry) ...[
             TextField(
               key: const Key('editar-valor'),
               controller: _amount,
