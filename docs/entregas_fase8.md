@@ -1,6 +1,6 @@
 # Fase 8 — Sincronização completa, qualidade e publicação
 
-**Status:** EM EXECUÇÃO. Entregas 69–74 e 75 (parcial) implementadas em 11/11/2026 e aguardando validação (§8). 76–81 dependem de decisões/serviços externos; 82 fecha a fase.
+**Status:** EM EXECUÇÃO. Entregas 69–74 e 75 (parcial) implementadas em 11/11/2026 e validadas pelo responsável em 12/11/2026 (§8). 76–81 dependem de decisões/serviços externos; 82 fecha a fase.
 **Estado vigente:** `docs/estado_atual.md`. Regras permanentes: `docs/arquitetura.md` §9, §13, §16 e §17.2. Escopo: `docs/requisitos.md` (RF022, RF027, §8).
 
 ## 1. Objetivo
@@ -40,6 +40,7 @@ Já implementado e testado (não refazer): estados da fila, chave idempotente, e
 | 74 | Exportação CSV (D4: só Web) | Um CSV por tipo (receitas, despesas, investimentos, categorias), centavos exatos; celular orienta a usar a Web | — | — |
 | 75 | Build de produção (local) | `--dart-define-from-file` por ambiente (modelo versionado, reais ignorados); assinatura por `key.properties`; `applicationId`/nome/ícone (D1); versionamento; script de build APK/AAB e Web | D1 | — |
 | 76 ⚠️ | Supabase de homologação | Projeto criado pelo responsável; `supabase link`/`db push` autorizados; Auth (URLs, Google com chave nova, SMTP – D5, senha 8 – D6); suítes 69–72 contra homologação | 72, 75; D5 | aplica as existentes |
+| 76 (12/11/2026) | — | FEITA exceto SMTP (D5, Entrega 79); aguarda validação. Segredo antigo do Google desativado/substituído pelo responsável. Detalhe: projeto `norte-homologacao` (`fxjkulkyzpwgaeeiwbbl`) criado; 19 migrations aplicadas (`link` + `db push` autorizados e conferidos com `migration list`); 33 testes de integração passando na homologação (`tooling/test_integration_homolog.ps1`, chave secreta pedida no terminal). Painel configurado pelo responsável em 12/11/2026: senha mínima 8 (D6) e URLs de retorno (`localhost:3000`, só homologação); confirmação de e-mail ligada, cadastro anônimo desligado. Google ativado com credenciais novas (segredo antigo a ser apagado no Google Cloud; login Google a validar no emulador). **Falta (responsável, painel):** SMTP (D5, exige domínio, Entrega 79) | — | — |
 | 77 | Backup e recuperação (D8) | GitHub Actions em repositório privado: dump diário cifrado (dados + auth), retenção 30 dias; roteiro de restauração reaplicando exclusões; restauração real no Supabase local; verificação mensal e antes de cada versão | 73, 76 | — |
 | 78 | Regressão Android e Web | Roteiro manual contra homologação: emulador e, se possível, aparelho físico (biometria, alertas); modo avião, rede lenta, app fechado na sincronização; Chrome, Edge, Firefox; medição RN043 | 69–77 | — |
 | 79 ⚠️ | Produção e monitoramento | Projeto de produção, migrations, Auth, backup ativo; monitoramento (D10): Play Vitals, painel Supabase, verificação de disponibilidade, `FlutterError.onError` sem valores | 78 | aplica as existentes |

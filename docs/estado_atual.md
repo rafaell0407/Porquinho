@@ -10,7 +10,7 @@
 - Fase 5 (recorrências): CONCLUÍDA em 11/11/2026 (Entregas 43–50, `docs/entregas_fase5.md`, validadas pelo responsável). 
 - Fase 6 (investimentos simples e rendimentos manuais): CONCLUÍDA em 11/11/2026 (Entregas 51–58, `docs/entregas_fase6.md`; a 54 foi removida por D3; validadas pelo responsável; commit `3560366`).
 - Fase 7 (períodos, Dashboard e relatórios, `docs/entregas_fase7.md`): CONCLUÍDA e VALIDADA em 11/11/2026 (Entregas 59A–68, incluindo o assistente inicial (67, Drift v5) e os gráficos com `fl_chart`).
-- Fase 8 (sincronização completa, qualidade e publicação, `docs/entregas_fase8.md`): EM EXECUÇÃO em 11/11/2026. Implementadas, aguardando validação: 69, 70, 71, 72, 73, 74 e 75 (parcial: falta D1). Bloqueadas por decisão/serviço externo: 75 (final), 76–81. Falta: 82.
+- Fase 8 (sincronização completa, qualidade e publicação, `docs/entregas_fase8.md`): EM EXECUÇÃO em 11/11/2026. Implementadas e VALIDADAS pelo responsável em 12/11/2026: 69, 70, 71, 72, 73, 74 e 75 (parcial: falta D1). Entrega 76 FEITA exceto SMTP, aguardando validação (12/11/2026; segredo antigo do Google substituído): homologação `norte-homologacao` com as 19 migrations e 33 testes de integração passando; Auth do painel configurado (senha 8, URLs, Google); falta SMTP/D5 (Entrega 79). Bloqueadas por decisão/serviço externo: 75 (final), 77–81. Falta: 82.
 - Plataformas do MVP: Android e Web (iOS fora do MVP — decisão de 10/11/2026). Web somente online.
 
 ## Entregas (detalhe em cada arquivo de fase)
@@ -22,7 +22,7 @@
 | 5 | 43–50 | `entregas_fase5.md` | Validadas |
 | 6 | 51–58 (54 removida) | `entregas_fase6.md` | Validadas |
 | 7 | 59–68 (+59A) | `entregas_fase7.md` | Implementada exceto 67; aguarda validação |
-| 8 | 69–82 | `entregas_fase8.md` | 69–74 e 75 (parcial) implementadas; aguardam validação |
+| 8 | 69–82 | `entregas_fase8.md` | 69–74 e 75 (parcial) implementadas e validadas (12/11/2026) |
 
 ## Lacunas conhecidas
 - Contrato de dados Web × celular tem só a porta de gravação e o modo (`lib/core/data_access.dart`); repositórios local e remoto nascem com cada funcionalidade.
@@ -37,7 +37,6 @@
 5. Medir índices e metas de desempenho (RN043).
 
 ## Ações do responsável
-- Trocar a chave secreta do Google exposta no chat.
 - Testar biometria em aparelho com digital cadastrada.
 - Autorizar e fornecer referências do Supabase gerenciado (Fase 8).
 - Supabase local: `supabase migration up` (já aplicado em 11/11/2026; faltavam 4 migrations).
@@ -51,4 +50,4 @@
 Emulador `Medium_Phone_API_37.0`, aberto sem flags gráficas; app com `--dart-define=SUPABASE_URL=http://10.0.2.2:54321` e a chave publicável local. Google exige `adb reverse tcp:54321 tcp:54321`. Detalhes na memória do agente.
 
 ## Próximo passo
-Validar as Entregas 69–75 (roteiro manual em `entregas_fase8.md` §8); depois, decisões D1/D5 e autorização do Supabase hospedado para as Entregas 76 em diante. Commits só quando você pedir.
+Concluir a configuração de Auth da homologação no painel (checklist em `entregas_fase8.md`) e decidir D1/D5; depois, Entrega 77 (backup). Commits só quando você pedir.

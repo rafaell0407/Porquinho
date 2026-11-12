@@ -211,7 +211,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 **Testes:** operação offline prolongada, reenvio, interrupção, duplicidade, divergência local/remota, conflito entre dispositivos, autenticação e recuperação.
 
 **Prioridade:** Essencial.  
-**Status:** EM EXECUÇÃO em 11/11/2026 — Entregas 69–82 (`docs/entregas_fase8.md`). Feitas, aguardando validação: 69, 70, 71, 72, 73, 74 e 75 (parcial, sem D1). Dependem de decisão/serviço externo: 76–81; 82 fecha a fase.
+**Status:** EM EXECUÇÃO em 11/11/2026 — Entregas 69–82 (`docs/entregas_fase8.md`). Feitas e VALIDADAS pelo responsável (12/11/2026): 69, 70, 71, 72, 73, 74 e 75 (parcial, sem D1). 76 feita exceto SMTP (aguarda validação). Dependem de decisão/serviço externo: 77–81; 82 fecha a fase.
 
 ## 4. Prioridades do MVP
 
