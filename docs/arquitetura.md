@@ -1,4 +1,4 @@
-# Arquitetura do Sistema — Porquinho
+# Arquitetura do Sistema — Norte
 
 **Versão:** 0.5  
 **Data:** 08/11/2026  
@@ -6,7 +6,7 @@
 
 ## 1. Visão geral
 
-O Porquinho será um aplicativo Flutter/Dart para Android e Web (iOS fora do MVP — decisão de 10/11/2026). O MVP é um sistema individual de lançamentos financeiros por períodos, com receitas, despesas, destinações simples para investimentos e cálculo do dinheiro livre do período.
+O Norte será um aplicativo Flutter/Dart para Android e Web (iOS fora do MVP — decisão de 10/11/2026). O MVP é um sistema individual de lançamentos financeiros por períodos, com receitas, despesas, destinações simples para investimentos e cálculo do dinheiro livre do período.
 
 A arquitetura não deve incluir módulos de contas bancárias, saldos bancários, Porquinho virtual, reservas, saldo disponível, compras/parcelas de cartão ou carteira de investimentos.
 
@@ -197,7 +197,7 @@ Casos de referência devem cobrir recebimento confirmado, despesa avulsa, despes
 
 ## 13. Distribuição
 
-O MVP será distribuído para Android e Web. Lojas, hospedagem web, assinatura de builds, pipeline e procedimentos operacionais permanecem pendentes.
+O MVP será distribuído para Android e Web. **Decisões de 11/11/2026 (Fase 8, APROVADAS):** Web hospedada no Cloudflare Pages (endereço `*.pages.dev`; domínio próprio depois); Android pela Google Play com chave de upload do responsável (fora do repositório) e Play App Signing; monitoramento sem nova dependência (Android Vitals, painel do Supabase, verificação de disponibilidade e tratamento global de erros sem valores financeiros). `applicationId` definitivo usará domínio próprio, ainda a definir. Execução: `docs/entregas_fase8.md`.
 
 ## 14. Decisões arquiteturais
 
@@ -222,7 +222,7 @@ Não são decisões de produto pendentes; são detalhamentos necessários antes 
 1. Ambientes e configuração operacional (hospedados dev/teste/produção e processo de promoção).
 2. Migrations, políticas e testes RLS, constraints e modelo físico; validação no Supabase gerenciado (grants, ownership de funções, RLS).
 3. Configuração OAuth, gestão de sessão, autorização e armazenamento seguro por plataforma.
-4. Protocolo de sincronização, retentativas e mecanismo técnico para preservar e resolver conflitos segundo a política aprovada. Envio e conflitos feitos (Entrega 21); faltam a versão local após o envio (Entrega 26), o download dos dados do servidor (Entrega 27) e a tela de conflitos (Entrega 22, Fase 4).
+4. Protocolo de sincronização, retentativas e mecanismo técnico para preservar e resolver conflitos segundo a política aprovada. Feitos: envio e conflitos (Entrega 21), versão local após o envio (26), download (27B) e tela de conflitos (22). Validação de ponta a ponta e entre aparelhos: testes automáticos feitos nas Entregas 69–71 (Fase 8, 11/11/2026); falta o roteiro manual e a rodada contra o Supabase hospedado.
 5. Notificações móveis: FEITO na Fase 5 (Entrega 49) — `flutter_local_notifications`, notificação diária às 9h (agendamento inexato), janela de 30 dias reagendada ao abrir, sincronizar e salvar, cancelada no logout; Android 13+ pede a permissão de notificações; Web sem alertas. Falta apenas a validação multiplataforma completa (Fase 8).
 6. Mecanismo e procedimento de backup, restauração, retenção, exportação CSV e exclusão definitiva.
 7. Observabilidade, publicação e compatibilidade dos mecanismos em Android e Web.
@@ -268,6 +268,14 @@ Operação aplicada com sucesso (ou resposta idempotente de reenvio) é **removi
 - Isolamento por usuário e autorização no backend.
 - Backup remoto diário, retenção de 30 dias, procedimento de recuperação, exclusão definitiva e exportação CSV. A restauração deve respeitar exclusões definitivas, evitando ressurreição de dados.
 - O fluxo de logout deve resolver operações pendentes antes da limpeza local, com opção/decisão explícita quando não for possível sincronizar.
+
+**Decisões de 11/11/2026 (Fase 8, APROVADAS):**
+- **Backup:** dump diário cifrado (dados e autenticação) por GitHub Actions em repositório privado, retenção de 30 dias; push e segredos cadastrados pelo responsável. Restauração reaplica as exclusões de conta registradas. Solução mais robusta pode substituí-la no futuro.
+- **Exclusão definitiva da conta:** só com todas as alterações sincronizadas; dupla confirmação; imediata e irreversível, com aviso claro; disponível no app e por página web.
+- **CSV:** somente na Web no MVP.
+- **Banco local ilegível (chave perdida):** o arquivo é guardado sem apagar, os dados são baixados de novo do servidor e o usuário é avisado; perdem-se só as alterações não sincronizadas. Exceção aprovada à regra de não descartar pendências. Backup automático do Android desligado.
+- **Senha mínima:** 8 caracteres nos ambientes hospedados.
+- **Conflito após reinstalar:** conflito aberto no servidor não é baixado pelo celular; aparece só na Web (pendência aceita).
 
 ## 17. Detalhamento arquitetural da Fase 2 — decisões e propostas
 
@@ -317,7 +325,7 @@ As dependências fluem da apresentação para a aplicação e desta para o domí
 
 O ambiente local versionado em `supabase/config.toml` usa o projeto lógico `porquinho-dev`; o banco local é isolado dos ambientes hospedados. O seed automático fica desativado até existir fixture sintética aprovada. A suíte PostgreSQL atual cria cluster temporário e usa Auth simulado. As nove migrations existentes também foram aplicadas e conferidas no Supabase local; a validação de RLS e grants no Supabase gerenciado permanece pendente.
 
-Para os ambientes hospedados, propõe-se separar projetos Supabase de desenvolvimento, teste e produção, sem compartilhar dados financeiros reais. URLs e chaves públicas serão fornecidas por configuração de build; chaves administrativas, senhas e tokens ficam somente em armazenamento seguro ou gerenciador de segredos do ambiente de execução/CI. Arquivos de exemplo devem conter placeholders, nunca credenciais. Os projetos hospedados ainda dependem de organização/projeto e referências fornecidas pelo responsável, além do processo de promoção.
+**Decisão de 11/11/2026 (APROVADA):** desenvolvimento e testes automatizados usam o Supabase local; hospedados são apenas homologação (plano gratuito) e produção (plano pago), sem compartilhar dados financeiros reais. Provedor de e-mail (SMTP) de produção aguarda a definição do domínio. URLs e chaves públicas serão fornecidas por configuração de build; chaves administrativas, senhas e tokens ficam somente em armazenamento seguro ou gerenciador de segredos do ambiente de execução/CI. Arquivos de exemplo devem conter placeholders, nunca credenciais. Os projetos hospedados ainda dependem de organização/projeto e referências fornecidas pelo responsável, além do processo de promoção.
 
 ### 17.3 Datas e geração recorrente
 

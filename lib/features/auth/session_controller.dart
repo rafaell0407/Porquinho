@@ -106,6 +106,38 @@ class SessionController {
     return const LogoutDone();
   }
 
+  /// Antes de excluir a conta: tenta enviar a fila e devolve quantas operações
+  /// continuam pendentes (a exclusão só segue com zero; decisão D3).
+  Future<int> pendingBeforeAccountDeletion() async {
+    final current = _state;
+    if (current is! SessionSignedIn) return 0;
+    try {
+      await _flushPending?.call(current.user.id);
+    } on Object {
+      // O que não subir continua contando como pendência.
+    }
+    return _pending.countPending(current.user.id);
+  }
+
+  /// Chamado depois que o servidor apagou a conta: encerra a sessão (que já
+  /// não existe no servidor) e apaga os dados locais.
+  Future<void> completeAccountDeletion() async {
+    final current = _state;
+    final user = switch (current) {
+      SessionSignedIn(:final user) => user,
+      SessionPasswordRecovery(:final user) => user,
+      _ => null,
+    };
+    if (user == null) return;
+    try {
+      await _auth.signOut();
+    } on Object {
+      // A sessão remota foi destruída com a conta; o logout local basta.
+    }
+    await _onSignedOut?.call(user.id);
+    await _setUser(null);
+  }
+
   /// Define a nova senha durante a recuperação e segue para a área logada.
   Future<void> completePasswordRecovery(String newPassword) async {
     final current = _state;

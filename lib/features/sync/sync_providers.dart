@@ -24,8 +24,9 @@ final syncNowProvider = Provider<Future<void> Function(String ownerId)?>((ref) {
 });
 
 /// Uma rodada completa: envia a fila e depois baixa o que mudou no servidor
-/// (Entrega 27B). `null` quando não há banco local (Web).
-final fullSyncProvider = Provider<Future<void> Function(String ownerId)?>((
+/// (Entrega 27B). Devolve `false` se o download parou no meio (Entrega 69).
+/// `null` quando não há banco local (Web).
+final fullSyncProvider = Provider<Future<bool> Function(String ownerId)?>((
   ref,
 ) {
   final manager = ref.watch(localDatabaseManagerProvider);
@@ -43,13 +44,14 @@ final fullSyncProvider = Provider<Future<void> Function(String ownerId)?>((
     } on SyncRejectedError {
       // Sem período para alguma data: aparece pela própria ocorrência faltante.
     }
-    await DownloadService(db, reader).downloadAll(ownerId);
+    final download = await DownloadService(db, reader).downloadAll(ownerId);
     // Modelos e períodos baixados podem ter novas ocorrências devidas.
     await LocalRecurrenceRepository(
       db,
       ownerId,
       null,
     ).generateDue(const UserClock().today());
+    return download.completed;
   };
 });
 
@@ -118,19 +120,22 @@ class SyncStatusNotifier extends Notifier<SyncStatus> {
       );
       return;
     }
+    // Download interrompido ou com erro não conta como sincronizado (L1).
+    var complete = online;
     if (online) {
       try {
-        await syncNow(ownerId);
+        complete = await syncNow(ownerId);
         await ref.read(alertsRefreshProvider)();
       } on Object {
         // O que não subiu continua na fila e aparece nas contagens.
+        complete = false;
       }
     }
     if (!ref.mounted) return;
 
     final counts = await readCounts(ownerId);
     if (!ref.mounted) return;
-    final offline = !online || counts.failed > 0;
+    final offline = !complete || counts.failed > 0;
     state = SyncStatus(
       phase: offline ? SyncPhase.offline : SyncPhase.synced,
       pendingCount: counts.pending,
@@ -139,3 +144,9 @@ class SyncStatusNotifier extends Notifier<SyncStatus> {
     );
   }
 }
+
+/// `true` enquanto o aviso de banco local recuperado (D9) não foi dispensado.
+final recoveryNoticeProvider = Provider<bool>((ref) {
+  ref.watch(syncStatusProvider); // reavalia a cada rodada de sincronização
+  return ref.watch(localDatabaseManagerProvider)?.needsRecoveryNotice ?? false;
+});

@@ -170,7 +170,7 @@ void main() {
       tester,
     ) async {
       await pump(tester);
-      expect(find.text('Como o Porquinho funciona'), findsOneWidget);
+      expect(find.text('Como o Norte funciona'), findsOneWidget);
       await tester.tap(find.byKey(const Key('onboarding-pular')));
       await tester.pumpAndSettle();
       // Categorias: "Agora não".
@@ -210,7 +210,7 @@ void main() {
       // Retomar: começa pelo tema, as duas primeiras não voltam.
       await pump(tester);
       expect(find.text('Tema'), findsOneWidget);
-      expect(find.text('Como o Porquinho funciona'), findsNothing);
+      expect(find.text('Como o Norte funciona'), findsNothing);
     });
   });
 }

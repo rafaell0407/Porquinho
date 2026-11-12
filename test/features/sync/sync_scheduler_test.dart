@@ -63,4 +63,28 @@ void main() {
     await scheduler.dispose();
     await session.dispose();
   });
+
+  test('sem conexão repete no intervalo curto (L2)', () async {
+    final session = SessionController(_Auth(_user), _None());
+    await session.start();
+    var calls = 0;
+    var offline = true;
+    final scheduler = SyncScheduler(
+      session,
+      (_) async => calls++,
+      interval: const Duration(hours: 1),
+      offlineInterval: const Duration(milliseconds: 20),
+      isOffline: () => offline,
+    )..start();
+    await Future<void>.delayed(const Duration(milliseconds: 150));
+    expect(calls, greaterThanOrEqualTo(3));
+
+    offline = false;
+    await Future<void>.delayed(const Duration(milliseconds: 60));
+    final before = calls;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(calls, before); // de volta ao intervalo normal
+    await scheduler.dispose();
+    await session.dispose();
+  });
 }

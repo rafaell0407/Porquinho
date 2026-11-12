@@ -8,7 +8,7 @@ import '../sync/sync_providers.dart';
 /// Etapas do assistente inicial (RF024; D6). O período é obrigatório e não é
 /// uma etapa: vem antes, no primeiro acesso.
 enum OnboardingStep {
-  intro('intro', 'Como o Porquinho funciona'),
+  intro('intro', 'Como o Norte funciona'),
   categories('categories', 'Categorias sugeridas'),
   theme('theme', 'Tema'),
   security('security', 'Bloqueio do aplicativo'),

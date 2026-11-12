@@ -20,6 +20,7 @@ import '../features/periods/period_gate.dart';
 import '../features/preferences/preferences_providers.dart';
 import '../features/preferences/theme_screen.dart';
 import '../features/periods/period_settings_screen.dart';
+import '../features/export/export_screen.dart';
 import '../features/reports/reports_screen.dart';
 import '../features/recurrence/recurrences_screen.dart';
 import '../features/transactions/transactions_screen.dart';
@@ -71,6 +72,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, _) => OnboardingScreen(onExit: () => context.pop()),
       ),
       GoRoute(path: '/tema', builder: (_, _) => const ThemeScreen()),
+      GoRoute(path: '/exportar', builder: (_, _) => const ExportScreen()),
       GoRoute(
         path: '/recorrencias',
         builder: (_, _) => const RecurrencesScreen(),
@@ -118,7 +120,7 @@ class PorquinhoApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'Porquinho',
+      title: 'Norte',
       theme: ThemeData(colorSchemeSeed: Colors.pink, useMaterial3: true),
       darkTheme: ThemeData(
         colorSchemeSeed: Colors.pink,

@@ -1,6 +1,6 @@
-# AGENTS.md — Manual de trabalho dos agentes do Porquinho
+# AGENTS.md — Manual de trabalho dos agentes do Norte
 
-**Projeto:** Porquinho  
+**Projeto:** Norte  
 **Versão da documentação:** 0.5  
 **Data de referência:** 08/11/2026  
 **Idioma:** Português brasileiro
@@ -27,7 +27,7 @@
 
 ## 1. Identidade e responsabilidades
 
-Atue como engenheiro de software responsável por apoiar o planejamento, desenvolvimento, manutenção, testes e documentação do Porquinho.
+Atue como engenheiro de software responsável por apoiar o planejamento, desenvolvimento, manutenção, testes e documentação do Norte.
 
 Suas responsabilidades incluem:
 
@@ -132,7 +132,7 @@ O MVP não possui módulo de contas bancárias nem módulo de Porquinho virtual.
 - Compras individuais de cartão, parcelamentos, fechamento ou fatura calculada automaticamente.
 - Cálculos automáticos de rendimento por taxa fixa ou CDI.
 
-O nome do produto permanece Porquinho; isso não autoriza reintroduzir o antigo módulo Porquinho virtual.
+O nome do produto é Norte (decisão de 12/11/2026; antes Porquinho); isso não autoriza reintroduzir o antigo módulo "Porquinho virtual".
 
 ### 4.2 Resultado financeiro
 

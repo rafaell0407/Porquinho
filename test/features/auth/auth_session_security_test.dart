@@ -18,7 +18,7 @@ final _mailpit =
 final _key =
     Platform.environment['PORQUINHO_SUPABASE_KEY'] ??
     'sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH';
-const _redirect = 'br.com.porquinho.porquinho://login-callback';
+const _redirect = 'br.com.norte.app://login-callback';
 const _senha = 'senha-segura-123';
 
 class _MemoryAsyncStorage extends GotrueAsyncStorage {

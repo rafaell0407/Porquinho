@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../auth/delete_account_flow.dart';
 import '../auth/logout_flow.dart';
 import '../sync/sync_indicator.dart';
 import '../sync/sync_providers.dart';
@@ -55,12 +56,27 @@ class MoreScreen extends ConsumerWidget {
             title: const Text('Recorrências'),
             onTap: () => context.push('/recorrencias'),
           ),
+          ListTile(
+            key: const Key('mais-exportar'),
+            leading: const Icon(Icons.download_outlined),
+            title: const Text('Exportar dados (CSV)'),
+            onTap: () => context.push('/exportar'),
+          ),
           if (!kIsWeb)
             ListTile(
               leading: const Icon(Icons.lock_outline),
               title: const Text('Segurança'),
               onTap: () => context.push('/seguranca'),
             ),
+          ListTile(
+            key: const Key('mais-excluir-conta'),
+            leading: Icon(
+              Icons.delete_forever_outlined,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            title: const Text('Excluir conta'),
+            onTap: () => deleteAccountFlow(context, ref),
+          ),
           ListTile(
             leading: const Icon(Icons.logout),
             title: const Text('Sair'),

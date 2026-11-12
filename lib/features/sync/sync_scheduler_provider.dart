@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../auth/auth_providers.dart';
 import 'sync_providers.dart';
 import 'sync_scheduler.dart';
+import 'sync_status.dart';
 
 /// Agendador de sincronização (entrada na conta, intervalo e retorno ao
 /// primeiro plano). Na Web só acompanha a conexão (sem fila local).
@@ -11,6 +12,7 @@ final syncSchedulerProvider = Provider<SyncScheduler>((ref) {
   final scheduler = SyncScheduler(
     ref.watch(sessionControllerProvider),
     (ownerId) => ref.read(syncStatusProvider.notifier).run(ownerId),
+    isOffline: () => ref.read(syncStatusProvider).phase == SyncPhase.offline,
   )..start();
   final observer = _ResumeSync(scheduler.onResume);
   WidgetsBinding.instance.addObserver(observer);

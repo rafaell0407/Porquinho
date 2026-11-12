@@ -40,4 +40,51 @@ void main() {
     expect(await counter.countPending('u1'), 0);
     await manager.closeAndWipe();
   });
+
+  test(
+    'banco ilegível (chave perdida): guarda o arquivo e recomeça (D9)',
+    () async {
+      final dir = await Directory.systemTemp.createTemp('porquinho_mgr');
+      addTearDown(() => dir.delete(recursive: true));
+      final store = InMemorySecureValueStore();
+      final path = '${dir.path}/porquinho.db';
+
+      final first = LocalDatabaseManager(store: store, path: path);
+      final db = await first.open();
+      await db.customStatement(
+        'INSERT INTO sync_outbox (owner_id, idempotency_key, entity_type, '
+        "entity_id, expected_version, payload_json, state) "
+        "VALUES ('u1', 'k1', 'income', 'e', 1, '{}', 'pending')",
+      );
+      await db.close();
+      expect(first.recoveredFrom, isNull);
+
+      // Chave perdida: o aparelho gera outra e não consegue ler o arquivo.
+      await store.delete('porquinho.database_key');
+      final second = LocalDatabaseManager(store: store, path: path);
+      final fresh = await second.open();
+
+      expect(second.recoveredFrom, isNotNull);
+      expect(second.needsRecoveryNotice, isTrue);
+      expect(File(second.recoveredFrom!).existsSync(), isTrue);
+      final rows = await fresh.customSelect('SELECT * FROM sync_outbox').get();
+      expect(rows, isEmpty); // recomeça vazio; o download repovoa
+      second.markRecoveryNoticeShown();
+      expect(second.needsRecoveryNotice, isFalse);
+      await fresh.close();
+    },
+  );
+
+  test('banco legível não é tocado', () async {
+    final dir = await Directory.systemTemp.createTemp('porquinho_mgr');
+    addTearDown(() => dir.delete(recursive: true));
+    final store = InMemorySecureValueStore();
+    final path = '${dir.path}/porquinho.db';
+    final first = LocalDatabaseManager(store: store, path: path);
+    await (await first.open()).close();
+    final again = LocalDatabaseManager(store: store, path: path);
+    await (await again.open()).close();
+    expect(again.recoveredFrom, isNull);
+    expect(dir.listSync().length, 1);
+  });
 }

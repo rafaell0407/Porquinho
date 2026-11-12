@@ -87,7 +87,7 @@ class LocalNotificationsAlertScheduler implements AlertScheduler {
       for (final alert in alerts) {
         await _plugin.zonedSchedule(
           id: alert.id,
-          title: 'Porquinho',
+          title: 'Norte',
           body: alert.body,
           scheduledDate: tz.TZDateTime(
             location,

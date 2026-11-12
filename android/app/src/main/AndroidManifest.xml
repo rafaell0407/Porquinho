@@ -5,7 +5,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <application
-        android:label="porquinho"
+        android:allowBackup="false"
+        android:label="Norte"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -34,7 +35,7 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data android:scheme="br.com.porquinho.porquinho" android:host="login-callback"/>
+                <data android:scheme="br.com.norte.app" android:host="login-callback"/>
             </intent-filter>
         </activity>
         <receiver

@@ -15,12 +15,16 @@ void main() {
   late _Probe probe;
   late SyncCounts counts;
   late int sends;
+  late bool downloadComplete;
 
   ProviderContainer makeContainer() {
     final container = ProviderContainer(
       overrides: [
         connectivityProbeProvider.overrideWithValue(probe),
-        fullSyncProvider.overrideWithValue((_) async => sends++),
+        fullSyncProvider.overrideWithValue((_) async {
+          sends++;
+          return downloadComplete;
+        }),
         syncCountsProvider.overrideWithValue((_) async => counts),
       ],
     );
@@ -32,6 +36,7 @@ void main() {
     probe = _Probe();
     counts = const SyncCounts(pending: 0, failed: 0, attention: 0);
     sends = 0;
+    downloadComplete = true;
   });
 
   test('modo avião: sem conexão; ao voltar, sincronizado', () async {
@@ -63,6 +68,15 @@ void main() {
     expect(container.read(syncStatusProvider).phase, SyncPhase.offline);
   });
 
+  test('download incompleto não aparece como sincronizado (L1)', () async {
+    final container = makeContainer();
+    downloadComplete = false;
+    await container.read(syncStatusProvider.notifier).run('u1');
+    final status = container.read(syncStatusProvider);
+    expect(status.phase, SyncPhase.offline);
+    expect(status.lastSyncAt, isNull);
+  });
+
   test('conflitos e recusas contam como itens de atenção', () async {
     final container = makeContainer();
     counts = const SyncCounts(pending: 0, failed: 0, attention: 3);
@@ -87,6 +101,21 @@ void main() {
 
     expect(find.textContaining('Sem conexão'), findsOneWidget);
     expect(find.textContaining('1 item(ns) precisam'), findsOneWidget);
+  });
+
+  testWidgets('aviso de banco recuperado aparece (D9)', (tester) async {
+    final container = ProviderContainer(
+      overrides: [recoveryNoticeProvider.overrideWithValue(true)],
+    );
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: Scaffold(body: SyncIndicator())),
+      ),
+    );
+    expect(find.byKey(const Key('faixa-recuperacao')), findsOneWidget);
+    expect(find.textContaining('baixados de novo'), findsOneWidget);
   });
 
   testWidgets('sincronizado e sem pendências: nenhuma faixa', (tester) async {

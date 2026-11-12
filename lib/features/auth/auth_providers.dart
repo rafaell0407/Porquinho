@@ -21,7 +21,7 @@ final authRepositoryProvider = Provider<AuthRepository>(
 );
 
 /// Retorno do login por navegador no celular (deep link do Android).
-const _mobileRedirect = 'br.com.porquinho.porquinho://login-callback';
+const _mobileRedirect = 'br.com.norte.app://login-callback';
 
 /// Conta pendências de sincronização. Na Web não há banco local.
 final pendingSyncCounterProvider = Provider<PendingSyncCounter>((ref) {

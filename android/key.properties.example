@@ -1,0 +1,6 @@
+# Copie para android/key.properties (arquivo ignorado pelo Git) e preencha.
+# Nunca versione a chave de upload nem estas senhas.
+storeFile=C:/caminho/seguro/porquinho-upload.jks
+storePassword=
+keyAlias=upload
+keyPassword=

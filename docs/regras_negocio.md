@@ -1,4 +1,4 @@
-# Regras de Negócio — Porquinho
+# Regras de Negócio — Norte
 
 **Versão:** 0.5  
 **Data:** 08/11/2026  

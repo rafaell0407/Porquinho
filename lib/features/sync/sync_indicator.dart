@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/infra_providers.dart';
 import 'sync_scheduler_provider.dart';
 import 'sync_providers.dart';
 import 'sync_status.dart';
@@ -46,6 +47,26 @@ class SyncIndicator extends ConsumerWidget {
             text:
                 '${status.attentionCount} item(ns) precisam da sua atenção. '
                 'Toque para resolver.',
+          ),
+        ),
+      );
+    }
+    if (ref.watch(recoveryNoticeProvider)) {
+      messages.add(
+        InkWell(
+          key: const Key('faixa-recuperacao'),
+          onTap: () {
+            ref.read(localDatabaseManagerProvider)?.markRecoveryNoticeShown();
+            ref.invalidate(recoveryNoticeProvider);
+          },
+          child: _Strip(
+            color: theme.colorScheme.tertiaryContainer,
+            textColor: theme.colorScheme.onTertiaryContainer,
+            icon: Icons.restore,
+            text:
+                'Não foi possível abrir os dados salvos neste aparelho. Eles '
+                'foram baixados de novo do servidor; o que ainda não tinha '
+                'sido enviado pode ter se perdido. Toque para fechar.',
           ),
         ),
       );

@@ -72,7 +72,7 @@ class _LockScreenState extends ConsumerState<LockScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Porquinho',
+                    'Norte',
                     style: Theme.of(context).textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 8),

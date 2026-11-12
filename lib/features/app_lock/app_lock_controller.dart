@@ -42,7 +42,7 @@ class AppLockController {
     if (!await _service.biometricEnabled() || !await _biometric.isAvailable()) {
       return false;
     }
-    final ok = await _biometric.authenticate('Desbloquear o Porquinho');
+    final ok = await _biometric.authenticate('Desbloquear o Norte');
     if (ok) _set(false);
     return ok;
   }

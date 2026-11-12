@@ -1,4 +1,4 @@
-# Requisitos do Produto — Porquinho
+# Requisitos do Produto — Norte
 
 **Versão:** 0.5  
 **Data:** 08/11/2026  
@@ -7,9 +7,9 @@
 
 ## 1. Visão geral
 
-O Porquinho é um aplicativo de controle financeiro pessoal por períodos. O MVP registra receitas pela data de recebimento, despesas cadastradas/geradas e valores totais destinados a investimentos. O principal e único indicador de resultado é a **dinheiro livre do período**.
+O Norte é um aplicativo de controle financeiro pessoal por períodos. O MVP registra receitas pela data de recebimento, despesas cadastradas/geradas e valores totais destinados a investimentos. O principal e único indicador de resultado é a **dinheiro livre do período**.
 
-O produto não fará controle de saldos bancários, não manterá módulo de contas e não terá o antigo Porquinho virtual de reservas e compromissos separados. "Dinheiro livre do período" passa a ser apenas o nome do indicador `receitas − despesas − investimentos` do período (decisão de 11/11/2026). O nome do aplicativo permanece Porquinho.
+O produto não fará controle de saldos bancários, não manterá módulo de contas e não terá o antigo Porquinho virtual de reservas e compromissos separados. "Dinheiro livre do período" passa a ser apenas o nome do indicador `receitas − despesas − investimentos` do período (decisão de 11/11/2026). O aplicativo chama-se Norte (decisão de 12/11/2026; antes Porquinho).
 
 ## 2. Objetivos do produto
 

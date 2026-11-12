@@ -125,7 +125,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _body(OnboardingStep step) => switch (step) {
     OnboardingStep.intro => const Text(
-      'O Porquinho mostra o seu dinheiro livre do período: o que você '
+      'O Norte mostra o seu dinheiro livre do período: o que você '
       'recebeu, menos o que gastou, menos o que destinou a investimentos. '
       'Ele não é um saldo bancário e não considera sobras de períodos '
       'anteriores.',
@@ -148,7 +148,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ),
     OnboardingStep.recurrences => const Text(
       'Salário, aluguel e a fatura do cartão se repetem todo mês? Cadastre-os '
-      'como recorrências em Mais → Recorrências. O Porquinho cria os '
+      'como recorrências em Mais → Recorrências. O Norte cria os '
       'lançamentos de cada período para você; receitas só contam depois de '
       'confirmadas.',
     ),

@@ -1,4 +1,4 @@
-# Estado atual — Porquinho
+# Estado atual — Norte
 
 **Atualizado em:** 11/11/2026. Ponto de partida de cada sessão. Detalhe das entregas: `docs/entregas_fase2.md` a `docs/entregas_fase7.md`. Histórico de decisões: `docs/historico/decisoes.md`.
 
@@ -43,7 +43,8 @@
 - Supabase local: `supabase migration up` (já aplicado em 11/11/2026; faltavam 4 migrations).
 
 ## Decisões abertas
-- Nome do produto/domínio próprio → `applicationId` definitivo (D1 da Fase 8; bloqueia a Entrega 75) e provedor de e-mail (D5; bloqueia a 76).
+- D1: nome **Norte** e `applicationId` provisório `br.com.norte.app` aprovados em 12/11/2026; confirmar como definitivo antes da primeira publicação. Domínio próprio fica opcional até a produção (Entrega 79), quando é necessário para o e-mail com Resend (D5, aprovado em 12/11/2026).
+- Renomeação Porquinho → Norte (12/11/2026): feita nos documentos, textos da interface, nome do app Android e Web. Mantidos por compatibilidade: pacote Dart, `applicationId`, nomes de arquivos/chaves internas. Falta o ícone (D1).
 - Política para futura alteração da zona IANA do usuário: pendente.
 
 ## Como testar no Android (máquina do responsável)

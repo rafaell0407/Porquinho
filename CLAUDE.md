@@ -1,4 +1,4 @@
-# CLAUDE.md — Porquinho
+# CLAUDE.md — Norte
 
 @AGENTS.md
 
