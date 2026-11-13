@@ -271,7 +271,7 @@ CategoryRpcCall rpcCallFor(CategoryChange change) => switch (change) {
 };
 
 /// Sugestões do primeiro acesso (RN024, decisão de 10/11/2026).
-const suggestedIncomeCategories = ['Salário', 'Renda extra', 'Rendimentos'];
+const suggestedIncomeCategories = ['Salário', 'Renda extra'];
 const suggestedExpenseCategories = [
   'Moradia',
   'Alimentação',

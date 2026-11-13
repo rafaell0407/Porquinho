@@ -341,15 +341,11 @@ void main() {
         expense: ['Mercado', 'Lazer'],
       );
       final cats = await repo.categories();
-      expect(cats.length, 5);
-      expect(cats.where((c) => c.kind == CategoryKind.income).length, 3);
-      expect(await count('sync_outbox'), 5);
+      expect(cats.length, 4);
+      expect(cats.where((c) => c.kind == CategoryKind.income).length, 2);
+      expect(await count('sync_outbox'), 4);
       expect(suggestedExpenseCategories.length, 10);
-      expect(suggestedIncomeCategories, [
-        'Salário',
-        'Renda extra',
-        'Rendimentos',
-      ]);
+      expect(suggestedIncomeCategories, ['Salário', 'Renda extra']);
       expect(suggestedExpenseCategories, isNot(contains('Saldo inicial')));
     },
   );

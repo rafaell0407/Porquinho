@@ -188,19 +188,20 @@ void main() {
       app(CategorySuggestionsScreen(onFinished: () => finished = true)),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Adicionar 13 categorias'), findsOneWidget);
+    expect(find.text('Adicionar 12 categorias'), findsOneWidget);
     expect(find.text('Saldo inicial'), findsNothing);
+    expect(find.text('Rendimentos'), findsNothing);
 
     await tester.tap(find.byKey(const Key('sugestao-Mercado')));
     await tester.pumpAndSettle();
-    expect(find.text('Adicionar 12 categorias'), findsOneWidget);
+    expect(find.text('Adicionar 11 categorias'), findsOneWidget);
 
-    await tester.tap(find.text('Adicionar 12 categorias'));
+    await tester.tap(find.text('Adicionar 11 categorias'));
     await tester.pumpAndSettle();
     expect(finished, isTrue);
-    expect(repo.cats.length, 12);
+    expect(repo.cats.length, 11);
     expect(repo.cats.any((c) => c.name == 'Mercado'), isFalse);
-    expect(repo.cats.where((c) => c.kind == CategoryKind.income).length, 3);
+    expect(repo.cats.where((c) => c.kind == CategoryKind.income).length, 2);
   });
 
   testWidgets('"Agora não" não cria nada', (tester) async {

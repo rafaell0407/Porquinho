@@ -227,7 +227,7 @@ O usuário pode criar e renomear categorias de Receita e Despesa. O tipo é defi
 
 **Visual — APROVADO pelo responsável em 12/11/2026:** cada categoria guarda uma chave de ícone e uma de cor (conjunto fixo no aplicativo; a cor se adapta ao tema claro/escuro). Padrão: ícone `category` e cor `gray`. Subcategorias herdam o visual. Alterar o visual é uma edição comum (versão, auditoria e sincronização, como renomear).
 
-**Sugestões no primeiro acesso — APROVADO pelo responsável em 10/11/2026:** o aplicativo sugere categorias, todas marcadas e desmarcáveis; as escolhidas viram categorias comuns, sem tratamento especial. Receitas: Salário, Renda extra, Rendimentos. Despesas: Moradia, Alimentação, Mercado, Transporte, Saúde, Educação, Lazer, Contas da casa, Assinaturas, Fatura do cartão. Sem subcategorias prontas. "Saldo inicial" não é sugerida (RN006).
+**Sugestões no primeiro acesso — APROVADO pelo responsável em 10/11/2026:** o aplicativo sugere categorias, todas marcadas e desmarcáveis; as escolhidas viram categorias comuns, sem tratamento especial. Receitas: Salário, Renda extra (alterado em 13/11/2026: "Rendimentos" deixou de ser sugerida; o usuário pode criá-la como categoria comum). Despesas: Moradia, Alimentação, Mercado, Transporte, Saúde, Educação, Lazer, Contas da casa, Assinaturas, Fatura do cartão. Sem subcategorias prontas. "Saldo inicial" não é sugerida (RN006).
 
 **Status:** APROVADO.
 
