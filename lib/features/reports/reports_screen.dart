@@ -3,7 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/domain/money.dart';
 import '../../core/domain/reports.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../shared/main_shell.dart' show NorteNavBar;
 import '../periods/period_navigation.dart';
+import '../transactions/transactions_screen.dart' show showNewEntryChooser;
 import 'reports_providers.dart';
 import 'series_chart.dart';
 
@@ -39,6 +43,12 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final view = ref.watch(selectedPeriodProvider);
     return Scaffold(
       appBar: AppBar(title: const Text('Relatórios')),
+      bottomNavigationBar: NorteNavBar(
+        reportsSelected: true,
+        onTab: (i) => context.go(const ['/', '/lancamentos', '/mais'][i]),
+        onAdd: () => showNewEntryChooser(context, ref),
+        onReports: () {},
+      ),
       body: Column(
         children: [
           Padding(

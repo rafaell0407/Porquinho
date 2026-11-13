@@ -3,7 +3,7 @@
 Onde fica cada coisa no código, como está hoje. Ler só a linha do módulo que vai mexer. Testes espelham `lib/` em `test/` (integração em `test/integration/`). Atualizar este arquivo quando criar/mover módulo, tela ou rota.
 
 ## Telas e rotas (`lib/app/app.dart`)
-- Abas (`lib/shared/main_shell.dart`): `/` Dashboard · `/lancamentos` Lançamentos · `/mais` Mais.
+- Barra inferior (`lib/shared/main_shell.dart`), em pílula: Home (`/`) · Relatórios (abre `/relatorios`) · Adicionar + (abre `showNewEntryChooser`) · Lançamentos (`/lancamentos`) · Mais (`/mais`, com Categorias).
 - Mais (`features/more/more_screen.dart`): Sincronizar agora (celular) · `/atencao` Itens que precisam de atenção · `/categorias` · `/periodo` · `/relatorios` · `/configuracao-inicial` · `/tema` · `/recorrencias` · `/exportar` (CSV) · `/seguranca` (celular) · Excluir conta · Sair.
 - Fora das abas: `/login`, `/nova-senha`, `/bloqueio` (PIN).
 

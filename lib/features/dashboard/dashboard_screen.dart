@@ -10,7 +10,6 @@ import '../entries/entry_providers.dart';
 import '../periods/period_navigation.dart';
 import '../periods/period_providers.dart';
 import '../sync/sync_providers.dart';
-import '../transactions/transactions_screen.dart';
 
 /// Dashboard: dinheiro livre do período e sua composição (receitas, despesas
 /// e investimentos; decisão D1 da Fase 7, revisa a D9 da Fase 4). Nenhum
@@ -98,16 +97,11 @@ String _periodLabel(PeriodRange range) {
   return '${start.toBr()} a ${end.addDays(-1).toBr()}';
 }
 
-/// Seletor de período (pílula com setas) e botão "+" para novo lançamento.
+/// Seletor de período (pílula com setas).
 class PeriodHeader extends ConsumerWidget {
-  const PeriodHeader({
-    required this.view,
-    this.newButtonKey = const Key('dashboard-novo'),
-    super.key,
-  });
+  const PeriodHeader({required this.view, super.key});
 
   final PeriodView view;
-  final Key newButtonKey;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -168,18 +162,6 @@ class PeriodHeader extends ConsumerWidget {
               onPressed: () => anchor.set(null),
               child: const Text('Atual'),
             ),
-          const SizedBox(width: 12),
-          IconButton.filled(
-            key: newButtonKey,
-            tooltip: 'Novo lançamento',
-            style: IconButton.styleFrom(
-              backgroundColor: scheme.primary,
-              foregroundColor: scheme.onPrimary,
-              fixedSize: const Size(44, 44),
-            ),
-            icon: const Icon(Icons.add),
-            onPressed: () => showNewEntryChooser(context, ref),
-          ),
         ],
       ),
     );

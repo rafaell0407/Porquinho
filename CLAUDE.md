@@ -42,7 +42,7 @@ Fonte de verdade: `requisitos.md` (escopo) e `regras_negocio.md` (financeiro) pr
 - Sem segredos, senhas ou tokens no repositório. Nova dependência: avaliar manutenção, licença, segurança e custo antes.
 
 ## 4. Regras de produto invioláveis (detalhe nas RNs)
-1. **Navegação:** só Dashboard, Lançamentos e Mais.
+1. **Navegação:** barra inferior em pílula (solta das bordas, + elevado no centro) com Home, Relatórios, Adicionar (+), Lançamentos e Mais (aprovado em 13/11/2026). Abas: Home, Lançamentos e Mais; Relatórios abre a tela de relatórios; + abre o novo lançamento. Categorias e demais itens secundários ficam em Mais.
 2. **Fora do MVP — não criar:** contas bancárias/saldos/conciliação; saldo inicial especial (usuário cria categoria comum "Saldo inicial", sem tratamento especial); Porquinho virtual, reservas, compromissos; carteira/ativos/rentabilidade; compras de cartão, parcelas, fatura automática (fatura = despesa recorrente variável); rendimento automático (CDI, taxa).
 3. **Indicador único:** dinheiro livre do período = receitas contabilizadas − despesas contabilizadas − investimentos. Sem saldo disponível/atual/bancário, sem sobra de períodos anteriores.
 4. **Receitas:** período pela data de recebimento (passada ou futura). Recorrente gera ocorrência pendente; só conta após confirmar. Valor da ocorrência editável sem alterar o modelo.

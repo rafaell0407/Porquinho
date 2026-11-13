@@ -33,7 +33,7 @@ import 'package:porquinho/features/recurrence/recurrence_service.dart';
 import 'package:porquinho/features/recurrence/recurrences_screen.dart';
 import 'package:porquinho/features/sync/local_change_recorder.dart';
 import 'package:porquinho/features/totals/totals_repository.dart';
-import 'package:porquinho/features/transactions/transactions_screen.dart';
+import '../../support/transactions_with_add.dart';
 
 void main() {
   late PorquinhoDatabase db;
@@ -108,7 +108,7 @@ void main() {
 
   testWidgets('Repetir: receita nasce pendente, confirma o recebimento e vira '
       'recorrência na lista', (tester) async {
-    await pump(tester, const TransactionsScreen());
+    await pump(tester, const TransactionsWithAdd());
 
     await tester.tap(find.byKey(const Key('novo-lancamento')));
     await tester.pumpAndSettle();
@@ -147,7 +147,7 @@ void main() {
   testWidgets('Despesa variável: informa o valor depois e ela entra na sobra', (
     tester,
   ) async {
-    await pump(tester, const TransactionsScreen());
+    await pump(tester, const TransactionsWithAdd());
     await tester.tap(find.byKey(const Key('novo-lancamento')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('nova-despesa')));
@@ -200,7 +200,7 @@ void main() {
 
   testWidgets('Repetir no investimento: sem pagar/vencimento, lista, edita o '
       'valor de um mês e das próximas, para de repetir', (tester) async {
-    await pump(tester, const TransactionsScreen());
+    await pump(tester, const TransactionsWithAdd());
 
     await tester.tap(find.byKey(const Key('novo-lancamento')));
     await tester.pumpAndSettle();

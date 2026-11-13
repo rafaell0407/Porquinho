@@ -21,7 +21,7 @@ Nova dependência: avaliar manutenção, licença, segurança e custo antes.
 - Organização por funcionalidade em `lib/features/<módulo>/`; transversal em `lib/core/` (domínio puro em `core/domain/`, banco local em `core/local_database/`); `lib/app/` (inicialização e rotas); `lib/shared/` (shell de navegação e componentes). `test/` espelha `lib/`. Mapa completo: `mapa_app.md`.
 - Dependência: apresentação → aplicação (services) → domínio. Regras financeiras só no domínio (`core/domain/`), testáveis sem widgets.
 - Cada módulo com dados tem interface de repositório + implementação **local** (Drift + fila, celular) e **remota** (RPCs Supabase, Web), escolhidas por `dataAccessModeProvider` (`core/data_access.dart`).
-- Navegação principal: só Dashboard, Lançamentos e Mais.
+- Navegação principal: barra inferior fixa com Home, Relatórios, Adicionar (+), Lançamentos e Mais (abas: Home, Lançamentos, Mais).
 
 ## 3. Celular × Web
 - **Celular (Android):** offline primeiro. Lê do Drift; grava registro + auditoria + operação da fila na mesma transação; só então diz "salvo". PIN/biometria opcional.

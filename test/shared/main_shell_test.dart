@@ -41,7 +41,9 @@ class _NoPending implements PendingSyncCounter {
 }
 
 void main() {
-  testWidgets('três abas: Dashboard, Lançamentos e Mais', (tester) async {
+  testWidgets('barra: Home, Relatórios, Adicionar, Lançamentos e Mais', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(800, 2400);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -60,7 +62,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(NavigationDestination), findsNWidgets(3));
+    expect(find.byKey(const Key('nav-home')), findsOneWidget);
+    expect(find.byKey(const Key('nav-relatorios')), findsOneWidget);
+    expect(find.byKey(const Key('nav-adicionar')), findsOneWidget);
+    expect(find.byKey(const Key('nav-lancamentos')), findsOneWidget);
+    expect(find.byKey(const Key('nav-mais')), findsOneWidget);
     expect(find.text('Dinheiro livre do período'), findsOneWidget);
 
     await tester.tap(find.text('Lançamentos'));
@@ -74,8 +80,18 @@ void main() {
     expect(find.text('Segurança'), findsOneWidget);
     expect(find.text('Sair'), findsOneWidget);
 
-    await tester.tap(find.text('Dashboard'));
+    await tester.tap(find.byKey(const Key('nav-home')));
     await tester.pumpAndSettle();
     expect(find.text('Dinheiro livre do período'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('nav-adicionar')));
+    await tester.pumpAndSettle();
+    expect(find.text('Nova despesa'), findsOneWidget);
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('nav-relatorios')));
+    await tester.pumpAndSettle();
+    expect(find.byType(NavigationBar), findsNothing);
   });
 }

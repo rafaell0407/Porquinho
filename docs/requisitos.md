@@ -102,7 +102,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF001 | Autenticação com Google e e-mail/senha | Essencial | APROVADO |
 | RF002 | Verificação de e-mail e recuperação de senha | Essencial | APROVADO |
 | RF003 | Bloqueio móvel opcional por PIN ou biometria ao abrir o app | Alta | APROVADO |
-| RF004 | Navegação principal Dashboard, Lançamentos e Mais | Essencial | APROVADO |
+| RF004 | Navegação principal: Home, Relatórios, Adicionar, Lançamentos e Mais | Essencial | APROVADO |
 | RF005 | Registrar receitas avulsas com data de recebimento informada (passada ou futura) | Essencial | APROVADO (revisado em 10/11/2026) |
 | RF006 | Criar receitas recorrentes mensais ("Todo mês"; por período retirado em 13/11/2026), fixas ou variáveis, ativando "Repetir" no formulário do lançamento (o lançamento é a primeira ocorrência); consultar em Mais → Recorrências | Alta | APROVADO (D8, 11/11/2026) |
 | RF007 | Gerar ocorrência pendente de receita recorrente e contabilizar somente após confirmação de recebimento | Essencial | APROVADO |

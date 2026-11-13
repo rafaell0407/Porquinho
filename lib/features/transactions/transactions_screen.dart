@@ -66,26 +66,12 @@ class TransactionsScreen extends ConsumerWidget {
     final filter = ref.watch(entryFilterProvider);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
+      appBar: AppBar(title: const Text('Lançamentos')),
       body: SafeArea(
         child: Column(
           children: [
-            if (view.value != null)
-              PeriodHeader(
-                view: view.value!,
-                newButtonKey: const Key('novo-lancamento'),
-              ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                child: Text(
-                  'Lançamentos',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
+            if (view.value != null) PeriodHeader(view: view.value!),
+            const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: TextField(

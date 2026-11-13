@@ -38,6 +38,9 @@ Aprovada pelo responsável: configuração única trocável a qualquer momento (
 - **Rede de segurança (P4):** antes de remover qualquer coisa, soma pelo período gravado = soma pelas datas em todos os períodos (celular, servidor e 4.439 lançamentos reais do banco local); nenhuma diferença.
 - **Testes:** `flutter analyze` sem problemas; 1.086 testes do app; suíte SQL completa (inclui 360 casos compartilhados da data mensal); 31 de integração com o Supabase local; catálogo de segurança no Supabase local.
 
+## Nova barra inferior (13/11/2026) — aguardando validação
+Barra em pílula (formato aprovado após comparar com a versão retangular): Home, Relatórios, Adicionar (+, círculo elevado no centro), Lançamentos e Mais. Home, Lançamentos e Mais são abas; Relatórios abre a tela de relatórios (continua também em Mais); + abre o mesmo menu de novo lançamento da Dashboard; Categorias segue em Mais. Ajuste de 13/11: o "+" estava colado na barra e sobre o rótulo; agora fica elevado acima da borda, com "Adicionar" abaixo (conferido no emulador, tema escuro). Sem mudança de regra financeira, banco ou sincronização.
+
 ## Próximo passo
 Validar P2–P7 no emulador e na Web (P8; roteiro T7). Homologação só com autorização (R2). Fase 8 (76, D1/D5, 77) retoma depois.
 

@@ -24,7 +24,7 @@ import 'package:porquinho/features/periods/period_providers.dart';
 import 'package:porquinho/features/periods/period_service.dart';
 import 'package:porquinho/features/sync/local_change_recorder.dart';
 import 'package:porquinho/features/totals/totals_repository.dart';
-import 'package:porquinho/features/transactions/transactions_screen.dart';
+import '../../support/transactions_with_add.dart';
 
 void main() {
   late PorquinhoDatabase db;
@@ -71,7 +71,7 @@ void main() {
             (ref) async => LocalTotalsRepository(db, 'u1'),
           ),
         ],
-        child: const MaterialApp(home: TransactionsScreen()),
+        child: const MaterialApp(home: TransactionsWithAdd()),
       ),
     );
     await tester.pumpAndSettle();
