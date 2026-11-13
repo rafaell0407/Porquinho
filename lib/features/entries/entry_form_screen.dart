@@ -473,6 +473,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                         fontWeight: FontWeight.w800,
                       ),
                       decoration: InputDecoration(
+                        floatingLabelBehavior: FloatingLabelBehavior.always,
                         prefixText: 'R\$ ',
                         prefixStyle: theme.textTheme.displaySmall?.copyWith(
                           fontSize: 44,

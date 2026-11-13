@@ -102,7 +102,6 @@ Color categoryColorFor(String key, Brightness brightness) {
 const suggestedCategoryAppearance = <String, (String, String)>{
   'Salário': ('work', 'lime'),
   'Renda extra': ('wallet', 'cyan'),
-  'Rendimentos': ('trending_up', 'yellow'),
   'Moradia': ('home', 'blue'),
   'Alimentação': ('restaurant', 'yellow'),
   'Mercado': ('shopping_cart', 'orange'),

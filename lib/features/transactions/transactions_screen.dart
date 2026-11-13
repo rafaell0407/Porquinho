@@ -309,7 +309,16 @@ class _EntryList extends ConsumerWidget {
           final category = cats?.categories
               .where((c) => c.id == e.categoryId)
               .firstOrNull;
-          return _EntryTile(entry: e, category: category);
+          final subcategory = e.subcategoryId == null
+              ? null
+              : cats?.subcategories
+                    .where((s) => s.id == e.subcategoryId)
+                    .firstOrNull;
+          return _EntryTile(
+            entry: e,
+            category: category,
+            subcategory: subcategory,
+          );
         },
       ),
     );
@@ -644,10 +653,11 @@ String entryStatusLabel(EntryRecord e) {
 }
 
 class _EntryTile extends ConsumerWidget {
-  const _EntryTile({required this.entry, this.category});
+  const _EntryTile({required this.entry, this.category, this.subcategory});
 
   final EntryRecord entry;
   final CategoryRecord? category;
+  final SubcategoryRecord? subcategory;
 
   String? get categoryName => category?.name;
 
@@ -686,7 +696,10 @@ class _EntryTile extends ConsumerWidget {
       strike: entry.isCancelled,
       subtitle: [
         entry.date.toBr(),
-        ?categoryName,
+        // Categoria já aparece como título quando não há descrição; o
+        // detalhe mostra a subcategoria, sem repetir o nome.
+        if (entry.description?.isNotEmpty == true) ?categoryName,
+        ?subcategory?.name,
         if (entry.isRecurring) 'Recorrente',
         if (entry.dueOn != null && entry.isPendingExpense)
           'vence ${entry.dueOn!.toBr()}',
