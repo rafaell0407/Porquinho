@@ -1,4 +1,5 @@
 import '../sync/sync_models.dart';
+import 'category_appearance.dart';
 import 'category_models.dart';
 import 'category_repository.dart';
 
@@ -49,15 +50,70 @@ class CategoryService {
   Future<CategoryData> load() async =>
       CategoryData(await _repo.categories(), await _repo.subcategories());
 
-  /// Devolve o id da categoria criada.
-  Future<String> createCategory(CategoryKind kind, String name) async {
+  /// Mesmas regras da RPC: ícone de qualquer chave conhecida e cor de uma das
+  /// chaves do conjunto fixo.
+  static String? _checkedIcon(String? key) {
+    if (key == null) return null;
+    if (!categoryIcons.containsKey(key)) {
+      throw const ChangeRejectedException('Escolha um ícone da lista.');
+    }
+    return key;
+  }
+
+  static String? _checkedColor(String? key) {
+    if (key == null) return null;
+    if (!categoryColorKeys.contains(key)) {
+      throw const ChangeRejectedException('Escolha uma cor da lista.');
+    }
+    return key;
+  }
+
+  /// Devolve o id da categoria criada. Sem [iconKey]/[colorKey], fica o visual
+  /// padrão.
+  Future<String> createCategory(
+    CategoryKind kind,
+    String name, {
+    String? iconKey,
+    String? colorKey,
+  }) async {
     final id = _newId();
-    await _repo.apply([CreateCategory(id, kind, _checked(name))]);
+    await _repo.apply([
+      CreateCategory(
+        id,
+        kind,
+        _checked(name),
+        iconKey: _checkedIcon(iconKey),
+        colorKey: _checkedColor(colorKey),
+      ),
+    ]);
     return id;
   }
 
   Future<void> renameCategory(CategoryRecord category, String name) async {
     await _repo.apply([RenameCategory(category, _checked(name))]);
+  }
+
+  /// Edita nome, ícone e cor de uma vez. Só envia o que mudou; sem mudança,
+  /// não grava nada.
+  Future<void> editCategory(
+    CategoryRecord category, {
+    required String name,
+    required String iconKey,
+    required String colorKey,
+  }) async {
+    final newName = _checked(name);
+    final change = EditCategory(
+      category,
+      name: newName == category.name ? null : newName,
+      iconKey: iconKey == category.iconKey ? null : _checkedIcon(iconKey),
+      colorKey: colorKey == category.colorKey ? null : _checkedColor(colorKey),
+    );
+    if (change.name == null &&
+        change.iconKey == null &&
+        change.colorKey == null) {
+      return;
+    }
+    await _repo.apply([change]);
   }
 
   /// O tipo nunca muda; desativar é permitido mesmo com lançamentos (RN040).
@@ -97,7 +153,18 @@ class CategoryService {
     Iterable<String> income = const [],
     Iterable<String> expense = const [],
   }) => _repo.apply([
-    for (final n in income) CreateCategory(_newId(), CategoryKind.income, n),
-    for (final n in expense) CreateCategory(_newId(), CategoryKind.expense, n),
+    for (final n in income) _suggested(CategoryKind.income, n),
+    for (final n in expense) _suggested(CategoryKind.expense, n),
   ]);
+
+  CreateCategory _suggested(CategoryKind kind, String name) {
+    final look = suggestedCategoryAppearance[name];
+    return CreateCategory(
+      _newId(),
+      kind,
+      name,
+      iconKey: look?.$1,
+      colorKey: look?.$2,
+    );
+  }
 }

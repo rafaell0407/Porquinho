@@ -5,9 +5,12 @@ import '../../core/data_access.dart';
 import '../../core/domain/calendar_date.dart';
 import '../../core/domain/money.dart';
 import '../../core/domain/recurrence_schedule.dart';
+import '../categories/category_appearance.dart';
+import '../categories/category_editor.dart';
 import '../categories/category_models.dart';
-import '../categories/category_name_dialog.dart';
+import '../categories/category_picker.dart';
 import '../categories/category_providers.dart';
+import '../categories/category_service.dart';
 import '../investments/investment_models.dart';
 import '../investments/investment_providers.dart';
 import '../periods/period_providers.dart';
@@ -44,7 +47,6 @@ class EntryFormScreen extends ConsumerStatefulWidget {
 
 class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _categoryField = GlobalKey<FormFieldState<String?>>();
   late final TextEditingController _amount;
   late final TextEditingController _description;
   late CalendarDate _date;
@@ -104,27 +106,52 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     super.dispose();
   }
 
-  static const _newCategoryValue = '__nova_categoria__';
+  /// Abre o seletor de categoria; "Nova categoria" leva ao editor e a criada
+  /// já fica selecionada. Cancelar ou falhar mantém a escolha anterior.
+  Future<void> _chooseCategory(CategoryData? data) async {
+    if (data == null) return;
+    final pick = await showCategoryPicker(
+      context,
+      data: data,
+      kind: CategoryKind.fromDb(widget.kind.categoryKind),
+      selectedCategoryId: _categoryId,
+      selectedSubcategoryId: _subcategoryId,
+    );
+    if (!mounted) return;
+    switch (pick) {
+      case PickedNone():
+        setState(() {
+          _categoryId = null;
+          _subcategoryId = null;
+        });
+      case PickedCategory(:final categoryId, :final subcategoryId):
+        setState(() {
+          _categoryId = categoryId;
+          _subcategoryId = subcategoryId;
+        });
+      case PickedCreate():
+        await _createCategory();
+      case null:
+        break;
+    }
+  }
 
-  /// Cria uma categoria do tipo do lançamento sem sair do formulário e a
-  /// seleciona. Cancelar ou falhar mantém a escolha anterior.
   Future<void> _createCategory() async {
     final messenger = ScaffoldMessenger.of(context);
-    final name = await askName(
+    final draft = await showCategoryEditor(
       context,
       title: _isIncome
           ? 'Nova categoria de receita'
           : 'Nova categoria de despesa',
     );
-    if (name == null || !mounted) {
-      _categoryField.currentState?.didChange(_categoryId);
-      return;
-    }
+    if (draft == null || !mounted) return;
     try {
       final service = await ref.read(categoryServiceProvider.future);
       final id = await service.createCategory(
         CategoryKind.fromDb(widget.kind.categoryKind),
-        name,
+        draft.name,
+        iconKey: draft.iconKey,
+        colorKey: draft.colorKey,
       );
       ref.invalidate(categoryDataProvider);
       if (!mounted) return;
@@ -132,9 +159,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         _categoryId = id;
         _subcategoryId = null;
       });
-      _categoryField.currentState?.didChange(id);
     } on Object catch (e) {
-      _categoryField.currentState?.didChange(_categoryId);
       messenger.showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
@@ -350,25 +375,14 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final cats = ref.watch(categoryDataProvider).value;
-    final categories = cats == null
-        ? <CategoryRecord>[]
-        : cats.categories
-              .where(
-                (c) =>
-                    c.kind.dbValue == widget.kind.categoryKind &&
-                    (c.isActive || c.id == widget.existing?.categoryId),
-              )
-              .toList();
-    final subs = (cats == null || _categoryId == null)
-        ? <SubcategoryRecord>[]
-        : cats.subcategories
-              .where(
-                (s) =>
-                    s.categoryId == _categoryId &&
-                    (s.isActive || s.id == widget.existing?.subcategoryId),
-              )
-              .toList();
+    final chosen = _categoryId == null
+        ? null
+        : cats?.categories.where((c) => c.id == _categoryId).firstOrNull;
+    final chosenSub = _subcategoryId == null
+        ? null
+        : cats?.subcategories.where((s) => s.id == _subcategoryId).firstOrNull;
     final title = _isInvestment
         ? (_editing ? 'Editar investimento' : 'Novo investimento')
         : _editing
@@ -387,10 +401,25 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
               keyboardType: const TextInputType.numberWithOptions(
                 decimal: true,
               ),
+              style: theme.textTheme.displaySmall?.copyWith(fontSize: 40),
               decoration: InputDecoration(
                 labelText: _isInvestment ? 'Valor investido' : 'Valor',
                 prefixText: 'R\$ ',
                 hintText: '0,00',
+                filled: false,
+                border: const UnderlineInputBorder(),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.outlineVariant,
+                  ),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(
+                    color: theme.colorScheme.primary,
+                    width: 2,
+                  ),
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
               validator: (v) {
                 if (_amountOptional && (v ?? '').trim().isEmpty) return null;
@@ -440,64 +469,33 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                   labelText: 'Descrição (opcional)',
                 ),
               ),
-              KeyedSubtree(
+              ListTile(
                 key: const Key('campo-categoria'),
-                child: DropdownButtonFormField<String?>(
-                  key: _categoryField,
-                  initialValue: _categoryId,
-                  decoration: const InputDecoration(
-                    labelText: 'Categoria (opcional)',
-                  ),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Sem categoria'),
-                    ),
-                    for (final c in categories)
-                      DropdownMenuItem<String?>(
-                        value: c.id,
-                        child: Text(
-                          c.isActive ? c.name : '${c.name} (desativada)',
-                        ),
+                contentPadding: EdgeInsets.zero,
+                leading: chosen == null
+                    ? const CategoryBadge(
+                        iconKey: defaultCategoryIconKey,
+                        colorKey: defaultCategoryColorKey,
+                      )
+                    : CategoryBadge(
+                        iconKey: chosen.iconKey,
+                        colorKey: chosen.colorKey,
+                        filled: true,
                       ),
-                    const DropdownMenuItem<String?>(
-                      key: Key('nova-categoria-form'),
-                      value: _newCategoryValue,
-                      child: Text('+ Nova categoria'),
-                    ),
-                  ],
-                  onChanged: (v) {
-                    if (v == _newCategoryValue) {
-                      _createCategory();
-                      return;
-                    }
-                    setState(() {
-                      _categoryId = v;
-                      _subcategoryId = null;
-                    });
-                  },
+                title: const Text('Categoria (opcional)'),
+                subtitle: Text(
+                  chosen == null
+                      ? 'Sem categoria'
+                      : [
+                          chosen.isActive
+                              ? chosen.name
+                              : '${chosen.name} (desativada)',
+                          ?chosenSub?.name,
+                        ].join(' › '),
                 ),
+                trailing: const Icon(Icons.expand_more),
+                onTap: () => _chooseCategory(cats),
               ),
-              if (subs.isNotEmpty)
-                DropdownButtonFormField<String?>(
-                  key: const Key('campo-subcategoria'),
-                  initialValue: _subcategoryId,
-                  decoration: const InputDecoration(
-                    labelText: 'Subcategoria (opcional)',
-                  ),
-                  items: [
-                    const DropdownMenuItem<String?>(
-                      value: null,
-                      child: Text('Nenhuma'),
-                    ),
-                    for (final s in subs)
-                      DropdownMenuItem<String?>(
-                        value: s.id,
-                        child: Text(s.name),
-                      ),
-                  ],
-                  onChanged: (v) => setState(() => _subcategoryId = v),
-                ),
               if (!_isIncome) ...[
                 ListTile(
                   key: const Key('campo-vencimento'),

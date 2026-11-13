@@ -30,9 +30,12 @@ abstract interface class SyncRemoteReader {
 enum _Kind { text, integer, boolean, amount }
 
 class _Col {
-  const _Col(this.name, [this.kind = _Kind.text]);
+  const _Col(this.name, [this.kind = _Kind.text, this.fallback]);
   final String name;
   final _Kind kind;
+
+  /// Valor quando o servidor não envia a coluna (ainda sem a migration).
+  final Object? fallback;
 }
 
 class _TableSpec {
@@ -81,6 +84,8 @@ const _specs = [
     _Col('kind'),
     _Col('name'),
     _Col('is_active', _Kind.boolean),
+    _Col('icon_key', _Kind.text, 'category'),
+    _Col('color_key', _Kind.text, 'gray'),
     ..._common,
   ]),
   _TableSpec('subcategories', 'subcategory', [
@@ -410,7 +415,7 @@ class DownloadService {
     final values = <Object?>[
       row['id'],
       ownerId,
-      for (final c in spec.columns) _convert(c, row[c.name]),
+      for (final c in spec.columns) _convert(c, row[c.name] ?? c.fallback),
     ];
     final updates = names
         .where((n) => n != 'id' && n != 'owner_id')

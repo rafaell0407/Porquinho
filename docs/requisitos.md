@@ -152,6 +152,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 - O tipo da categoria (receita ou despesa) é definido na criação e não pode ser alterado.
 - Subcategorias são opcionais e vinculadas a uma categoria.
 - Categoria já utilizada não é apagada fisicamente; pode ser desativada, preservando lançamentos históricos.
+- Cada categoria tem ícone e cor, escolhidos de um conjunto fixo (APROVADO em 12/11/2026); subcategorias herdam o visual da categoria. O visual não altera nenhuma regra financeira.
 - Categorias não são aplicadas ao lançamento simples de investimento.
 - No primeiro acesso, o aplicativo sugere categorias desmarcáveis (lista na RN024); o usuário pode criar as suas.
 

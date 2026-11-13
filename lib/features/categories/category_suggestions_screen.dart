@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'category_appearance.dart';
 import 'category_models.dart';
 import 'category_providers.dart';
 
@@ -73,6 +74,14 @@ class _CategorySuggestionsScreenState
         CheckboxListTile(
           key: Key('sugestao-$name'),
           value: chosen.contains(name),
+          secondary: CategoryBadge(
+            iconKey:
+                suggestedCategoryAppearance[name]?.$1 ?? defaultCategoryIconKey,
+            colorKey:
+                suggestedCategoryAppearance[name]?.$2 ??
+                defaultCategoryColorKey,
+            filled: true,
+          ),
           title: Text(name),
           onChanged: (v) => setState(() {
             v == true ? chosen.add(name) : chosen.remove(name);

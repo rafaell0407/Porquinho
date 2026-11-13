@@ -1,3 +1,5 @@
+import 'category_appearance.dart';
+
 /// Tipo da categoria; definido na criação e imutável (RN024).
 enum CategoryKind {
   income('income', 'Receitas'),
@@ -18,6 +20,8 @@ class CategoryRecord {
     required this.name,
     required this.isActive,
     required this.version,
+    this.iconKey = defaultCategoryIconKey,
+    this.colorKey = defaultCategoryColorKey,
   });
 
   final String id;
@@ -26,11 +30,17 @@ class CategoryRecord {
   final bool isActive;
   final int version;
 
+  /// Chaves do visual (ver `category_appearance.dart`); subcategorias herdam.
+  final String iconKey;
+  final String colorKey;
+
   Map<String, dynamic> toSnapshot() => {
     'id': id,
     'kind': kind.dbValue,
     'name': name,
     'is_active': isActive,
+    'icon_key': iconKey,
+    'color_key': colorKey,
     'version': version,
   };
 }
@@ -65,10 +75,30 @@ sealed class CategoryChange {
 }
 
 class CreateCategory extends CategoryChange {
-  const CreateCategory(this.id, this.kind, this.name);
+  const CreateCategory(
+    this.id,
+    this.kind,
+    this.name, {
+    this.iconKey,
+    this.colorKey,
+  });
   final String id;
   final CategoryKind kind;
   final String name;
+
+  /// `null` = visual padrão (o servidor e o aparelho usam o mesmo).
+  final String? iconKey;
+  final String? colorKey;
+}
+
+/// Muda nome e/ou visual numa só operação. Só vão os campos que mudaram:
+/// com nome é `rename`, sem nome é `restyle`.
+class EditCategory extends CategoryChange {
+  const EditCategory(this.category, {this.name, this.iconKey, this.colorKey});
+  final CategoryRecord category;
+  final String? name;
+  final String? iconKey;
+  final String? colorKey;
 }
 
 class RenameCategory extends CategoryChange {
@@ -126,20 +156,46 @@ class CategoryRpcCall {
 /// Traduz a alteração para os parâmetros da RPC (`apply_category_change` /
 /// `apply_subcategory_change`), os mesmos no celular e na Web.
 CategoryRpcCall rpcCallFor(CategoryChange change) => switch (change) {
-  CreateCategory(:final id, :final kind, :final name) => CategoryRpcCall(
-    entityType: 'category',
-    entityId: id,
-    operation: 'create',
-    expectedVersion: 0,
-    rpc: 'apply_category_change',
-    params: {
-      'p_action': 'create',
-      'p_category_id': id,
-      'p_expected_version': 0,
-      'p_kind': kind.dbValue,
-      'p_name': name,
-    },
-  ),
+  CreateCategory(
+    :final id,
+    :final kind,
+    :final name,
+    :final iconKey,
+    :final colorKey,
+  ) =>
+    CategoryRpcCall(
+      entityType: 'category',
+      entityId: id,
+      operation: 'create',
+      expectedVersion: 0,
+      rpc: 'apply_category_change',
+      params: {
+        'p_action': 'create',
+        'p_category_id': id,
+        'p_expected_version': 0,
+        'p_kind': kind.dbValue,
+        'p_name': name,
+        'p_icon_key': ?iconKey,
+        'p_color_key': ?colorKey,
+      },
+    ),
+  EditCategory(:final category, :final name, :final iconKey, :final colorKey) =>
+    CategoryRpcCall(
+      entityType: 'category',
+      entityId: category.id,
+      operation: name != null ? 'rename' : 'restyle',
+      expectedVersion: category.version,
+      rpc: 'apply_category_change',
+      params: {
+        'p_action': name != null ? 'rename' : 'restyle',
+        'p_category_id': category.id,
+        'p_expected_version': category.version,
+        'p_kind': null,
+        'p_name': name,
+        'p_icon_key': ?iconKey,
+        'p_color_key': ?colorKey,
+      },
+    ),
   RenameCategory(:final category, :final name) => CategoryRpcCall(
     entityType: 'category',
     entityId: category.id,

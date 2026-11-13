@@ -140,7 +140,7 @@ void main() {
     await tester.tap(find.byKey(const Key('filtro-all')));
     await tester.pumpAndSettle();
 
-    // Cancelar a despesa: confirma, fica no histórico.
+    // Cancelar a despesa: confirma e ela some da lista.
     await tester.tap(find.text('Luz'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('acao-cancelar')));
@@ -148,7 +148,7 @@ void main() {
     expect(find.text('Cancelar este lançamento?'), findsOneWidget);
     await tester.tap(find.byKey(const Key('confirmar-cancelar')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Cancelado'), findsOneWidget);
+    expect(find.text('Luz'), findsNothing);
 
     final periodId = (await periods.periodFor(CalendarDate(2026, 11, 10)))!.id;
     final t = await LocalTotalsRepository(db, 'u1').totalsFor(periodId);
@@ -306,7 +306,7 @@ void main() {
     expect(find.text('- R\$ 500,00'), findsOneWidget);
     expect(await surplusNow(), BigInt.from(-50000));
 
-    // Cancelar: confirma, fica no histórico e sai da sobra.
+    // Cancelar: confirma, some da lista e sai da sobra.
     await tester.tap(find.text('Investimento'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('acao-cancelar')));
@@ -314,7 +314,7 @@ void main() {
     expect(find.text('Cancelar este investimento?'), findsOneWidget);
     await tester.tap(find.byKey(const Key('confirmar-cancelar')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Cancelado'), findsOneWidget);
+    expect(find.text('Investimento'), findsNothing);
     expect(await surplusNow(), BigInt.zero);
   });
 

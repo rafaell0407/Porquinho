@@ -3,87 +3,131 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../app/theme/norte_theme.dart';
 import '../auth/delete_account_flow.dart';
 import '../auth/logout_flow.dart';
 import '../sync/sync_indicator.dart';
 import '../sync/sync_providers.dart';
 
-/// Aba "Mais": Segurança (só no celular) e Sair. Demais itens (categorias,
-/// período, relatórios) entram nas fases seguintes.
+/// Aba "Mais": atalhos para categorias, período, relatórios, tema,
+/// recorrências, exportação, segurança, exclusão de conta e saída.
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = NorteColors.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Mais')),
       body: ListView(
+        padding: const EdgeInsets.only(bottom: 24),
         children: [
           if (!kIsWeb) const SyncNowTile(),
           const _AttentionTile(),
-          ListTile(
-            leading: const Icon(Icons.category_outlined),
-            title: const Text('Categorias'),
+          _MoreTile(
+            icon: Icons.category_outlined,
+            title: 'Categorias',
             onTap: () => context.push('/categorias'),
           ),
-          ListTile(
-            key: const Key('mais-periodo'),
-            leading: const Icon(Icons.date_range_outlined),
-            title: const Text('Período'),
+          _MoreTile(
+            tileKey: const Key('mais-periodo'),
+            icon: Icons.date_range_outlined,
+            title: 'Período',
             onTap: () => context.push('/periodo'),
           ),
-          ListTile(
-            key: const Key('mais-relatorios'),
-            leading: const Icon(Icons.bar_chart_outlined),
-            title: const Text('Relatórios'),
+          _MoreTile(
+            tileKey: const Key('mais-relatorios'),
+            icon: Icons.bar_chart_outlined,
+            title: 'Relatórios',
             onTap: () => context.push('/relatorios'),
           ),
-          ListTile(
-            key: const Key('mais-configuracao-inicial'),
-            leading: const Icon(Icons.checklist_outlined),
-            title: const Text('Configuração inicial'),
+          _MoreTile(
+            tileKey: const Key('mais-configuracao-inicial'),
+            icon: Icons.checklist_outlined,
+            title: 'Configuração inicial',
             onTap: () => context.push('/configuracao-inicial'),
           ),
-          ListTile(
-            key: const Key('mais-tema'),
-            leading: const Icon(Icons.brightness_6_outlined),
-            title: const Text('Tema'),
+          _MoreTile(
+            tileKey: const Key('mais-tema'),
+            icon: Icons.brightness_6_outlined,
+            title: 'Tema',
             onTap: () => context.push('/tema'),
           ),
-          ListTile(
-            key: const Key('mais-recorrencias'),
-            leading: const Icon(Icons.repeat),
-            title: const Text('Recorrências'),
+          _MoreTile(
+            tileKey: const Key('mais-recorrencias'),
+            icon: Icons.repeat,
+            title: 'Recorrências',
             onTap: () => context.push('/recorrencias'),
           ),
-          ListTile(
-            key: const Key('mais-exportar'),
-            leading: const Icon(Icons.download_outlined),
-            title: const Text('Exportar dados (CSV)'),
+          _MoreTile(
+            tileKey: const Key('mais-exportar'),
+            icon: Icons.download_outlined,
+            title: 'Exportar dados (CSV)',
             onTap: () => context.push('/exportar'),
           ),
           if (!kIsWeb)
-            ListTile(
-              leading: const Icon(Icons.lock_outline),
-              title: const Text('Segurança'),
+            _MoreTile(
+              icon: Icons.lock_outline,
+              title: 'Segurança',
               onTap: () => context.push('/seguranca'),
             ),
-          ListTile(
-            key: const Key('mais-excluir-conta'),
-            leading: Icon(
-              Icons.delete_forever_outlined,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            title: const Text('Excluir conta'),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Divider(),
+          ),
+          _MoreTile(
+            tileKey: const Key('mais-excluir-conta'),
+            icon: Icons.delete_forever_outlined,
+            iconColor: colors.expense,
+            title: 'Excluir conta',
             onTap: () => deleteAccountFlow(context, ref),
           ),
-          ListTile(
-            leading: const Icon(Icons.logout),
-            title: const Text('Sair'),
+          _MoreTile(
+            icon: Icons.logout,
+            title: 'Sair',
             onTap: () => signOutWithPendingCheck(context, ref),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Item do menu: ícone em círculo suave, título e seta.
+class _MoreTile extends StatelessWidget {
+  const _MoreTile({
+    required this.icon,
+    required this.title,
+    required this.onTap,
+    this.tileKey,
+    this.iconColor,
+  });
+
+  final Key? tileKey;
+  final IconData icon;
+  final Color? iconColor;
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ListTile(
+      key: tileKey,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+      leading: CircleAvatar(
+        backgroundColor: scheme.surfaceContainerHighest,
+        foregroundColor: iconColor ?? scheme.onSurface,
+        child: Icon(icon, size: 22),
+      ),
+      title: Text(
+        title,
+        style: Theme.of(
+          context,
+        ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+      ),
+      trailing: Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
+      onTap: onTap,
     );
   }
 }
@@ -95,12 +139,24 @@ class _AttentionTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final count = ref.watch(syncStatusProvider).attentionCount;
+    final colors = NorteColors.of(context);
+    final scheme = Theme.of(context).colorScheme;
     return ListTile(
-      leading: Icon(
-        count > 0 ? Icons.error_outline : Icons.check_circle_outline,
-        color: count > 0 ? Theme.of(context).colorScheme.error : null,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 2),
+      leading: CircleAvatar(
+        backgroundColor: scheme.surfaceContainerHighest,
+        foregroundColor: count > 0 ? colors.pending : colors.income,
+        child: Icon(
+          count > 0 ? Icons.error_outline : Icons.check_circle_outline,
+          size: 22,
+        ),
       ),
-      title: const Text('Itens que precisam de atenção'),
+      title: Text(
+        'Itens que precisam de atenção',
+        style: Theme.of(
+          context,
+        ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+      ),
       subtitle: Text(count > 0 ? '$count item(ns)' : 'Nada pendente'),
       onTap: () => context.push('/atencao'),
     );

@@ -23,6 +23,7 @@ import '../features/periods/period_settings_screen.dart';
 import '../features/export/export_screen.dart';
 import '../features/reports/reports_screen.dart';
 import '../features/recurrence/recurrences_screen.dart';
+import 'theme/norte_theme.dart';
 import '../features/transactions/transactions_screen.dart';
 import '../features/sync/sync_indicator.dart';
 import '../shared/main_shell.dart';
@@ -121,12 +122,8 @@ class PorquinhoApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
       title: 'Norte',
-      theme: ThemeData(colorSchemeSeed: Colors.pink, useMaterial3: true),
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.pink,
-        brightness: Brightness.dark,
-        useMaterial3: true,
-      ),
+      theme: NorteTheme.light(),
+      darkTheme: NorteTheme.dark(),
       themeMode: ref.watch(themeModeProvider).value ?? ThemeMode.system,
       locale: const Locale('pt', 'BR'),
       supportedLocales: const [Locale('pt', 'BR')],

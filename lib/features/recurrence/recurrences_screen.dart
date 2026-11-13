@@ -1,3 +1,4 @@
+import '../../app/theme/norte_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -105,7 +106,9 @@ class _TemplateTile extends ConsumerWidget {
       key: Key('recorrencia-${t.id}'),
       leading: Icon(
         income ? Icons.arrow_downward : Icons.arrow_upward,
-        color: income ? Colors.green : Theme.of(context).colorScheme.error,
+        color: income
+            ? NorteColors.of(context).income
+            : NorteColors.of(context).expense,
       ),
       title: Text(
         title,

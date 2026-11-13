@@ -29,7 +29,7 @@ DECLARE
 BEGIN
     IF NOT pg_catalog.has_function_privilege(
         'authenticated',
-        'public.apply_category_change(uuid,text,uuid,bigint,text,text)',
+        'public.apply_category_change(uuid,text,uuid,bigint,text,text,text,text)',
         'EXECUTE'
     ) THEN
         RAISE EXCEPTION 'authenticated must be able to execute the category RPC';
@@ -38,7 +38,7 @@ BEGIN
     IF NOT EXISTS (
         SELECT 1
         FROM pg_catalog.pg_proc AS function
-        WHERE function.oid = 'public.apply_category_change(uuid,text,uuid,bigint,text,text)'::REGPROCEDURE
+        WHERE function.oid = 'public.apply_category_change(uuid,text,uuid,bigint,text,text,text,text)'::REGPROCEDURE
           AND function.prosecdef
           AND function.proowner = 'postgres'::REGROLE
     ) THEN
@@ -47,7 +47,7 @@ BEGIN
 
     IF pg_catalog.has_function_privilege(
         'anon',
-        'public.apply_category_change(uuid,text,uuid,bigint,text,text)',
+        'public.apply_category_change(uuid,text,uuid,bigint,text,text,text,text)',
         'EXECUTE'
     ) OR EXISTS (
         SELECT 1
@@ -58,7 +58,7 @@ BEGIN
                 pg_catalog.acldefault('f', function.proowner)
             )
         ) AS privilege
-        WHERE function.oid = 'public.apply_category_change(uuid,text,uuid,bigint,text,text)'::REGPROCEDURE
+        WHERE function.oid = 'public.apply_category_change(uuid,text,uuid,bigint,text,text,text,text)'::REGPROCEDURE
           AND privilege.grantee = 0
           AND privilege.privilege_type = 'EXECUTE'
     ) THEN

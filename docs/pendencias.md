@@ -15,9 +15,20 @@ Regras: cada item tem ID fixo (não reaproveitar). Concluiu → apagar a linha e
 - R2: Autorizar e fornecer referências do Supabase gerenciado nas próximas etapas (nunca agir sem autorização).
 - R3: Rodar `supabase migration up` no local quando houver migration nova.
 - R4: Roteiro manual de validação da Fase 8 (`entregas_fase8.md` §8).
+- R5: Validar a V1 (tema) no emulador, claro e escuro.
+- R6: Buscar o nome "Norte" no INPI antes de publicar nas lojas e, se possível, consultar advogado de propriedade intelectual.
 
 ## E — Entregas restantes da Fase 8 (detalhe em `entregas_fase8.md`)
 - 75 (final): depende de D1 · 77 backup · 78 regressão Android/Web · 79 produção + SMTP (D5) + monitoramento (tratamento global de erros já feito) · 80 publicação Web · 81 publicação Android · 82 fechamento.
+
+## V — Renovação visual (aprovada em 12/11/2026; uma entrega por vez)
+Visual próprio do Norte (Menta + Inter), sem copiar elementos de outro app: sem mascote, sem barra de assistente, só 3 abas, ícones do Material do Flutter, lista de categorias própria.
+| ID | Entrega | Situação |
+|---|---|---|
+| V1–V5 | Tema, ícone/cor nas categorias (V2), Dashboard (V3), Lançamentos e formulário (V4), Categorias e Mais (V5) | Feitas em 12/11/2026; aguardam validação (R5). Ao validar, apagar estas linhas |
+| V6 | Subcategoria hoje herda ícone e cor da categoria (sem ícone próprio) | Aceito; ícone próprio por subcategoria só com aprovação |
+| V7 | Migration `20261113000300` ainda não está no Supabase hospedado (`norte-homologacao`). Antes de usar o app novo contra ele, aplicar com autorização (R2). O app tolera servidor sem as colunas na leitura, mas criar/editar visual falha até a migration | Aberto |
+| V8 | Telas fora do escopo da V3–V5 mantêm o layout antigo, só com cores/fonte novas (Relatórios, Período, Recorrências, Exportar, Segurança, Tema, Configuração inicial, Itens de atenção, Login) | Aberto, sem aprovação para redesenhar |
 
 ## T — Pendências técnicas
 | ID | Item |

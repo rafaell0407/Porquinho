@@ -31,7 +31,16 @@ class MemoryCategoryRepository implements CategoryRepository {
               name: c.name,
               isActive: true,
               version: 1,
+              iconKey: c.iconKey ?? 'category',
+              colorKey: c.colorKey ?? 'gray',
             ),
+          );
+        case EditCategory():
+          _replace(
+            c.category,
+            name: c.name,
+            iconKey: c.iconKey,
+            colorKey: c.colorKey,
           );
         case RenameCategory():
           _replace(c.category, name: c.name);
@@ -69,7 +78,13 @@ class MemoryCategoryRepository implements CategoryRepository {
     }
   }
 
-  void _replace(CategoryRecord old, {String? name, bool? active}) {
+  void _replace(
+    CategoryRecord old, {
+    String? name,
+    bool? active,
+    String? iconKey,
+    String? colorKey,
+  }) {
     final i = cats.indexWhere((c) => c.id == old.id);
     cats[i] = CategoryRecord(
       id: old.id,
@@ -128,10 +143,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(repo.cats.last.kind, CategoryKind.expense);
 
-    // Renomear.
+    // Editar (nome, ícone e cor).
     await tester.tap(find.byKey(Key('menu-${repo.cats.last.id}')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Renomear'));
+    await tester.tap(find.text('Editar'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('campo-nome')), 'Supermercado');
     await tester.tap(find.text('Salvar'));

@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/theme/norte_theme.dart';
 import '../../core/data_access.dart';
 import '../../core/domain/calendar_date.dart';
 import '../../core/domain/money.dart';
+import '../categories/category_appearance.dart';
+import '../categories/category_models.dart';
 import '../categories/category_providers.dart';
 import '../entries/entry_form_screen.dart';
 import '../entries/entry_models.dart';
@@ -60,8 +63,9 @@ class TransactionsScreen extends ConsumerWidget {
       body: Column(
         children: [
           const PeriodNavigator(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
                 for (final f in EntryFilter.values)
@@ -70,7 +74,14 @@ class TransactionsScreen extends ConsumerWidget {
                     child: ChoiceChip(
                       key: Key('filtro-${f.name}'),
                       label: Text(f.label),
+                      showCheckmark: false,
                       selected: filter == f,
+                      labelStyle: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: filter == f
+                            ? Theme.of(context).colorScheme.surface
+                            : Theme.of(context).colorScheme.onSurface,
+                      ),
                       onSelected: (_) =>
                           ref.read(entryFilterProvider.notifier).set(f),
                     ),
@@ -193,12 +204,14 @@ class _EntryList extends ConsumerWidget {
     }
     final rows = <_Row>[
       for (final e in entries.requireValue)
-        if (filter == EntryFilter.all ||
-            (filter == EntryFilter.income && e.kind == EntryKind.income) ||
-            (filter == EntryFilter.expense && e.kind == EntryKind.expense))
+        if (!e.isCancelled &&
+            (filter == EntryFilter.all ||
+                (filter == EntryFilter.income && e.kind == EntryKind.income) ||
+                (filter == EntryFilter.expense && e.kind == EntryKind.expense)))
           _Row.entry(e),
       if (filter == EntryFilter.all || filter == EntryFilter.investment)
-        for (final i in investments.requireValue) _Row.investment(i),
+        for (final i in investments.requireValue)
+          if (!i.cancelled) _Row.investment(i),
     ]..sort((a, b) => b.date.compareTo(a.date));
     if (rows.isEmpty) {
       return Center(
@@ -209,14 +222,36 @@ class _EntryList extends ConsumerWidget {
         ),
       );
     }
+    // Cabeçalho por dia ("Hoje", "Ontem", "5 de nov") antes de cada grupo.
+    final today = ref.watch(userClockProvider).today();
+    final items = <Object>[];
+    CalendarDate? lastDay;
+    for (final row in rows) {
+      if (lastDay == null || row.date.toBr() != lastDay.toBr()) {
+        items.add(_dayLabel(row.date, today));
+        lastDay = row.date;
+      }
+      items.add(row);
+    }
     return RefreshIndicator(
       onRefresh: () async => refreshFinanceData(ref),
-      child: ListView.separated(
+      child: ListView.builder(
         padding: const EdgeInsets.only(bottom: 88),
-        itemCount: rows.length,
-        separatorBuilder: (_, _) => const Divider(height: 1),
+        itemCount: items.length,
         itemBuilder: (context, i) {
-          final row = rows[i];
+          final item = items[i];
+          if (item is String) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 4),
+              child: Text(
+                item,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
+              ),
+            );
+          }
+          final row = item as _Row;
           if (row.investment != null) {
             return _InvestmentTile(investment: row.investment!);
           }
@@ -224,12 +259,42 @@ class _EntryList extends ConsumerWidget {
           final category = cats?.categories
               .where((c) => c.id == e.categoryId)
               .firstOrNull;
-          return _EntryTile(entry: e, categoryName: category?.name);
+          return _EntryTile(entry: e, category: category);
         },
       ),
     );
   }
 }
+
+const _monthAbbr = [
+  'jan',
+  'fev',
+  'mar',
+  'abr',
+  'mai',
+  'jun',
+  'jul',
+  'ago',
+  'set',
+  'out',
+  'nov',
+  'dez',
+];
+
+String _dayLabel(CalendarDate date, CalendarDate today) {
+  if (date.toBr() == today.toBr()) return 'Hoje';
+  if (date.toBr() == today.addDays(-1).toBr()) return 'Ontem';
+  final label = '${date.day} de ${_monthAbbr[date.month - 1]}';
+  return date.year == today.year ? label : '$label de ${date.year}';
+}
+
+/// Texto do valor em fonte de números alinhados, na cor do significado.
+TextStyle _amountStyle(BuildContext context, Color color, {TextStyle? base}) =>
+    (base ?? const TextStyle()).copyWith(
+      color: color,
+      fontWeight: FontWeight.w700,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
 
 /// Investimento na lista: só valor e data, sem status de pagamento (D2).
 class _InvestmentTile extends ConsumerWidget {
@@ -239,16 +304,24 @@ class _InvestmentTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = NorteColors.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final strike = investment.cancelled
         ? const TextStyle(decoration: TextDecoration.lineThrough)
         : null;
     return ListTile(
       key: Key('investimento-${investment.id}'),
-      leading: Icon(
-        Icons.savings_outlined,
-        color: Theme.of(context).colorScheme.tertiary,
+      leading: CircleAvatar(
+        backgroundColor: scheme.surfaceContainerHighest,
+        foregroundColor: colors.investment,
+        child: const Icon(Icons.trending_up),
       ),
-      title: Text('Investimento', style: strike),
+      title: Text(
+        'Investimento',
+        style: (strike ?? const TextStyle()).copyWith(
+          fontWeight: FontWeight.w700,
+        ),
+      ),
       subtitle: Text(
         [
           investment.date.toBr(),
@@ -258,8 +331,10 @@ class _InvestmentTile extends ConsumerWidget {
       ),
       trailing: Text(
         '- ${formatBrl(investment.amount)}',
-        style: (strike ?? const TextStyle()).copyWith(
-          fontWeight: FontWeight.w600,
+        style: _amountStyle(
+          context,
+          investment.cancelled ? scheme.onSurfaceVariant : colors.investment,
+          base: strike,
         ),
       ),
       onTap: () => _showActions(context, ref),
@@ -370,8 +445,7 @@ class _InvestmentTile extends ConsumerWidget {
         title: const Text('Cancelar este investimento?'),
         content: const Text(
           'O valor volta para o dinheiro livre do período em que foi investido e o '
-          'registro continua no histórico como cancelado. Não é possível '
-          'desfazer.',
+          'registro some da lista. Não é possível desfazer.',
         ),
         actions: [
           TextButton(
@@ -412,15 +486,18 @@ String entryStatusLabel(EntryRecord e) {
 }
 
 class _EntryTile extends ConsumerWidget {
-  const _EntryTile({required this.entry, this.categoryName});
+  const _EntryTile({required this.entry, this.category});
 
   final EntryRecord entry;
-  final String? categoryName;
+  final CategoryRecord? category;
+
+  String? get categoryName => category?.name;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final income = entry.kind == EntryKind.income;
     final theme = Theme.of(context);
+    final colors = NorteColors.of(context);
     final title = entry.description?.isNotEmpty == true
         ? entry.description!
         : (categoryName ?? entry.kind.label);
@@ -432,11 +509,23 @@ class _EntryTile extends ConsumerWidget {
         : null;
     return ListTile(
       key: Key('lancamento-${entry.id}'),
-      leading: Icon(
-        income ? Icons.arrow_downward : Icons.arrow_upward,
-        color: income ? Colors.green : theme.colorScheme.error,
+      leading: category != null
+          ? CategoryBadge(
+              iconKey: category!.iconKey,
+              colorKey: category!.colorKey,
+              filled: true,
+            )
+          : CircleAvatar(
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              foregroundColor: income ? colors.income : colors.expense,
+              child: Icon(income ? Icons.south_west : Icons.north_east),
+            ),
+      title: Text(
+        title,
+        style: (strike ?? const TextStyle()).copyWith(
+          fontWeight: FontWeight.w700,
+        ),
       ),
-      title: Text(title, style: strike),
       subtitle: Text(
         [
           entry.date.toBr(),
@@ -449,8 +538,12 @@ class _EntryTile extends ConsumerWidget {
       ),
       trailing: Text(
         income ? '+ $amount' : '- $amount',
-        style: (strike ?? const TextStyle()).copyWith(
-          fontWeight: FontWeight.w600,
+        style: _amountStyle(
+          context,
+          entry.isCancelled
+              ? theme.colorScheme.onSurfaceVariant
+              : (income ? colors.income : colors.expense),
+          base: strike,
         ),
       ),
       onTap: () => _showActions(context, ref),
@@ -677,8 +770,8 @@ class _EntryTile extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Cancelar este lançamento?'),
         content: const Text(
-          'Ele deixa de entrar no dinheiro livre, mas continua no histórico como '
-          'cancelado. Não é possível desfazer.',
+          'Ele deixa de entrar no dinheiro livre e some da lista. '
+          'Não é possível desfazer.',
         ),
         actions: [
           TextButton(

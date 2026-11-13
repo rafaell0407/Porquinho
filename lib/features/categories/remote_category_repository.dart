@@ -1,5 +1,6 @@
 import '../sync/remote_table_reader.dart';
 import '../sync/sync_models.dart';
+import 'category_appearance.dart';
 import 'category_models.dart';
 import 'category_repository.dart';
 
@@ -26,6 +27,8 @@ class RemoteCategoryRepository implements CategoryRepository {
             name: r['name'] as String,
             isActive: r['is_active'] == true,
             version: (r['version'] as num).toInt(),
+            iconKey: r['icon_key'] as String? ?? defaultCategoryIconKey,
+            colorKey: r['color_key'] as String? ?? defaultCategoryColorKey,
           ),
         )
         .toList();

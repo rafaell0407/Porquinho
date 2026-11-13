@@ -127,6 +127,7 @@ String describeRequest(String entityType, Map<String, dynamic> request) {
       return switch (action) {
         'create' => 'Criar "${request['name']}"',
         'rename' => 'Renomear para "${request['name']}"',
+        'restyle' => 'Mudar ícone e cor',
         'deactivate' => 'Desativar',
         _ => 'Alterar',
       };

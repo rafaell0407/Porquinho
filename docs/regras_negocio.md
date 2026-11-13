@@ -225,6 +225,8 @@ O aplicativo não acompanha carteira, ativos, posições, saldo acumulado, renta
 
 O usuário pode criar e renomear categorias de Receita e Despesa. O tipo é definido na criação e não pode ser alterado posteriormente.
 
+**Visual — APROVADO pelo responsável em 12/11/2026:** cada categoria guarda uma chave de ícone e uma de cor (conjunto fixo no aplicativo; a cor se adapta ao tema claro/escuro). Padrão: ícone `category` e cor `gray`. Subcategorias herdam o visual. Alterar o visual é uma edição comum (versão, auditoria e sincronização, como renomear).
+
 **Sugestões no primeiro acesso — APROVADO pelo responsável em 10/11/2026:** o aplicativo sugere categorias, todas marcadas e desmarcáveis; as escolhidas viram categorias comuns, sem tratamento especial. Receitas: Salário, Renda extra, Rendimentos. Despesas: Moradia, Alimentação, Mercado, Transporte, Saúde, Educação, Lazer, Contas da casa, Assinaturas, Fatura do cartão. Sem subcategorias prontas. "Saldo inicial" não é sugerida (RN006).
 
 **Status:** APROVADO.

@@ -59,7 +59,7 @@ class PeriodNavigator extends ConsumerWidget {
     final last = view.range.end.addDays(-1);
     return Row(
       children: [
-        IconButton(
+        IconButton.filledTonal(
           key: const Key('periodo-anterior'),
           tooltip: 'Período anterior',
           icon: const Icon(Icons.chevron_left),
@@ -82,7 +82,7 @@ class PeriodNavigator extends ConsumerWidget {
             ],
           ),
         ),
-        IconButton(
+        IconButton.filledTonal(
           key: const Key('periodo-proximo'),
           tooltip: 'Próximo período',
           icon: const Icon(Icons.chevron_right),

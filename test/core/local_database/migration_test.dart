@@ -146,4 +146,38 @@ void main() {
     expect(e.read<String>('description'), 'Salário');
     await db.close();
   });
+
+  test(
+    'v5 -> v6 preserva categorias e dá o visual padrão (ícone e cor)',
+    () async {
+      final schema = await verifier.schemaAt(5);
+      schema.rawDatabase.execute(
+        "INSERT INTO categories (id, owner_id, version, created_at, "
+        "updated_at, kind, name, is_active) VALUES "
+        "('c1', 'u1', 3, 'x', 'y', 'expense', 'Moradia', 1)",
+      );
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 6);
+      final row = await db.customSelect('SELECT * FROM categories').getSingle();
+      expect(row.read<String>('name'), 'Moradia');
+      expect(row.read<int>('version'), 3);
+      expect(row.read<String>('icon_key'), 'category');
+      expect(row.read<String>('color_key'), 'gray');
+      await db.close();
+    },
+  );
+
+  test('criação direta na v6 equivale ao snapshot v6', () async {
+    final schema = await verifier.schemaAt(6);
+    final db = PorquinhoDatabase(schema.newConnection());
+    await verifier.migrateAndValidate(db, 6);
+    await db.close();
+  });
+
+  test('v1 -> v6 (todos os passos) produz o esquema do snapshot v6', () async {
+    final schema = await verifier.schemaAt(1);
+    final db = PorquinhoDatabase(schema.newConnection());
+    await verifier.migrateAndValidate(db, 6);
+    await db.close();
+  });
 }

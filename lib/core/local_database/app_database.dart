@@ -91,6 +91,11 @@ class Categories extends OwnedRecord {
   TextColumn get name => text()();
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
 
+  /// Visual da categoria (chaves do conjunto fixo do app); subcategorias
+  /// herdam. Mesmos padrões do servidor.
+  TextColumn get iconKey => text().withDefault(const Constant('category'))();
+  TextColumn get colorKey => text().withDefault(const Constant('gray'))();
+
   @override
   List<String> get customConstraints => [
     "CHECK (kind IN ('income', 'expense'))",
@@ -411,7 +416,7 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
   PorquinhoDatabase(super.executor);
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -480,6 +485,11 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
           schema.userPreferences,
           schema.userPreferences.onboarding,
         );
+      },
+      // v6 (Renovação visual V2): ícone e cor das categorias.
+      from5To6: (migrator, schema) async {
+        await migrator.addColumn(schema.categories, schema.categories.iconKey);
+        await migrator.addColumn(schema.categories, schema.categories.colorKey);
       },
     ),
     beforeOpen: (_) async => customStatement('PRAGMA foreign_keys = ON'),

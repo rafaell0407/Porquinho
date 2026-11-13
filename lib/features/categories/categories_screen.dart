@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'category_appearance.dart';
+import 'category_editor.dart';
 import 'category_models.dart';
-import 'category_providers.dart';
 import 'category_name_dialog.dart';
+import 'category_providers.dart';
 import 'category_service.dart';
 
-/// Mais > Categorias: criar, renomear e desativar categorias e subcategorias
-/// de receitas e despesas (RN024–RN026, RN040).
+/// Mais > Categorias: criar, editar (nome, ícone e cor) e desativar categorias
+/// e subcategorias de receitas e despesas (RN024–RN026, RN040).
 class CategoriesScreen extends ConsumerWidget {
   const CategoriesScreen({super.key});
 
@@ -81,14 +83,23 @@ class _KindTab extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         key: const Key('nova-categoria'),
         onPressed: () async {
-          final name = await askName(
+          final draft = await showCategoryEditor(
             context,
             title: kind == CategoryKind.income
                 ? 'Nova categoria de receita'
                 : 'Nova categoria de despesa',
           );
-          if (name != null && context.mounted) {
-            await _run(context, ref, (s) => s.createCategory(kind, name));
+          if (draft != null && context.mounted) {
+            await _run(
+              context,
+              ref,
+              (s) => s.createCategory(
+                kind,
+                draft.name,
+                iconKey: draft.iconKey,
+                colorKey: draft.colorKey,
+              ),
+            );
           }
         },
         icon: const Icon(Icons.add),
@@ -97,7 +108,7 @@ class _KindTab extends ConsumerWidget {
       body: RefreshIndicator(
         onRefresh: () async => ref.invalidate(categoryDataProvider),
         child: ListView(
-          padding: const EdgeInsets.only(bottom: 88),
+          padding: const EdgeInsets.only(bottom: 96),
           children: [
             if (active.isEmpty && inactive.isEmpty)
               const Padding(
@@ -105,13 +116,17 @@ class _KindTab extends ConsumerWidget {
                 child: Text('Nenhuma categoria ainda.'),
               ),
             for (final c in active)
-              _CategoryTile(category: c, data: data, run: _run),
+              _CategoryGroup(category: c, data: data, run: _run),
             if (inactive.isNotEmpty)
               ExpansionTile(
                 title: const Text('Desativadas'),
                 children: [
                   for (final c in inactive)
                     ListTile(
+                      leading: CategoryBadge(
+                        iconKey: c.iconKey,
+                        colorKey: c.colorKey,
+                      ),
                       title: Text(c.name),
                       subtitle: const Text('Desativada'),
                     ),
@@ -131,8 +146,9 @@ typedef _Runner =
       Future<void> Function(CategoryService s) action,
     );
 
-class _CategoryTile extends ConsumerWidget {
-  const _CategoryTile({
+/// Categoria como cabeçalho colorido, com as subcategorias logo abaixo.
+class _CategoryGroup extends ConsumerWidget {
+  const _CategoryGroup({
     required this.category,
     required this.data,
     required this.run,
@@ -144,36 +160,71 @@ class _CategoryTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
     final subs = data.subsOf(category.id, active: true);
-    return ExpansionTile(
-      key: PageStorageKey('cat-${category.id}'),
-      title: Text(category.name),
-      subtitle: subs.isEmpty ? null : Text('${subs.length} subcategorias'),
-      trailing: PopupMenuButton<String>(
-        key: Key('menu-${category.id}'),
-        onSelected: (action) async {
-          if (action == 'renomear') {
-            final name = await askName(
-              context,
-              title: 'Renomear categoria',
-              initial: category.name,
-            );
-            if (name != null && context.mounted) {
-              await run(context, ref, (s) => s.renameCategory(category, name));
-            }
-          } else if (action == 'desativar') {
-            await run(context, ref, (s) => s.deactivateCategory(category));
-          }
-        },
-        itemBuilder: (_) => const [
-          PopupMenuItem(value: 'renomear', child: Text('Renomear')),
-          PopupMenuItem(value: 'desativar', child: Text('Desativar')),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        const SizedBox(height: 8),
+        Material(
+          color: theme.colorScheme.surfaceContainer,
+          child: ListTile(
+            key: PageStorageKey('cat-${category.id}'),
+            leading: CategoryBadge(
+              iconKey: category.iconKey,
+              colorKey: category.colorKey,
+              filled: true,
+            ),
+            title: Text(category.name, style: theme.textTheme.titleMedium),
+            subtitle: subs.isEmpty
+                ? null
+                : Text('${subs.length} subcategorias'),
+            trailing: PopupMenuButton<String>(
+              key: Key('menu-${category.id}'),
+              onSelected: (action) async {
+                if (action == 'editar') {
+                  final draft = await showCategoryEditor(
+                    context,
+                    title: 'Editar categoria',
+                    initialName: category.name,
+                    initialIcon: category.iconKey,
+                    initialColor: category.colorKey,
+                  );
+                  if (draft != null && context.mounted) {
+                    await run(
+                      context,
+                      ref,
+                      (s) => s.editCategory(
+                        category,
+                        name: draft.name,
+                        iconKey: draft.iconKey,
+                        colorKey: draft.colorKey,
+                      ),
+                    );
+                  }
+                } else if (action == 'desativar') {
+                  await run(
+                    context,
+                    ref,
+                    (s) => s.deactivateCategory(category),
+                  );
+                }
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'editar', child: Text('Editar')),
+                PopupMenuItem(value: 'desativar', child: Text('Desativar')),
+              ],
+            ),
+          ),
+        ),
         for (final s in subs)
           ListTile(
-            contentPadding: const EdgeInsets.only(left: 32, right: 16),
+            contentPadding: const EdgeInsets.only(left: 28, right: 16),
+            leading: CategoryBadge(
+              iconKey: category.iconKey,
+              colorKey: category.colorKey,
+              size: 34,
+            ),
             title: Text(s.name),
             trailing: PopupMenuButton<String>(
               key: Key('menu-${s.id}'),
@@ -207,8 +258,13 @@ class _CategoryTile extends ConsumerWidget {
           ),
         ListTile(
           key: Key('nova-sub-${category.id}'),
-          contentPadding: const EdgeInsets.only(left: 32, right: 16),
-          leading: const Icon(Icons.add),
+          contentPadding: const EdgeInsets.only(left: 28, right: 16),
+          leading: CircleAvatar(
+            radius: 17,
+            backgroundColor: theme.colorScheme.surfaceContainerHighest,
+            foregroundColor: theme.colorScheme.onSurfaceVariant,
+            child: const Icon(Icons.add, size: 18),
+          ),
           title: const Text('Adicionar subcategoria'),
           onTap: () async {
             final name = await askName(context, title: 'Nova subcategoria');

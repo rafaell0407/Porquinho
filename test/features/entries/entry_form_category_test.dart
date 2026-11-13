@@ -96,13 +96,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  Finder dialogButton(String text) =>
-      find.descendant(of: find.byType(AlertDialog), matching: find.text(text));
+  final saveCategory = find.byKey(const Key('salvar-categoria'));
 
+  /// Abre o seletor e escolhe "Nova categoria" (abre o editor).
   Future<void> chooseNew(WidgetTester tester) async {
     await tester.tap(find.byKey(const Key('campo-categoria')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('+ Nova categoria').last);
+    await tester.tap(find.byKey(const Key('nova-categoria-form')));
     await tester.pumpAndSettle();
   }
 
@@ -112,12 +112,17 @@ void main() {
     await pumpForm(tester, const EntryFormScreen(kind: EntryKind.expense));
     await chooseNew(tester);
     await tester.enterText(find.byKey(const Key('campo-nome')), 'Mercado');
-    await tester.tap(dialogButton('Salvar'));
+    await tester.ensureVisible(find.byKey(const Key('icone-car')));
+    await tester.tap(find.byKey(const Key('icone-car')));
+    await tester.tap(find.byKey(const Key('cor-blue')));
+    await tester.tap(saveCategory);
     await tester.pumpAndSettle();
 
     final cats = (await categories.load()).categories;
     expect(cats.single.name, 'Mercado');
     expect(cats.single.kind.dbValue, 'expense');
+    expect(cats.single.iconKey, 'car');
+    expect(cats.single.colorKey, 'blue');
     expect(
       find.descendant(
         of: find.byKey(const Key('campo-categoria')),
@@ -133,20 +138,60 @@ void main() {
     await categories.createCategory(CategoryKind.income, 'Salário');
     await pumpForm(tester, const EntryFormScreen(kind: EntryKind.income));
     await chooseNew(tester);
-    await tester.tap(dialogButton('Salvar'));
+    await tester.tap(saveCategory);
     await tester.pumpAndSettle();
     expect(find.text('Informe um nome.'), findsOneWidget);
-    await tester.tap(dialogButton('Cancelar'));
+    await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
 
     expect((await categories.load()).categories.length, 1);
     expect(
       find.descendant(
         of: find.byKey(const Key('campo-categoria')),
-        matching: find.text('+ Nova categoria'),
+        matching: find.text('Sem categoria'),
       ),
-      findsNothing,
+      findsOneWidget,
     );
+  });
+
+  testWidgets('escolhe categoria e subcategoria existentes no seletor', (
+    tester,
+  ) async {
+    final id = await categories.createCategory(CategoryKind.expense, 'Mercado');
+    await categories.createSubcategory(
+      (await categories.load()).categories.single,
+      'Feira',
+    );
+    await categories.createCategory(CategoryKind.income, 'Salário');
+    await pumpForm(tester, const EntryFormScreen(kind: EntryKind.expense));
+
+    await tester.tap(find.byKey(const Key('campo-categoria')));
+    await tester.pumpAndSettle();
+    // Só aparecem categorias de despesa.
+    expect(find.text('Salário'), findsNothing);
+    expect(find.byKey(Key('categoria-$id')), findsOneWidget);
+
+    // Busca pelo nome da subcategoria mostra a categoria dela.
+    await tester.enterText(find.byKey(const Key('buscar-categoria')), 'feira');
+    await tester.pumpAndSettle();
+    expect(find.text('Feira'), findsOneWidget);
+    expect(find.byKey(const Key('sem-categoria')), findsNothing);
+
+    await tester.tap(find.text('Feira'));
+    await tester.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('campo-categoria')),
+        matching: find.text('Mercado › Feira'),
+      ),
+      findsOneWidget,
+    );
+
+    // Volta para "Sem categoria".
+    await tester.tap(find.byKey(const Key('campo-categoria')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('sem-categoria')));
+    await tester.pumpAndSettle();
     expect(
       find.descendant(
         of: find.byKey(const Key('campo-categoria')),
@@ -167,7 +212,7 @@ void main() {
     await pumpForm(tester, const EntryFormScreen(kind: EntryKind.expense));
     await chooseNew(tester);
     await tester.enterText(find.byKey(const Key('campo-nome')), 'Mercado');
-    await tester.tap(dialogButton('Salvar'));
+    await tester.tap(saveCategory);
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('campo-valor')), '10,00');
     await tester.tap(find.byKey(const Key('salvar-lancamento')));
