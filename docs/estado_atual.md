@@ -41,6 +41,9 @@ Aprovada pelo responsável: configuração única trocável a qualquer momento (
 ## Nova barra inferior (13/11/2026) — aguardando validação
 Barra em pílula (formato aprovado após comparar com a versão retangular): Home, Relatórios, Adicionar (+, círculo elevado no centro), Lançamentos e Mais. Home, Lançamentos e Mais são abas; Relatórios abre a tela de relatórios (continua também em Mais); + abre o mesmo menu de novo lançamento da Dashboard; Categorias segue em Mais. Ajuste de 13/11: o "+" estava colado na barra e sobre o rótulo; agora fica elevado acima da borda, com "Adicionar" abaixo (conferido no emulador, tema escuro). Sem mudança de regra financeira, banco ou sincronização.
 
+## Menu "O que você quer registrar?" (13/11/2026) — aguardando validação
+O menu do "+" virou bottom sheet com cartões (Despesa, Receita, Investimento), alça no topo e cantos arredondados, no layout da referência. Mesmas chaves e fluxos de antes. Sem "Transferência" (contas fora do MVP) e sem "Ver todos os atalhos" (não existe no app). Arquivo: `lib/features/transactions/transactions_screen.dart`.
+
 ## Próximo passo
 Validar P2–P7 no emulador e na Web (P8; roteiro T7). Homologação só com autorização (R2). Fase 8 (76, D1/D5, 77) retoma depois.
 

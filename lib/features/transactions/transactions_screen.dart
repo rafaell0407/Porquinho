@@ -143,31 +143,67 @@ class TransactionsScreen extends ConsumerWidget {
 /// Escolhe o tipo (receita, despesa, investimento) e abre o formulário.
 /// Também usado pelo botão "+" da Dashboard.
 Future<void> showNewEntryChooser(BuildContext context, WidgetRef ref) async {
+  final colors = NorteColors.of(context);
   final kind = await showModalBottomSheet<_NewItem>(
     context: context,
+    isScrollControlled: true,
+    showDragHandle: false,
+    backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+    ),
     builder: (sheet) => SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            key: const Key('nova-receita'),
-            leading: const Icon(Icons.arrow_downward),
-            title: const Text('Nova receita'),
-            onTap: () => Navigator.pop(sheet, _NewItem.income),
-          ),
-          ListTile(
-            key: const Key('nova-despesa'),
-            leading: const Icon(Icons.arrow_upward),
-            title: const Text('Nova despesa'),
-            onTap: () => Navigator.pop(sheet, _NewItem.expense),
-          ),
-          ListTile(
-            key: const Key('novo-investimento'),
-            leading: const Icon(Icons.savings_outlined),
-            title: const Text('Novo investimento'),
-            onTap: () => Navigator.pop(sheet, _NewItem.investment),
-          ),
-        ],
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Theme.of(sheet).colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'O que você quer registrar?',
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                sheet,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 18),
+            _ChooserCard(
+              key: const Key('nova-despesa'),
+              icon: Icons.arrow_downward,
+              color: colors.expense,
+              title: 'Despesa',
+              subtitle: 'Compromissos financeiros e gastos realizados.',
+              onTap: () => Navigator.pop(sheet, _NewItem.expense),
+            ),
+            const SizedBox(height: 10),
+            _ChooserCard(
+              key: const Key('nova-receita'),
+              icon: Icons.arrow_upward,
+              color: colors.income,
+              title: 'Receita',
+              subtitle: 'Ganhos, recebimentos e outras fontes de renda.',
+              onTap: () => Navigator.pop(sheet, _NewItem.income),
+            ),
+            const SizedBox(height: 10),
+            _ChooserCard(
+              key: const Key('novo-investimento'),
+              icon: Icons.savings_outlined,
+              color: colors.investment,
+              title: 'Investimento',
+              subtitle: 'Dinheiro que você separou para investir',
+              onTap: () => Navigator.pop(sheet, _NewItem.investment),
+            ),
+          ],
+        ),
       ),
     ),
   );
@@ -185,6 +221,87 @@ Future<void> showNewEntryChooser(BuildContext context, WidgetRef ref) async {
       ),
     ),
   );
+}
+
+/// Cartão de opção do menu de novo lançamento.
+class _ChooserCard extends StatelessWidget {
+  const _ChooserCard({
+    super.key,
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Material(
+      color: scheme.surfaceContainerLowest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+        side: BorderSide(color: scheme.outlineVariant),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(15),
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 56),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, size: 18, color: color),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Linha da lista mista: lançamento (receita/despesa) ou investimento.
