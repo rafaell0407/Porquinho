@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart';
 
 import '../../core/domain/calendar_date.dart';
-import '../../core/domain/period_calendar.dart';
 import '../../core/domain/recurrence_schedule.dart';
 import '../../core/local_database/app_database.dart';
 import '../entries/entry_models.dart';
@@ -85,23 +84,7 @@ class LocalRecurrenceRepository implements RecurrenceRepository {
         .getSingle();
     final last = row.data['last'] as String?;
     if (last == null) return const ScheduleFacts();
-    final period = await _db
-        .customSelect(
-          'SELECT end_date FROM accounting_periods WHERE owner_id = ? '
-          'AND start_date <= ? AND ? < end_date',
-          variables: [
-            Variable.withString(_ownerId),
-            Variable.withString(last),
-            Variable.withString(last),
-          ],
-        )
-        .getSingleOrNull();
-    return ScheduleFacts(
-      lastScheduled: CalendarDate.parse(last),
-      lastPeriodEnd: period == null
-          ? null
-          : CalendarDate.parse(period.read<String>('end_date')),
-    );
+    return ScheduleFacts(lastScheduled: CalendarDate.parse(last));
   }
 
   @override
@@ -204,23 +187,6 @@ class LocalRecurrenceRepository implements RecurrenceRepository {
   /// gera e audita a sua cópia (RN038).
   @override
   Future<int> generateDue(CalendarDate today) => _db.transaction(() async {
-    final periodRows = await _db
-        .customSelect(
-          'SELECT id, start_date, end_date FROM accounting_periods '
-          'WHERE owner_id = ? ORDER BY start_date',
-          variables: [Variable.withString(_ownerId)],
-        )
-        .get();
-    final periods = [
-      for (final r in periodRows)
-        (
-          id: r.read<String>('id'),
-          range: PeriodRange(
-            CalendarDate.parse(r.read<String>('start_date')),
-            CalendarDate.parse(r.read<String>('end_date')),
-          ),
-        ),
-    ];
     final now = _clock().toUtc().toIso8601String();
     var created = 0;
     for (final kind in EntryKind.values) {
@@ -234,55 +200,22 @@ class LocalRecurrenceRepository implements RecurrenceRepository {
       for (final row in rows) {
         final template = _fromRow(kind, row.data);
         final schedule = template.schedule;
-        if (schedule.isMonthly) {
-          for (final date in RecurrenceCalendar.monthlyUntil(schedule, today)) {
-            final period = periods
-                .where((p) => p.range.contains(date))
-                .firstOrNull;
-            if (await _insertOccurrence(
-              kind,
-              template,
-              date,
-              now,
-              periodId: period?.id,
-            )) {
-              created++;
-            }
-          }
-        } else {
-          final due = RecurrenceCalendar.periodsUntil(
-            schedule.startsOn,
-            periods.map((p) => p.range),
-            today,
-          );
-          for (final range in due) {
-            final period = periods.firstWhere((p) => p.range == range);
-            if (await _insertOccurrence(
-              kind,
-              template,
-              range.start,
-              now,
-              periodId: period.id,
-              scheduledPeriodId: period.id,
-            )) {
-              created++;
-            }
-          }
+        // Só "Todo mês" gera (13/11/2026); modelos antigos "por período"
+        // ficam no histórico, sem novas ocorrências.
+        if (!schedule.isMonthly) continue;
+        for (final date in RecurrenceCalendar.monthlyUntil(schedule, today)) {
+          if (await _insertOccurrence(kind, template, date, now)) created++;
         }
       }
     }
-    created += await _generateInvestments(periods, today, now);
+    created += await _generateInvestments(today, now);
     return created;
   });
 
   /// Investimentos recorrentes (D7): mesma agenda e mesmo identificador das
   /// outras recorrências; entram na sobra do período da data programada, sem
-  /// confirmação (D9). Sem período para a data, fica para a próxima rodada.
-  Future<int> _generateInvestments(
-    List<({String id, PeriodRange range})> periods,
-    CalendarDate today,
-    String now,
-  ) async {
+  /// confirmação (D9).
+  Future<int> _generateInvestments(CalendarDate today, String now) async {
     final rows = await _db
         .customSelect(
           'SELECT * FROM investment_recurrence_templates '
@@ -296,51 +229,45 @@ class LocalRecurrenceRepository implements RecurrenceRepository {
       final templateId = d['id']! as String;
       final startsOn = CalendarDate.parse(d['starts_on']! as String);
       final amount = d['default_amount_centavos']! as String;
-      final monthly = d['frequency'] == 'monthly';
-      final schedule = monthly
-          ? RecurrenceSchedule.monthly(
-              startsOn: startsOn,
-              day: d['monthly_reference_day']! as int,
-            )
-          : RecurrenceSchedule.byPeriod(startsOn: startsOn);
-      if (monthly) {
-        for (final date in RecurrenceCalendar.monthlyUntil(schedule, today)) {
-          final period = periods
-              .where((p) => p.range.contains(date))
-              .firstOrNull;
-          if (period == null) continue;
-          if (await _insertInvestment(
-            templateId,
-            amount,
-            date,
-            now,
-            period.id,
-          )) {
-            created++;
-          }
-        }
-      } else {
-        final due = RecurrenceCalendar.periodsUntil(
-          startsOn,
-          periods.map((p) => p.range),
-          today,
-        );
-        for (final range in due) {
-          final period = periods.firstWhere((p) => p.range == range);
-          if (await _insertInvestment(
-            templateId,
-            amount,
-            range.start,
-            now,
-            period.id,
-            scheduledPeriodId: period.id,
-          )) {
-            created++;
-          }
+      // Só "Todo mês" gera; modelos antigos "por período" não geram mais.
+      if (d['frequency'] != 'monthly') continue;
+      final schedule = RecurrenceSchedule.monthly(
+        startsOn: startsOn,
+        day: d['monthly_reference_day']! as int,
+      );
+      for (final date in RecurrenceCalendar.monthlyUntil(schedule, today)) {
+        if (await _insertInvestment(templateId, amount, date, now)) {
+          created++;
         }
       }
     }
     return created;
+  }
+
+  /// Já existe ocorrência do modelo [templateId] no mês de [date]? Nunca há
+  /// duas no mesmo mês (D2), nem quando a regra do dia mudou (RN038,
+  /// 13/11/2026: ocorrências antigas ficam na data em que foram geradas).
+  Future<bool> _hasOccurrenceInMonth(
+    String table,
+    String templateId,
+    CalendarDate date,
+  ) async {
+    final start = CalendarDate(date.year, date.month, 1);
+    final next = CalendarDate.addMonthsTo(date.year, date.month, 1);
+    final rows = await _db
+        .customSelect(
+          'SELECT 1 FROM $table WHERE owner_id = ? '
+          'AND recurrence_template_id = ? '
+          'AND scheduled_for_date >= ? AND scheduled_for_date < ? LIMIT 1',
+          variables: [
+            Variable.withString(_ownerId),
+            Variable.withString(templateId),
+            Variable.withString(start.toIso()),
+            Variable.withString(CalendarDate(next.$1, next.$2, 1).toIso()),
+          ],
+        )
+        .get();
+    return rows.isNotEmpty;
   }
 
   Future<bool> _insertInvestment(
@@ -348,26 +275,19 @@ class LocalRecurrenceRepository implements RecurrenceRepository {
     String amount,
     CalendarDate date,
     String now,
-    String periodId, {
-    String? scheduledPeriodId,
-  }) async {
-    final exists = await _db
-        .customSelect(
-          'SELECT 1 FROM investment_allocations WHERE owner_id = ? '
-          'AND recurrence_template_id = ? AND scheduled_for_date = ?',
-          variables: [
-            Variable.withString(_ownerId),
-            Variable.withString(templateId),
-            Variable.withString(date.toIso()),
-          ],
-        )
-        .get();
-    if (exists.isNotEmpty) return false;
+  ) async {
+    if (await _hasOccurrenceInMonth(
+      'investment_allocations',
+      templateId,
+      date,
+    )) {
+      return false;
+    }
     await _db.customStatement(
       'INSERT INTO investment_allocations (id, owner_id, version, created_at, '
-      'updated_at, amount_centavos, allocated_on, accounting_period_id, '
-      'recurrence_template_id, scheduled_for_date, scheduled_period_id) '
-      'VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'updated_at, amount_centavos, allocated_on, '
+      'recurrence_template_id, scheduled_for_date) '
+      'VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?)',
       [
         RecurrenceCalendar.occurrenceId(templateId, date),
         _ownerId,
@@ -375,48 +295,31 @@ class LocalRecurrenceRepository implements RecurrenceRepository {
         now,
         amount,
         date.toIso(),
-        periodId,
         templateId,
         date.toIso(),
-        scheduledPeriodId,
       ],
     );
     return true;
   }
 
-  /// `true` se criou. Despesa sem período para a data não é criada agora (o
-  /// período é criado ao abrir o app; a geração roda de novo a cada abertura).
+  /// `true` se criou (nunca duas do mesmo modelo no mesmo mês). A despesa
+  /// conta no período que contém a data programada (RN004).
   Future<bool> _insertOccurrence(
     EntryKind kind,
     RecurringTemplate t,
     CalendarDate date,
-    String now, {
-    String? periodId,
-    String? scheduledPeriodId,
-  }) async {
+    String now,
+  ) async {
     final income = kind == EntryKind.income;
-    if (!income && periodId == null) return false;
-    final exists = await _db
-        .customSelect(
-          'SELECT 1 FROM ${kind.table} WHERE owner_id = ? '
-          'AND recurrence_template_id = ? AND scheduled_for_date = ?',
-          variables: [
-            Variable.withString(_ownerId),
-            Variable.withString(t.id),
-            Variable.withString(date.toIso()),
-          ],
-        )
-        .get();
-    if (exists.isNotEmpty) return false;
+    if (await _hasOccurrenceInMonth(kind.table, t.id, date)) return false;
     final iso = date.toIso();
     await _db.customStatement(
       'INSERT INTO ${kind.table} (id, owner_id, version, created_at, '
       'updated_at, description, amount_centavos, status, category_id, '
-      'subcategory_id, recurrence_template_id, scheduled_for_date, '
-      'scheduled_period_id${income ? '' : ', competence_on, due_on, '
-                'accounting_period_id'}) '
-      "VALUES (?, ?, 1, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?"
-      "${income ? '' : ', ?, ?, ?'})",
+      'subcategory_id, recurrence_template_id, scheduled_for_date'
+      "${income ? '' : ', competence_on, due_on'}) "
+      "VALUES (?, ?, 1, ?, ?, ?, ?, 'pending', ?, ?, ?, ?"
+      "${income ? '' : ', ?, ?'})",
       [
         RecurrenceCalendar.occurrenceId(t.id, date),
         _ownerId,
@@ -428,8 +331,7 @@ class LocalRecurrenceRepository implements RecurrenceRepository {
         t.subcategoryId,
         t.id,
         iso,
-        scheduledPeriodId,
-        if (!income) ...[iso, iso, periodId],
+        if (!income) ...[iso, iso],
       ],
     );
     return true;

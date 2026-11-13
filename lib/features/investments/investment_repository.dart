@@ -1,10 +1,11 @@
+import '../../core/domain/period_calendar.dart';
 import 'investment_models.dart';
 
 /// Investimentos. Celular: banco local + fila de envio. Web: servidor, online.
 abstract interface class InvestmentRepository {
   /// Investimentos do período (inclusive cancelados), do mais recente ao mais
   /// antigo.
-  Future<List<InvestmentRecord>> investmentsInPeriod(String periodId);
+  Future<List<InvestmentRecord>> investmentsInPeriod(PeriodRange range);
 
   Future<InvestmentRecord?> investment(String id);
 

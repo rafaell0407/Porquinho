@@ -50,10 +50,7 @@ void main() {
     ids = 0;
     db = PorquinhoDatabase(NativeDatabase.memory());
     final recorder = LocalChangeRecorder(db, newId: () => 'a${++ids}');
-    periods = PeriodService(
-      LocalPeriodRepository(db, 'u1', recorder),
-      newId: () => 'p${++ids}',
-    );
+    periods = PeriodService(LocalPeriodRepository(db, 'u1', recorder));
     final catRepo = LocalCategoryRepository(db, 'u1', recorder);
     categories = CategoryService(catRepo, newId: () => 'c${++ids}');
     recurrenceRepo = LocalRecurrenceRepository(db, 'u1', recorder);
@@ -61,7 +58,6 @@ void main() {
     service = EntryService(
       LocalEntryRepository(db, 'u1', recorder),
       catRepo,
-      periods,
       recurrences: recurrenceRepo,
       newId: () => 'e${++ids}',
     );
@@ -72,13 +68,9 @@ void main() {
     );
     investments = InvestmentService(
       LocalInvestmentRepository(db, 'u1', recorder),
-      periods,
       newId: () => 'i${++ids}',
     );
-    await periods.setup(
-      PeriodConfig.calendarMonth(),
-      CalendarDate(2026, 11, 10),
-    );
+    await periods.setup(PeriodConfig.calendarMonth());
   });
 
   tearDown(() => db.close());
@@ -136,8 +128,8 @@ void main() {
     // Pendente: aparece como "A receber" e a sobra continua zerada.
     expect(find.textContaining('A receber'), findsOneWidget);
     expect(find.textContaining('Recorrente'), findsOneWidget);
-    final period = (await periods.periodFor(CalendarDate(2026, 11, 10)))!;
-    var totals = await LocalTotalsRepository(db, 'u1').totalsFor(period.id);
+    final period = (await periods.periodFor(CalendarDate(2026, 11, 10)));
+    var totals = await LocalTotalsRepository(db, 'u1').totalsFor(period);
     expect(totals.surplus, BigInt.zero);
 
     // Confirma o recebimento (data de hoje no seletor).
@@ -148,7 +140,7 @@ void main() {
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Recebida'), findsOneWidget);
-    totals = await LocalTotalsRepository(db, 'u1').totalsFor(period.id);
+    totals = await LocalTotalsRepository(db, 'u1').totalsFor(period);
     expect(totals.surplus, BigInt.from(300000));
   });
 
@@ -182,8 +174,8 @@ void main() {
     await tester.tap(find.byKey(const Key('confirmar-valor')));
     await tester.pumpAndSettle();
     expect(find.text('- R\$ 1.500,00'), findsOneWidget);
-    final period = (await periods.periodFor(CalendarDate(2026, 11, 10)))!;
-    final totals = await LocalTotalsRepository(db, 'u1').totalsFor(period.id);
+    final period = (await periods.periodFor(CalendarDate(2026, 11, 10)));
+    final totals = await LocalTotalsRepository(db, 'u1').totalsFor(period);
     expect(totals.surplus, BigInt.from(-150000));
   });
 
@@ -229,9 +221,9 @@ void main() {
 
     expect(find.textContaining('Recorrente'), findsOneWidget);
     expect(find.text('- R\$ 300,00'), findsOneWidget);
-    final period = (await periods.periodFor(CalendarDate(2026, 11, 10)))!;
+    final period = (await periods.periodFor(CalendarDate(2026, 11, 10)));
     final totals = LocalTotalsRepository(db, 'u1');
-    expect((await totals.totalsFor(period.id)).surplus, BigInt.from(-30000));
+    expect((await totals.totalsFor(period)).surplus, BigInt.from(-30000));
 
     // "Editar só esta": muda o valor deste mês; o modelo não muda.
     await tester.tap(find.text('Investimento'));
@@ -245,7 +237,7 @@ void main() {
     await tester.tap(find.byKey(const Key('salvar-lancamento')));
     await tester.pumpAndSettle();
     expect(find.text('- R\$ 450,00'), findsOneWidget);
-    expect((await totals.totalsFor(period.id)).surplus, BigInt.from(-45000));
+    expect((await totals.totalsFor(period)).surplus, BigInt.from(-45000));
     final template = (await investmentTemplates.templates()).single;
     expect(template.defaultAmount, BigInt.from(30000));
 
@@ -261,7 +253,7 @@ void main() {
       (await investmentTemplates.templates()).single.defaultAmount,
       BigInt.from(60000),
     );
-    expect((await totals.totalsFor(period.id)).surplus, BigInt.from(-45000));
+    expect((await totals.totalsFor(period)).surplus, BigInt.from(-45000));
   });
 
   testWidgets('Mais → Recorrências lista investimento recorrente e permite '

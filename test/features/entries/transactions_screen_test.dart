@@ -39,23 +39,16 @@ void main() {
     ids = 0;
     db = PorquinhoDatabase(NativeDatabase.memory());
     final recorder = LocalChangeRecorder(db, newId: () => 'a${++ids}');
-    periods = PeriodService(
-      LocalPeriodRepository(db, 'u1', recorder),
-      newId: () => 'p${++ids}',
-    );
+    periods = PeriodService(LocalPeriodRepository(db, 'u1', recorder));
     final catRepo = LocalCategoryRepository(db, 'u1', recorder);
     categories = CategoryService(catRepo, newId: () => 'c${++ids}');
     entries = LocalEntryRepository(db, 'u1', recorder);
     investments = InvestmentService(
       LocalInvestmentRepository(db, 'u1', recorder),
-      periods,
       newId: () => 'i${++ids}',
     );
-    service = EntryService(entries, catRepo, periods, newId: () => 'e${++ids}');
-    await periods.setup(
-      PeriodConfig.calendarMonth(),
-      CalendarDate(2026, 11, 10),
-    );
+    service = EntryService(entries, catRepo, newId: () => 'e${++ids}');
+    await periods.setup(PeriodConfig.calendarMonth());
   });
 
   tearDown(() => db.close());
@@ -150,7 +143,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Luz'), findsNothing);
 
-    final periodId = (await periods.periodFor(CalendarDate(2026, 11, 10)))!.id;
+    final periodId = (await periods.periodFor(CalendarDate(2026, 11, 10)));
     final t = await LocalTotalsRepository(db, 'u1').totalsFor(periodId);
     expect(t.surplus, BigInt.from(123456));
   });
@@ -175,31 +168,37 @@ void main() {
     expect(find.textContaining('Paga'), findsOneWidget);
   });
 
-  testWidgets('navegar para período inexistente pergunta antes de criar', (
+  testWidgets('navegar entre períodos calculados, sem criar nada', (
     tester,
   ) async {
+    await service.create(
+      EntryDraft(
+        kind: EntryKind.income,
+        amount: BigInt.from(1000),
+        date: CalendarDate(2026, 10, 5),
+        description: 'Outubro',
+      ),
+    );
     await pumpScreen(tester);
     await tester.tap(find.byKey(const Key('periodo-anterior')));
     await tester.pumpAndSettle();
     expect(find.text('Outubro 2026'), findsOneWidget);
-    expect(find.byKey(const Key('pergunta-periodos')), findsOneWidget);
-    expect(
-      find.text('Criar o período de 01/10/2026 a 31/10/2026?'),
-      findsOneWidget,
-    );
-    expect((await periods.periodFor(CalendarDate(2026, 10, 5))), isNull);
-
-    await tester.tap(find.byKey(const Key('criar-periodos')));
-    await tester.pumpAndSettle();
+    expect(find.text('Outubro'), findsOneWidget);
     expect(find.byKey(const Key('pergunta-periodos')), findsNothing);
-    expect(await periods.periodFor(CalendarDate(2026, 10, 5)), isNotNull);
+    // Outubro é o mais antigo: não volta mais.
+    expect(
+      tester
+          .widget<IconButton>(find.byKey(const Key('periodo-anterior')))
+          .onPressed,
+      isNull,
+    );
 
     await tester.tap(find.byKey(const Key('periodo-hoje')));
     await tester.pumpAndSettle();
     expect(find.text('Novembro 2026'), findsOneWidget);
   });
 
-  testWidgets('data em período inexistente pede confirmação e só então salva', (
+  testWidgets('data de meses atrás salva direto, sem perguntar', (
     tester,
   ) async {
     await pumpScreen(tester);
@@ -222,29 +221,11 @@ void main() {
 
     await tester.tap(find.byKey(const Key('salvar-lancamento')));
     await tester.pumpAndSettle();
-    expect(find.text('Período ainda não existe'), findsOneWidget);
-    expect(
-      find.text('Criar os 2 períodos de setembro de 2026 a outubro de 2026?'),
-      findsOneWidget,
-    );
-    expect(
-      await db
-          .customSelect('SELECT COUNT(*) AS n FROM income_entries')
-          .getSingle()
-          .then((r) => r.read<int>('n')),
-      0,
-    );
-
-    await tester.tap(find.byKey(const Key('confirmar-periodos')));
-    await tester.pumpAndSettle();
+    expect(find.text('Período ainda não existe'), findsNothing);
     final n = await db
         .customSelect('SELECT COUNT(*) AS n FROM income_entries')
         .getSingle();
     expect(n.read<int>('n'), 1);
-    final p = await db
-        .customSelect('SELECT COUNT(*) AS n FROM accounting_periods')
-        .getSingle();
-    expect(p.read<int>('n'), 3);
   });
 
   testWidgets('investimento: criar, filtrar, editar a data, cancelar (D10)', (
@@ -252,9 +233,7 @@ void main() {
   ) async {
     await pumpScreen(tester);
     Future<BigInt> surplusNow() async {
-      final periodId = (await periods.periodFor(
-        CalendarDate(2026, 11, 10),
-      ))!.id;
+      final periodId = (await periods.periodFor(CalendarDate(2026, 11, 10)));
       return (await LocalTotalsRepository(
         db,
         'u1',
@@ -317,7 +296,7 @@ void main() {
     expect(await surplusNow(), BigInt.zero);
   });
 
-  testWidgets('investimento: lista vazia e data em período inexistente', (
+  testWidgets('investimento: lista vazia e data de meses atrás', (
     tester,
   ) async {
     await pumpScreen(tester);
@@ -341,16 +320,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('salvar-lancamento')));
     await tester.pumpAndSettle();
-    expect(find.text('Período ainda não existe'), findsOneWidget);
-    expect(
-      (await db
-              .customSelect('SELECT COUNT(*) AS n FROM investment_allocations')
-              .getSingle())
-          .read<int>('n'),
-      0,
-    );
-    await tester.tap(find.byKey(const Key('confirmar-periodos')));
-    await tester.pumpAndSettle();
+    expect(find.text('Período ainda não existe'), findsNothing);
     expect(
       (await db
               .customSelect('SELECT COUNT(*) AS n FROM investment_allocations')

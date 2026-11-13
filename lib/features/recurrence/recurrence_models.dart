@@ -84,10 +84,9 @@ class TemplateEdit {
 }
 
 /// Última ocorrência já gerada de um modelo, usada para a agenda alterada
-/// nunca repetir o mês/período (D2).
+/// nunca repetir o mês (D2).
 class ScheduleFacts {
-  const ScheduleFacts({this.lastScheduled, this.lastPeriodEnd});
+  const ScheduleFacts({this.lastScheduled});
 
   final CalendarDate? lastScheduled;
-  final CalendarDate? lastPeriodEnd;
 }

@@ -11,13 +11,6 @@ DECLARE
 BEGIN
     INSERT INTO auth.users(id) VALUES(v_owner_id),('95000000-0000-0000-0000-000000000002');
     INSERT INTO public.user_preferences(owner_id,time_zone_id) VALUES(v_owner_id,'America/Sao_Paulo');
-    INSERT INTO public.period_configurations(owner_id,id,mode,custom_start_day,effective_from)
-    VALUES(v_owner_id,config_id,'calendar_month',NULL,period_base);
-    INSERT INTO public.accounting_periods(owner_id,id,configuration_id,start_date,end_date)
-    SELECT v_owner_id,('95000000-0000-0000-0000-'||pg_catalog.lpad((100+n)::TEXT,12,'0'))::UUID,config_id,
-        (period_base+(n||' months')::INTERVAL)::DATE,
-        (period_base+((n+1)||' months')::INTERVAL)::DATE
-    FROM pg_catalog.generate_series(0,3) AS gs(n);
 END;
 $fixtures$;
 
@@ -70,9 +63,8 @@ BEGIN
         IF v_alloc.allocated_on<>v_alloc.scheduled_for_date OR v_alloc.amount_centavos<>5000 OR v_alloc.cancelled_at IS NOT NULL THEN
             RAISE EXCEPTION 'generated investment has wrong date, amount or status';
         END IF;
-        IF NOT EXISTS(SELECT 1 FROM public.accounting_periods p WHERE p.owner_id=v_owner_id AND p.id=v_alloc.accounting_period_id
-            AND p.start_date<=v_alloc.allocated_on AND v_alloc.allocated_on<p.end_date) THEN
-            RAISE EXCEPTION 'generated investment is not in the period of its scheduled date';
+        IF pg_catalog.to_jsonb(v_alloc)->>'accounting_period_id' IS NOT NULL THEN
+            RAISE EXCEPTION 'generated investment must not be linked to a stored period (P6)';
         END IF;
     END LOOP;
 
@@ -160,30 +152,38 @@ BEGIN
     BEGIN
         PERFORM public.apply_investment_recurrence_template_change('95100000-0000-0000-0000-00000000000D','create',
             '95200000-0000-0000-0000-000000000003',0,
-            pg_catalog.jsonb_build_object('frequency','by_period','starts_on',period_base));
+            pg_catalog.jsonb_build_object('frequency','monthly','monthly_reference_day',1,'starts_on',period_base));
         RAISE EXCEPTION 'template without amount was accepted';
     EXCEPTION WHEN invalid_parameter_value THEN NULL;
     END;
     BEGIN
         PERFORM public.apply_investment_recurrence_template_change('95100000-0000-0000-0000-00000000000E','create',
             '95200000-0000-0000-0000-000000000003',0,
-            pg_catalog.jsonb_build_object('frequency','by_period','starts_on',period_base,'value_mode','variable'));
+            pg_catalog.jsonb_build_object('frequency','monthly','monthly_reference_day',1,'starts_on',period_base,'value_mode','variable'));
         RAISE EXCEPTION 'variable value was accepted';
     EXCEPTION WHEN invalid_parameter_value THEN NULL;
     END;
     BEGIN
         PERFORM public.apply_investment_recurrence_template_change('95100000-0000-0000-0000-00000000000F','create',
             '95200000-0000-0000-0000-000000000003',0,
-            pg_catalog.jsonb_build_object('frequency','by_period','starts_on',period_base,'default_amount_centavos',-1));
+            pg_catalog.jsonb_build_object('frequency','monthly','monthly_reference_day',1,'starts_on',period_base,'default_amount_centavos',-1));
         RAISE EXCEPTION 'negative amount was accepted';
     EXCEPTION WHEN invalid_parameter_value OR check_violation THEN NULL;
     END;
+    -- P6: períodos são calculados; início em qualquer data é aceito.
+    result:=public.apply_investment_recurrence_template_change('95100000-0000-0000-0000-000000000010','create',
+        '95200000-0000-0000-0000-000000000003',0,
+        pg_catalog.jsonb_build_object('frequency','monthly','monthly_reference_day',1,'starts_on',(period_base-INTERVAL '2 months')::DATE,
+            'default_amount_centavos',100));
+    IF result->>'status'<>'applied' THEN RAISE EXCEPTION 'template before the old first period was refused: %',result; END IF;
+    PERFORM public.apply_investment_recurrence_template_change('95100000-0000-0000-0000-000000000031','deactivate',
+        '95200000-0000-0000-0000-000000000003',1,NULL);
+    -- P5: "por período" não existe mais.
     BEGIN
-        PERFORM public.apply_investment_recurrence_template_change('95100000-0000-0000-0000-000000000010','create',
-            '95200000-0000-0000-0000-000000000003',0,
-            pg_catalog.jsonb_build_object('frequency','by_period','starts_on',(period_base-INTERVAL '2 months')::DATE,
-                'default_amount_centavos',100));
-        RAISE EXCEPTION 'template before the first period was accepted';
+        PERFORM public.apply_investment_recurrence_template_change('95100000-0000-0000-0000-000000000030','create',
+            '95200000-0000-0000-0000-000000000009',0,
+            pg_catalog.jsonb_build_object('frequency','by_period','starts_on',period_base,'default_amount_centavos',100));
+        RAISE EXCEPTION 'by-period template was accepted';
     EXCEPTION WHEN check_violation THEN NULL;
     END;
 
@@ -210,28 +210,30 @@ BEGIN
         RAISE EXCEPTION 'generation duplicated the first occurrence';
     END IF;
 
-    -- Investimento avulso vira a primeira ocorrência (por período).
+    -- Investimento avulso vira a primeira ocorrência (mensal, na própria data).
     result:=public.apply_investment_allocation_change('95100000-0000-0000-0000-000000000013','create','95300000-0000-0000-0000-000000000002',0,
         4000,current_month+9);
     IF result->>'status'<>'applied' THEN RAISE EXCEPTION 'standalone create failed: %',result; END IF;
     result:=public.create_investment_recurrence_from_entry('95100000-0000-0000-0000-000000000014',
         '95200000-0000-0000-0000-000000000005','95300000-0000-0000-0000-000000000002',1,
-        pg_catalog.jsonb_build_object('frequency','by_period','starts_on',current_month+9,'default_amount_centavos',4000),NULL);
-    IF result->>'status'<>'applied' OR (result#>>'{allocation,scheduled_for_date}')::DATE<>current_month
-        OR (result#>>'{allocation,allocated_on}')::DATE<>current_month OR result#>>'{allocation,version}'<>'2'
-        OR (result#>>'{allocation,scheduled_period_id}') IS NULL THEN
-        RAISE EXCEPTION 'standalone did not become the first by-period occurrence: %',result;
+        pg_catalog.jsonb_build_object('frequency','monthly','monthly_reference_day',10,'starts_on',current_month+9,
+            'default_amount_centavos',4000),NULL);
+    IF result->>'status'<>'applied' OR (result#>>'{allocation,scheduled_for_date}')::DATE<>current_month+9
+        OR (result#>>'{allocation,allocated_on}')::DATE<>current_month+9 OR result#>>'{allocation,version}'<>'2'
+        OR (result#>>'{allocation,scheduled_period_id}') IS NOT NULL THEN
+        RAISE EXCEPTION 'standalone did not become the first monthly occurrence: %',result;
     END IF;
     PERFORM public.generate_due_recurrence_occurrences('95100000-0000-0000-0000-000000000015');
     IF (SELECT pg_catalog.count(*) FROM public.investment_allocations a WHERE a.owner_id=v_owner_id
-        AND a.recurrence_template_id='95200000-0000-0000-0000-000000000005' AND a.scheduled_for_date=current_month)<>1 THEN
+        AND a.recurrence_template_id='95200000-0000-0000-0000-000000000005'
+        AND a.scheduled_for_date>=current_month AND a.scheduled_for_date<(current_month+INTERVAL '1 month')::DATE)<>1 THEN
         RAISE EXCEPTION 'generation duplicated the converted occurrence';
     END IF;
 
     -- Versão antiga gera conflito, sem criar o modelo.
     result:=public.create_investment_recurrence_from_entry('95100000-0000-0000-0000-000000000016',
         '95200000-0000-0000-0000-000000000006','95300000-0000-0000-0000-000000000002',1,
-        pg_catalog.jsonb_build_object('frequency','by_period','starts_on',current_month+9,'default_amount_centavos',1),NULL);
+        pg_catalog.jsonb_build_object('frequency','monthly','monthly_reference_day',10,'starts_on',current_month+9,'default_amount_centavos',1),NULL);
     IF result->>'status'<>'conflict' OR EXISTS(SELECT 1 FROM public.investment_recurrence_templates t
         WHERE t.owner_id=v_owner_id AND t.id='95200000-0000-0000-0000-000000000006') THEN
         RAISE EXCEPTION 'stale conversion must conflict without creating a template: %',result;
@@ -291,7 +293,7 @@ BEGIN
     BEGIN
         PERFORM public.create_investment_recurrence_from_entry('95100000-0000-0000-0000-00000000001E',
             '95200000-0000-0000-0000-000000000008','95300000-0000-0000-0000-000000000002',1,
-            pg_catalog.jsonb_build_object('frequency','by_period','starts_on',current_month+9,'default_amount_centavos',1),NULL);
+            pg_catalog.jsonb_build_object('frequency','monthly','monthly_reference_day',10,'starts_on',current_month+9,'default_amount_centavos',1),NULL);
         RAISE EXCEPTION 'another user converted this investment';
     EXCEPTION WHEN no_data_found THEN NULL;
     END;

@@ -26,11 +26,6 @@ BEGIN
         RAISE EXCEPTION 'investment RPC security configuration is incorrect';
     END IF;
 
-    PERFORM public.create_accounting_period(
-        '62000000-0000-0000-0000-000000000001',
-        '63000000-0000-0000-0000-000000000001',
-        '64000000-0000-0000-0000-000000000001',
-        '2026-11-01', 'calendar_month', NULL);
 
     response := public.apply_investment_allocation_change(
         '65000000-0000-0000-0000-000000000001', 'create',
@@ -38,7 +33,7 @@ BEGIN
         9007199254740993, '2026-11-09');
     IF response ->> 'status' <> 'applied'
         OR response #>> '{allocation,amount_centavos}' <> '9007199254740993'
-        OR response #>> '{allocation,accounting_period_id}' <> '63000000-0000-0000-0000-000000000001' THEN
+        OR response #>> '{allocation,accounting_period_id}' IS NOT NULL THEN
         RAISE EXCEPTION 'investment create failed exact amount or period assignment: %', response;
     END IF;
     replay := public.apply_investment_allocation_change(

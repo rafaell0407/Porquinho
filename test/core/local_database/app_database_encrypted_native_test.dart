@@ -104,7 +104,7 @@ void main() {
   });
 
   test(
-    'migra v1 -> atual (v6) em arquivo cifrado preservando centavos 2^63-1',
+    'migra v1 -> atual (v8) em arquivo cifrado preservando centavos 2^63-1',
     () async {
       final pragma = buildKeyPragma(_keyA);
       // Cria o banco exatamente como a v1 (sem os índices da v2).
@@ -145,10 +145,20 @@ void main() {
             "'investment_allocations_period_idx', 'sync_outbox_state_idx')",
           )
           .get();
-      expect(indices, hasLength(4));
+      // v2 criou os índices por período; v8 (P7) os removeu com o vínculo.
+      expect(indices.map((r) => r.read<String>('name')), [
+        'sync_outbox_state_idx',
+      ]);
+      final periodTables = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'table' "
+            "AND name IN ('accounting_periods', 'period_configurations')",
+          )
+          .get();
+      expect(periodTables, isEmpty);
 
       final version = await db.customSelect('PRAGMA user_version').getSingle();
-      expect(version.read<int>('user_version'), 6);
+      expect(version.read<int>('user_version'), 8);
       expect(await db.customSelect('PRAGMA foreign_key_check').get(), isEmpty);
       await db.close();
     },

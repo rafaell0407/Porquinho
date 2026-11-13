@@ -143,7 +143,6 @@ class TransactionsScreen extends ConsumerWidget {
                   if (v == null) {
                     return const Center(child: Text('Nenhum período ainda.'));
                   }
-                  if (!v.exists) return MissingPeriodCard(view: v);
                   return _EntryList(filter: filter);
                 },
               ),
@@ -511,6 +510,7 @@ class _InvestmentTile extends ConsumerWidget {
   Future<void> _showActions(BuildContext context, WidgetRef ref) async {
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       builder: (sheet) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -725,6 +725,7 @@ class _EntryTile extends ConsumerWidget {
   Future<void> _showActions(BuildContext context, WidgetRef ref) async {
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       builder: (sheet) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,

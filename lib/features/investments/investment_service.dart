@@ -1,10 +1,7 @@
-import '../../core/domain/calendar_date.dart';
 import '../../core/domain/money.dart';
+import '../../core/domain/period_calendar.dart';
 import '../../core/domain/recurrence_schedule.dart';
 import '../categories/category_models.dart';
-import '../entries/entry_models.dart' show PeriodMissingException;
-import '../periods/period_models.dart';
-import '../periods/period_service.dart';
 import '../sync/sync_models.dart';
 import 'investment_models.dart';
 import 'investment_repository.dart';
@@ -14,15 +11,14 @@ import 'investment_repository.dart';
 /// da data. As mesmas validações da RPC, para que o salvo no aparelho não seja
 /// recusado depois.
 class InvestmentService {
-  InvestmentService(this._repo, this._periods, {String Function()? newId})
+  InvestmentService(this._repo, {String Function()? newId})
     : _newId = newId ?? newUuid;
 
   final InvestmentRepository _repo;
-  final PeriodService _periods;
   final String Function() _newId;
 
-  Future<List<InvestmentRecord>> investmentsInPeriod(String periodId) =>
-      _repo.investmentsInPeriod(periodId);
+  Future<List<InvestmentRecord>> investmentsInPeriod(PeriodRange range) =>
+      _repo.investmentsInPeriod(range);
 
   /// Registra um investimento e devolve seu id. Com [repeat] (D7) cria
   /// também a recorrência: o investimento é a primeira ocorrência, no valor
@@ -32,13 +28,12 @@ class InvestmentService {
     RecurrenceFrequency? repeat,
   }) async {
     final clean = _validated(draft);
-    final period = await _requirePeriod(clean.date);
     if (repeat == null) {
       final id = _newId();
       await _repo.apply([CreateInvestment(id, clean)]);
       return id;
     }
-    final recurrence = _recurrenceFor(clean, repeat, period, null);
+    final recurrence = _recurrenceFor(clean, repeat, null);
     await _repo.apply([recurrence]);
     return recurrence.entryId;
   }
@@ -57,17 +52,12 @@ class InvestmentService {
       throw const ChangeRejectedException('Este investimento já se repete.');
     }
     final clean = _validated(draft);
-    PeriodRecord? period;
-    if (repeat != null || clean.date != current.date) {
-      period = await _requirePeriod(clean.date);
-    }
     final changes = <InvestmentChange>[UpdateInvestment(current, clean)];
     if (repeat != null) {
       changes.add(
         _recurrenceFor(
           clean,
           repeat,
-          period!,
           current.copyWith(version: current.version + 1),
         ),
       );
@@ -78,15 +68,14 @@ class InvestmentService {
   CreateInvestmentRecurrence _recurrenceFor(
     InvestmentDraft clean,
     RecurrenceFrequency frequency,
-    PeriodRecord period,
     InvestmentRecord? existing,
   ) {
+    if (frequency != RecurrenceFrequency.monthly) {
+      throw const ChangeRejectedException('A repetição é só "Todo mês".');
+    }
     final templateId = _newId();
-    final scheduled = RecurrenceCalendar.firstOccurrenceDate(
-      frequency,
-      clean.date,
-      period.range,
-    );
+    // O próprio investimento é a primeira ocorrência (D8).
+    final scheduled = clean.date;
     return CreateInvestmentRecurrence(
       templateId: templateId,
       entryId:
@@ -95,10 +84,6 @@ class InvestmentService {
       draft: clean,
       frequency: frequency,
       scheduledFor: scheduled,
-      periodId: period.id,
-      scheduledPeriodId: frequency == RecurrenceFrequency.byPeriod
-          ? period.id
-          : null,
       existing: existing,
     );
   }
@@ -109,26 +94,12 @@ class InvestmentService {
     await _repo.apply([CancelInvestment(current)]);
   }
 
-  /// Cria os períodos faltantes depois da confirmação do usuário (RN002).
-  Future<void> createMissingPeriods(CalendarDate date) =>
-      _periods.createCovering(date);
-
   void _requireEditable(InvestmentRecord current) {
     if (current.cancelled) {
       throw const ChangeRejectedException(
         'Este investimento está cancelado e não pode mais ser alterado.',
       );
     }
-  }
-
-  Future<PeriodRecord> _requirePeriod(CalendarDate date) async {
-    final plan = await _periods.planFor(date);
-    if (plan != null) throw PeriodMissingException(date, plan);
-    final period = await _periods.periodFor(date);
-    if (period == null) {
-      throw const ChangeRejectedException('Nenhum período cobre esta data.');
-    }
-    return period;
   }
 
   InvestmentDraft _validated(InvestmentDraft d) {

@@ -9,13 +9,6 @@ DECLARE
 BEGIN
     INSERT INTO auth.users(id) VALUES(v_owner_id),('94000000-0000-0000-0000-000000000002');
     INSERT INTO public.user_preferences(owner_id,time_zone_id) VALUES(v_owner_id,'America/Sao_Paulo');
-    INSERT INTO public.period_configurations(owner_id,id,mode,custom_start_day,effective_from)
-    VALUES(v_owner_id,config_id,'calendar_month',NULL,period_base);
-    INSERT INTO public.accounting_periods(owner_id,id,configuration_id,start_date,end_date)
-    SELECT v_owner_id,('94000000-0000-0000-0000-'||pg_catalog.lpad((100+n)::TEXT,12,'0'))::UUID,config_id,
-        (period_base+(n||' months')::INTERVAL)::DATE,
-        (period_base+((n+1)||' months')::INTERVAL)::DATE
-    FROM pg_catalog.generate_series(0,3) AS gs(n);
 END;
 $fixtures$;
 
@@ -95,15 +88,14 @@ BEGIN
     WHERE e.owner_id=v_owner_id AND e.recurrence_template_id='94200000-0000-0000-0000-000000000001';
     IF after_count<>occurrence_count THEN RAISE EXCEPTION 'schedule change created past or duplicate occurrences'; END IF;
 
-    -- D4: início antes do primeiro período é recusado, não ignorado.
-    BEGIN
-        PERFORM public.apply_income_recurrence_template_change('94100000-0000-0000-0000-000000000008','create',
-            '94200000-0000-0000-0000-000000000002',0,
-            pg_catalog.jsonb_build_object('frequency','monthly','starts_on',(period_base-INTERVAL '2 months')::DATE,
-                'monthly_reference_day',10,'value_mode','fixed','default_amount_centavos',100));
-        RAISE EXCEPTION 'template before the first period was accepted';
-    EXCEPTION WHEN check_violation THEN NULL;
-    END;
+    -- D4 superada (P6): períodos são calculados; início em qualquer data é aceito.
+    result:=public.apply_income_recurrence_template_change('94100000-0000-0000-0000-000000000008','create',
+        '94200000-0000-0000-0000-000000000002',0,
+        pg_catalog.jsonb_build_object('frequency','monthly','starts_on',(period_base-INTERVAL '2 months')::DATE,
+            'monthly_reference_day',10,'value_mode','fixed','default_amount_centavos',100));
+    IF result->>'status'<>'applied' THEN RAISE EXCEPTION 'template before the old first period was refused: %',result; END IF;
+    PERFORM public.apply_income_recurrence_template_change('94100000-0000-0000-0000-000000000030','deactivate',
+        '94200000-0000-0000-0000-000000000002',1,NULL);
 
     -- D8: lançamento novo vira a primeira ocorrência (despesa mensal).
     result:=public.create_recurrence_from_entry('94100000-0000-0000-0000-000000000009','expense',
@@ -128,33 +120,44 @@ BEGIN
         RAISE EXCEPTION 'generation duplicated the first occurrence';
     END IF;
 
-    -- D8: lançamento avulso existente vira a primeira ocorrência (por período).
+    -- D8: lançamento avulso existente vira a primeira ocorrência (mensal, na própria data).
     result:=public.apply_expense_entry_change('94100000-0000-0000-0000-00000000000B','create','94300000-0000-0000-0000-000000000002',0,
         pg_catalog.jsonb_build_object('amount_centavos',5000,'competence_on',current_month+9,'description','Condomínio'));
     IF result->>'status'<>'applied' THEN RAISE EXCEPTION 'standalone expense create failed: %',result; END IF;
     result:=public.create_recurrence_from_entry('94100000-0000-0000-0000-00000000000C','expense',
         '94200000-0000-0000-0000-000000000004','94300000-0000-0000-0000-000000000002',1,
-        pg_catalog.jsonb_build_object('description','Condomínio','frequency','by_period','starts_on',current_month+9,
-            'value_mode','fixed','default_amount_centavos',5000),NULL);
-    IF result->>'status'<>'applied' OR (result#>>'{entry,scheduled_for_date}')::DATE<>current_month
-        OR (result#>>'{entry,competence_on}')::DATE<>current_month OR result#>>'{entry,version}'<>'2'
-        OR (result#>>'{entry,scheduled_period_id}') IS NULL THEN
-        RAISE EXCEPTION 'standalone expense did not become the first by-period occurrence: %',result;
+        pg_catalog.jsonb_build_object('description','Condomínio','frequency','monthly','monthly_reference_day',10,
+            'starts_on',current_month+9,'value_mode','fixed','default_amount_centavos',5000),NULL);
+    IF result->>'status'<>'applied' OR (result#>>'{entry,scheduled_for_date}')::DATE<>current_month+9
+        OR (result#>>'{entry,competence_on}')::DATE<>current_month+9 OR result#>>'{entry,version}'<>'2'
+        OR (result#>>'{entry,scheduled_period_id}') IS NOT NULL THEN
+        RAISE EXCEPTION 'standalone expense did not become the first monthly occurrence: %',result;
     END IF;
     PERFORM public.generate_due_recurrence_occurrences('94100000-0000-0000-0000-00000000000D');
     IF (SELECT pg_catalog.count(*) FROM public.expense_entries e WHERE e.owner_id=v_owner_id
-        AND e.recurrence_template_id='94200000-0000-0000-0000-000000000004' AND e.scheduled_for_date=current_month)<>1 THEN
+        AND e.recurrence_template_id='94200000-0000-0000-0000-000000000004'
+        AND e.scheduled_for_date>=current_month AND e.scheduled_for_date<(current_month+INTERVAL '1 month')::DATE)<>1 THEN
         RAISE EXCEPTION 'generation duplicated the converted occurrence';
     END IF;
 
     -- Versão antiga gera conflito, sem criar o modelo.
     result:=public.create_recurrence_from_entry('94100000-0000-0000-0000-00000000000E','expense',
         '94200000-0000-0000-0000-000000000005','94300000-0000-0000-0000-000000000002',1,
-        pg_catalog.jsonb_build_object('frequency','by_period','starts_on',current_month+9,'value_mode','variable'),NULL);
+        pg_catalog.jsonb_build_object('frequency','monthly','monthly_reference_day',10,'starts_on',current_month+9,'value_mode','variable'),NULL);
     IF result->>'status'<>'conflict' OR EXISTS(SELECT 1 FROM public.expense_recurrence_templates t
         WHERE t.owner_id=v_owner_id AND t.id='94200000-0000-0000-0000-000000000005') THEN
         RAISE EXCEPTION 'stale conversion must conflict without creating a template: %',result;
     END IF;
+
+    -- P5: "por período" é recusado também na conversão.
+    BEGIN
+        PERFORM public.create_recurrence_from_entry('94100000-0000-0000-0000-000000000020','expense',
+            '94200000-0000-0000-0000-000000000009','94300000-0000-0000-0000-000000000009',0,
+            pg_catalog.jsonb_build_object('frequency','by_period','starts_on',current_month+9,'value_mode','variable'),
+            pg_catalog.jsonb_build_object('date',current_month+9));
+        RAISE EXCEPTION 'by-period conversion was accepted';
+    EXCEPTION WHEN check_violation THEN NULL;
+    END;
 
     -- Receita nova mensal: nasce pendente e sem período.
     result:=public.create_recurrence_from_entry('94100000-0000-0000-0000-00000000000F','income',
@@ -183,7 +186,7 @@ BEGIN
     BEGIN
         PERFORM public.create_recurrence_from_entry('94100000-0000-0000-0000-000000000011','expense',
             '94200000-0000-0000-0000-000000000008','94300000-0000-0000-0000-000000000002',1,
-            pg_catalog.jsonb_build_object('frequency','by_period','starts_on',current_month+9,'value_mode','variable'),NULL);
+            pg_catalog.jsonb_build_object('frequency','monthly','monthly_reference_day',10,'starts_on',current_month+9,'value_mode','variable'),NULL);
         RAISE EXCEPTION 'another user converted this entry';
     EXCEPTION WHEN no_data_found THEN NULL;
     END;

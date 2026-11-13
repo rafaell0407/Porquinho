@@ -41,11 +41,19 @@ BEGIN
     IF replay IS DISTINCT FROM income THEN RAISE EXCEPTION 'income-template replay was not idempotent'; END IF;
     income:=public.apply_income_recurrence_template_change('84000000-0000-0000-0000-000000000002','update',
         '85000000-0000-0000-0000-000000000001',1,
-        '{"frequency":"by_period","monthly_reference_day":null,"value_mode":"variable","default_amount_centavos":null}'::JSONB);
-    IF income#>>'{template,frequency}'<>'by_period' OR income#>>'{template,monthly_reference_day}' IS NOT NULL
+        '{"monthly_reference_day":15,"value_mode":"variable","default_amount_centavos":null}'::JSONB);
+    IF income#>>'{template,frequency}'<>'monthly' OR income#>>'{template,monthly_reference_day}'<>'15'
         OR income#>>'{template,default_amount_centavos}' IS NOT NULL OR income#>>'{template,version}'<>'2' THEN
         RAISE EXCEPTION 'income recurrence template update failed: %',income;
     END IF;
+    -- P5: mudar para "por período" é recusado.
+    BEGIN
+        PERFORM public.apply_income_recurrence_template_change('84000000-0000-0000-0000-000000000010','update',
+            '85000000-0000-0000-0000-000000000001',2,
+            '{"frequency":"by_period","monthly_reference_day":null}'::JSONB);
+        RAISE EXCEPTION 'change to by-period was accepted';
+    EXCEPTION WHEN check_violation THEN NULL;
+    END;
     conflict_response:=public.apply_income_recurrence_template_change('84000000-0000-0000-0000-000000000003','update',
         '85000000-0000-0000-0000-000000000001',1,'{"description":"stale"}'::JSONB);
     IF conflict_response->>'status'<>'conflict' THEN RAISE EXCEPTION 'stale income-template update did not conflict'; END IF;
@@ -55,9 +63,9 @@ BEGIN
 
     expense:=public.apply_expense_recurrence_template_change('86000000-0000-0000-0000-000000000001','create',
         '87000000-0000-0000-0000-000000000001',0,
-        '{"description":"Condomínio","frequency":"by_period","starts_on":"2026-11-01","value_mode":"variable","category_id":"83000000-0000-0000-0000-000000000002"}'::JSONB);
+        '{"description":"Condomínio","frequency":"monthly","monthly_reference_day":1,"starts_on":"2026-11-01","value_mode":"variable","category_id":"83000000-0000-0000-0000-000000000002"}'::JSONB);
     IF expense->>'status'<>'applied' OR expense#>>'{template,default_amount_centavos}' IS NOT NULL
-        OR expense#>>'{template,frequency}'<>'by_period' THEN RAISE EXCEPTION 'expense recurrence template create failed: %',expense; END IF;
+        OR expense#>>'{template,frequency}'<>'monthly' THEN RAISE EXCEPTION 'expense recurrence template create failed: %',expense; END IF;
     BEGIN
         PERFORM public.apply_expense_recurrence_template_change('86000000-0000-0000-0000-000000000002','update',
             '87000000-0000-0000-0000-000000000001',1,'{"value_mode":"fixed"}'::JSONB);

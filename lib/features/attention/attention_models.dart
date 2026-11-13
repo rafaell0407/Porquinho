@@ -35,7 +35,13 @@ class AttentionItem {
   /// Motivo da recusa, quando [kind] é `rejected`.
   final String? reason;
 
-  String? get action => request['action'] as String?;
+  /// Ação pedida. A configuração de período não envia `action`: é criação
+  /// quando a versão esperada é 0 e troca nos demais casos.
+  String? get action =>
+      request['action'] as String? ??
+      (entityType == 'period_settings'
+          ? (request['expected_version'] == 0 ? 'create' : 'update')
+          : null);
 
   /// Conflitos de criação, de período e de configuração só aceitam a versão
   /// do servidor (o servidor recusa reaplicar uma criação).
@@ -75,14 +81,14 @@ class AttentionItem {
     'income_recurrence_template',
     'expense_recurrence_template',
     'investment_recurrence_template',
+    'period_settings',
   };
 }
 
 String entityLabel(String entityType) => switch (entityType) {
   'category' => 'Categoria',
   'subcategory' => 'Subcategoria',
-  'accounting_period' => 'Período',
-  'period_configuration' => 'Configuração de período',
+  'period_settings' => 'Configuração de período',
   'income_entry' => 'Receita',
   'expense_entry' => 'Despesa',
   'investment_allocation' => 'Investimento',
@@ -156,10 +162,8 @@ String describeRequest(String entityType, Map<String, dynamic> request) {
       ];
       final verb = action == 'create' ? 'Criar' : 'Alterar';
       return parts.isEmpty ? verb : '$verb: ${parts.join(' · ')}';
-    case 'accounting_period':
-      return 'Criar o período a partir de ${_date(request['start_date'])}';
-    case 'period_configuration':
-      return 'Criar a configuração de período';
+    case 'period_settings':
+      return 'Mudar para ${_periodConfig(request)}';
     default:
       return switch (action) {
         'create' => 'Criar',
@@ -191,9 +195,8 @@ String describeRecord(String entityType, Map<String, dynamic> record) {
       final cancelled = record['cancelled_at'] != null ? ' (cancelado)' : '';
       return '${_amount(record['amount_centavos'])} · '
           '${_date(record['allocated_on'])}$cancelled';
-    case 'accounting_period':
-      return 'Período de ${_date(record['start_date'])} a '
-          '${_date(record['end_date'])} (fim exclusivo)';
+    case 'period_settings':
+      return _periodConfig(record);
     default:
       return 'Versão ${record['version']}';
   }
@@ -207,3 +210,8 @@ Map<String, dynamic> asJsonMap(Object? value) {
   }
   return {};
 }
+
+/// "Mês-calendário" ou "Ciclo personalizado (dia N)".
+String _periodConfig(Map<String, dynamic> m) => m['mode'] == 'custom_cycle'
+    ? 'Ciclo personalizado (dia ${m['custom_start_day']})'
+    : 'Mês-calendário';

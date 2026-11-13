@@ -46,25 +46,16 @@ void main() {
     ids = 0;
     db = PorquinhoDatabase(NativeDatabase.memory());
     final recorder = LocalChangeRecorder(db, newId: () => 'a${++ids}');
-    periods = PeriodService(
-      LocalPeriodRepository(db, 'u1', recorder),
-      newId: () => 'p${++ids}',
-    );
+    periods = PeriodService(LocalPeriodRepository(db, 'u1', recorder));
     final catRepo = LocalCategoryRepository(db, 'u1', recorder);
     categories = CategoryService(catRepo, newId: () => 'c${++ids}');
     entryRepo = LocalEntryRepository(db, 'u1', recorder);
-    entries = EntryService(
-      entryRepo,
-      catRepo,
-      periods,
-      newId: () => 'e${++ids}',
-    );
+    entries = EntryService(entryRepo, catRepo, newId: () => 'e${++ids}');
     investments = InvestmentService(
       LocalInvestmentRepository(db, 'u1', recorder),
-      periods,
       newId: () => 'i${++ids}',
     );
-    await periods.setup(PeriodConfig.calendarMonth(), d(2026, 11, 10));
+    await periods.setup(PeriodConfig.calendarMonth());
   });
   tearDown(() => db.close());
 
@@ -151,9 +142,9 @@ void main() {
     ) async {
       final id = await add(EntryKind.income, 10000, d(2026, 11, 1));
       final other = await add(EntryKind.income, 5000, d(2026, 11, 2));
-      final period = (await periods.periodFor(d(2026, 11, 1)))!;
+      final period = (await periods.periodFor(d(2026, 11, 1)));
       final record = (await entryRepo.entriesInPeriod(
-        period.id,
+        period,
       )).firstWhere((e) => e.id == other);
       await entries.cancel(record);
       await pump(tester);
@@ -166,10 +157,10 @@ void main() {
       final paid = await add(EntryKind.expense, 120000, d(2026, 11, 2), home);
       await add(EntryKind.expense, 30000, d(2026, 11, 3), home);
       await add(EntryKind.expense, 10000, d(2026, 11, 4));
-      final period = (await periods.periodFor(d(2026, 11, 2)))!;
+      final period = (await periods.periodFor(d(2026, 11, 2)));
       await entries.pay(
         (await entryRepo.entriesInPeriod(
-          period.id,
+          period,
         )).firstWhere((e) => e.id == paid),
         d(2026, 11, 9),
       );
@@ -216,10 +207,10 @@ void main() {
       final second = await investments.create(
         InvestmentDraft(amount: c(1000), date: d(2026, 11, 4)),
       );
-      final period = (await periods.periodFor(d(2026, 11, 3)))!;
+      final period = (await periods.periodFor(d(2026, 11, 3)));
       await investments.cancel(
         (await investments.investmentsInPeriod(
-          period.id,
+          period,
         )).firstWhere((i) => i.id == second),
       );
       await pump(tester);
@@ -241,9 +232,9 @@ void main() {
       final id = await add(EntryKind.income, 10000, d(2026, 11, 1));
       final container = await pump(tester);
       expect(text(tester, 'total-relatorio'), 'R\$ 100,00');
-      final period = (await periods.periodFor(d(2026, 11, 1)))!;
+      final period = (await periods.periodFor(d(2026, 11, 1)));
       final record = (await entryRepo.entriesInPeriod(
-        period.id,
+        period,
       )).firstWhere((e) => e.id == id);
       await entries.update(
         record,
@@ -257,7 +248,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(text(tester, 'total-relatorio'), 'R\$ 250,00');
       final edited = (await entryRepo.entriesInPeriod(
-        period.id,
+        period,
       )).firstWhere((e) => e.id == id);
       await entries.cancel(edited);
       refresh(container);
@@ -275,8 +266,8 @@ void main() {
         InvestmentDraft(amount: c(30000), date: d(2026, 11, 3)),
       );
       final container = await pump(tester);
-      final period = (await periods.periodFor(d(2026, 11, 1)))!;
-      final totals = await LocalTotalsRepository(db, 'u1').totalsFor(period.id);
+      final period = (await periods.periodFor(d(2026, 11, 1)));
+      final totals = await LocalTotalsRepository(db, 'u1').totalsFor(period);
       expect(text(tester, 'total-relatorio'), 'R\$ ${_money(totals.income)}');
       await choose(tester, ReportKind.expenseByCategory);
       expect(text(tester, 'total-relatorio'), 'R\$ ${_money(totals.expense)}');
@@ -288,13 +279,17 @@ void main() {
       expect(container, isNotNull);
     });
 
-    testWidgets('período futuro inexistente pergunta antes de criar', (
+    testWidgets('período futuro com lançamento abre direto, sem perguntar', (
       tester,
     ) async {
+      await add(EntryKind.expense, 7000, d(2026, 12, 5));
       await pump(tester);
       await tester.tap(find.byKey(const Key('periodo-proximo')));
       await tester.pumpAndSettle();
-      expect(find.byKey(const Key('pergunta-periodos')), findsOneWidget);
+      expect(find.byKey(const Key('pergunta-periodos')), findsNothing);
+      expect(find.text('01/12/2026 a 31/12/2026'), findsOneWidget);
+      // Relatório do período (receitas por categoria): calculado, vazio.
+      expect(find.byKey(const Key('relatorio-receitas')), findsOneWidget);
     });
   });
 
@@ -302,7 +297,6 @@ void main() {
     testWidgets('evolução: cada linha bate com o dinheiro livre do período', (
       tester,
     ) async {
-      await periods.createCovering(d(2026, 9, 1));
       await add(EntryKind.income, 100000, d(2026, 9, 5));
       await add(EntryKind.income, 200000, d(2026, 10, 5));
       await add(EntryKind.expense, 50000, d(2026, 10, 6));
@@ -338,7 +332,8 @@ void main() {
     testWidgets('mostra no máximo 12 períodos e navega para trás', (
       tester,
     ) async {
-      await periods.createCovering(d(2025, 9, 1)); // 15 períodos até nov/2026
+      // Lançamento em set/2025: 15 períodos navegáveis até nov/2026.
+      await add(EntryKind.income, 1000, d(2025, 9, 5));
       await pump(tester);
       await choose(tester, ReportKind.evolution);
       expect(find.textContaining('Últimos 12 períodos'), findsOneWidget);
@@ -351,25 +346,19 @@ void main() {
       expect(find.byKey(const Key('evolucao-2025-11-01')), findsOneWidget);
     });
 
-    testWidgets('sequência atravessa mudança de configuração', (tester) async {
-      await periods.scheduleChange(
-        PeriodConfig.customCycle(20),
-        d(2026, 11, 10),
-      );
-      await periods.ensureUpTo(d(2027, 1, 25));
-      await add(EntryKind.income, 10000, d(2026, 12, 10)); // transição
-      await add(EntryKind.income, 20000, d(2026, 12, 25));
+    testWidgets('trocar a configuração recalcula toda a sequência (RN002)', (
+      tester,
+    ) async {
+      await add(EntryKind.income, 10000, d(2026, 10, 25));
+      await add(EntryKind.income, 20000, d(2026, 11, 5));
+      await periods.change(PeriodConfig.customCycle(20));
       await pump(tester);
-      // Período atual do app é o de novembro; vai até o mais recente.
-      for (var i = 0; i < 3; i++) {
-        await tester.tap(find.byKey(const Key('periodo-proximo')));
-        await tester.pumpAndSettle();
-      }
       await choose(tester, ReportKind.comparison);
-      expect(find.text('01/12/2026 a 19/12/2026'), findsOneWidget);
-      expect(find.text('20/12/2026 a 19/01/2027'), findsOneWidget);
-      expect(text(tester, 'comp-receitas-2026-12-01'), 'R\$ 100,00');
-      expect(text(tester, 'comp-receitas-2026-12-20'), 'R\$ 200,00');
+      // Todos os períodos, inclusive os antigos, já são ciclos do dia 20: os
+      // dois lançamentos caem no mesmo período [20/10, 20/11).
+      expect(find.text('20/10/2026 a 19/11/2026'), findsWidgets);
+      expect(text(tester, 'comp-receitas-2026-10-20'), 'R\$ 300,00');
+      expect(find.text('01/11/2026 a 30/11/2026'), findsNothing);
     });
 
     testWidgets('comparativo: receitas, despesas, investimentos e livre', (
@@ -388,8 +377,10 @@ void main() {
       expect(text(tester, 'comp-livre-2026-11-01'), 'R\$ 3.500,00');
     });
 
-    testWidgets('período futuro vazio fica com zeros', (tester) async {
-      await periods.createCovering(d(2026, 12, 5));
+    testWidgets('período futuro sem valores fica com zeros', (tester) async {
+      // Despesa futura cancelada: o período é navegável e soma zero.
+      final id = await add(EntryKind.expense, 9900, d(2026, 12, 5));
+      await entries.cancel((await entryRepo.entry(EntryKind.expense, id))!);
       await pump(tester);
       await tester.tap(find.byKey(const Key('periodo-proximo')));
       await tester.pumpAndSettle();

@@ -35,19 +35,17 @@ final investmentServiceProvider = FutureProvider<InvestmentService>((
 ) async {
   return InvestmentService(
     await ref.watch(investmentRepositoryProvider.future),
-    await ref.watch(periodServiceProvider.future),
   );
 });
 
-/// Investimentos do período exibido (vazio se o período ainda não existe).
+/// Investimentos do período exibido (pelas datas do período calculado).
 final periodInvestmentsProvider = FutureProvider<List<InvestmentRecord>>((
   ref,
 ) async {
   final view = await ref.watch(selectedPeriodProvider.future);
-  final periodId = view?.record?.id;
-  if (periodId == null) return const [];
+  if (view == null) return const [];
   final service = await ref.watch(investmentServiceProvider.future);
-  return service.investmentsInPeriod(periodId);
+  return service.investmentsInPeriod(view.range);
 });
 
 final investmentRecurrenceRepositoryProvider =

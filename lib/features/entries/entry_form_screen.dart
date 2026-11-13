@@ -235,12 +235,11 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         date: _date,
       );
       final repeat = _repeat && _canRepeat ? _frequency : null;
-      await _confirmingPeriods(
-        service.createMissingPeriods,
-        () => _editing
-            ? service.update(widget.existingInvestment!, draft, repeat: repeat)
-            : service.create(draft, repeat: repeat),
-      );
+      if (_editing) {
+        await service.update(widget.existingInvestment!, draft, repeat: repeat);
+      } else {
+        await service.create(draft, repeat: repeat);
+      }
       refreshFinanceData(ref);
       if (mounted) Navigator.of(context).pop(true);
     } on Object catch (e) {
@@ -253,64 +252,22 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     }
   }
 
-  /// Tenta gravar; se o período não existe, pergunta antes de criá-lo (RN002).
-  Future<void> _confirmingPeriods(
-    Future<void> Function(CalendarDate) createPeriods,
-    Future<void> Function() attempt,
-  ) async {
-    try {
-      await attempt();
-    } on PeriodMissingException catch (missing) {
-      if (!mounted) return;
-      final ok = await _askCreatePeriods(missing);
-      if (ok != true) {
-        throw const ChangeRejectedException('Nada foi salvo.');
-      }
-      await createPeriods(missing.date);
-      await attempt();
-    }
-  }
-
-  Future<bool?> _askCreatePeriods(PeriodMissingException missing) =>
-      showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Período ainda não existe'),
-          content: Text(missing.plan.question),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Voltar'),
-            ),
-            FilledButton(
-              key: const Key('confirmar-periodos'),
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Criar e salvar'),
-            ),
-          ],
-        ),
-      );
-
   Future<void> _write(EntryService service, EntryDraft draft) async {
     final repeat = _repeat && _canRepeat
         ? RepeatChoice(frequency: _frequency, variableValue: _variable)
         : null;
-    Future<void> attempt() async {
-      if (_editing) {
-        await service.update(widget.existing!, draft, repeat: repeat);
-      } else {
-        await service.create(
-          draft,
-          alreadyPaid: !_isIncome && _alreadyPaid,
-          paidOn: _paidOn,
-          repeat: repeat,
-          alreadyReceived: _isIncome && repeat != null && _alreadyReceived,
-          receivedOn: _paidOn,
-        );
-      }
+    if (_editing) {
+      await service.update(widget.existing!, draft, repeat: repeat);
+    } else {
+      await service.create(
+        draft,
+        alreadyPaid: !_isIncome && _alreadyPaid,
+        paidOn: _paidOn,
+        repeat: repeat,
+        alreadyReceived: _isIncome && repeat != null && _alreadyReceived,
+        receivedOn: _paidOn,
+      );
     }
-
-    await _confirmingPeriods(service.createMissingPeriods, attempt);
   }
 
   /// Troca o tipo de um lançamento novo. Campos que não existem no outro tipo
@@ -331,7 +288,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   }
 
   /// "Repetir" (D8): o lançamento vira a primeira ocorrência; as próximas
-  /// seguem o dia dele (todo mês) ou o início de cada período.
+  /// seguem o dia dele, todo mês (RN038).
   Future<void> _chooseRepeat() async {
     final choice = await showModalBottomSheet<(RecurrenceFrequency?,)>(
       context: context,
@@ -345,7 +302,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
               trailing: _repeat ? null : const Icon(Icons.check),
               onTap: () => Navigator.pop(sheet, (null,)),
             ),
-            for (final f in RecurrenceFrequency.values)
+            for (final f in RecurrenceFrequency.selectable)
               ListTile(
                 key: Key('repetir-${f.dbValue}'),
                 title: Text(f.label),
@@ -397,10 +354,10 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     }
     if (_repeat && _canRepeat) {
       lines.add(
-        _frequency == RecurrenceFrequency.monthly
-            ? 'Repete todo dia ${_date.day} (em mês curto, no último dia).'
-            : 'A ocorrência fica no início do período que contém a data '
-                  'informada.',
+        _date.day > 28
+            ? 'Repete todo dia ${_date.day}. Em mês sem esse dia, no último '
+                  'dia útil do mês.'
+            : 'Repete todo dia ${_date.day}.',
       );
       if (_isInvestment) {
         lines.add(

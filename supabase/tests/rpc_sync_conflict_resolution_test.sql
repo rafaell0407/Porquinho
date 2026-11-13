@@ -98,9 +98,6 @@ BEGIN
     END;
 
     -- Investment allocation conflict resolved by keep_local.
-    PERFORM public.create_accounting_period('62000000-0000-0000-0000-000000000001',
-        '63000000-0000-0000-0000-000000000001', '64000000-0000-0000-0000-000000000001',
-        '2026-11-01', 'calendar_month', NULL);
     PERFORM public.apply_investment_allocation_change('20000000-0000-0000-0000-000000000c01', 'create', alloc, 0, 1000, DATE '2026-11-10');
     PERFORM public.apply_investment_allocation_change('20000000-0000-0000-0000-000000000c02', 'update', alloc, 1, 2000, DATE '2026-11-10');
     c4 := (public.apply_investment_allocation_change('20000000-0000-0000-0000-000000000c03', 'update', alloc, 1, 3000, DATE '2026-11-10') ->> 'conflict_id')::UUID;

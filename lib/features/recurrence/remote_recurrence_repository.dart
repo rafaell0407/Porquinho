@@ -73,23 +73,8 @@ class RemoteRecurrenceRepository implements RecurrenceRepository {
     );
     if (rows.isEmpty) return const ScheduleFacts();
     final last = rows.last['scheduled_for_date'] as String;
-    final periods = await _reader.select(
-      'accounting_periods',
-      filters: [RemoteFilter.lt('start_date', _nextDay(last))],
-      orderBy: 'start_date',
-    );
-    final containing = periods.where(
-      (p) => (p['end_date'] as String).compareTo(last) > 0,
-    );
-    return ScheduleFacts(
-      lastScheduled: CalendarDate.parse(last),
-      lastPeriodEnd: containing.isEmpty
-          ? null
-          : CalendarDate.parse(containing.last['end_date'] as String),
-    );
+    return ScheduleFacts(lastScheduled: CalendarDate.parse(last));
   }
-
-  String _nextDay(String iso) => CalendarDate.parse(iso).addDays(1).toIso();
 
   Future<void> _call(String rpc, Map<String, dynamic> params) async {
     final Map<String, dynamic> response;

@@ -50,7 +50,6 @@ class Device {
     );
     periods = PeriodService(
       LocalPeriodRepository(db, 'u1', recorder, clock: clock),
-      newId: () => '$prefix-p${++_ids}',
     );
     final catRepo = LocalCategoryRepository(db, 'u1', recorder, clock: clock);
     recurrenceRepo = LocalRecurrenceRepository(
@@ -63,7 +62,6 @@ class Device {
     service = EntryService(
       entries,
       catRepo,
-      periods,
       recurrences: recurrenceRepo,
       newId: () => '$prefix-e${++_ids}',
     );
@@ -80,11 +78,10 @@ class Device {
   late final RecurrenceService recurrences;
   late final LocalTotalsRepository totals;
 
-  Future<void> setUp() =>
-      periods.setup(PeriodConfig.calendarMonth(), d(2026, 11, 10));
+  Future<void> setUp() => periods.setup(PeriodConfig.calendarMonth());
 
   Future<BigInt> surplus(CalendarDate date) async =>
-      (await totals.totalsFor((await periods.periodFor(date))!.id)).surplus;
+      (await totals.totalsFor((await periods.periodFor(date)))).surplus;
 
   Future<List<Map<String, Object?>>> rows(
     String table, {
@@ -185,7 +182,6 @@ void main() {
     });
 
     test('data passada gera também as atrasadas até hoje (RN038)', () async {
-      await dev.periods.createCovering(d(2026, 9, 5));
       await dev.service.create(expense(9000, d(2026, 9, 5)), repeat: monthly);
       expect(await dev.recurrenceRepo.generateDue(today), 2);
       final rows = await dev.rows('expense_entries');
@@ -199,15 +195,29 @@ void main() {
       expect(await dev.count('expense_entries'), 3);
     });
 
-    test('todo período: a ocorrência fica no início do período', () async {
-      await dev.service.create(
-        expense(5000, d(2026, 11, 20)),
-        repeat: byPeriod,
+    test('"Todo período" é recusado (só "Todo mês", 13/11/2026)', () async {
+      await expectLater(
+        dev.service.create(expense(5000, d(2026, 11, 20)), repeat: byPeriod),
+        throwsA(isA<ChangeRejectedException>()),
       );
-      final row = (await dev.rows('expense_entries')).single;
-      expect(row['scheduled_for_date'], '2026-11-01');
-      expect(row['competence_on'], '2026-11-01');
-      expect(row['scheduled_period_id'], isNotNull);
+      expect(await dev.count('expense_entries'), 0);
+      expect(await dev.count('expense_recurrence_templates'), 0);
+    });
+
+    test('dia inexistente: dia útil anterior, vencimento igual', () async {
+      // Criada em 31/08/2026; setembro tem 30 dias (30/09 é quarta).
+      await dev.service.create(expense(5000, d(2026, 8, 31)), repeat: monthly);
+      await dev.recurrenceRepo.generateDue(today);
+      final rows = await dev.rows('expense_entries');
+      expect(rows.map((r) => r['scheduled_for_date']), [
+        '2026-08-31',
+        '2026-09-30',
+        '2026-10-31',
+      ]);
+      for (final r in rows) {
+        expect(r['due_on'], r['scheduled_for_date']);
+        expect(r['competence_on'], r['scheduled_for_date']);
+      }
     });
 
     test(
@@ -221,8 +231,8 @@ void main() {
         expect(entry.status, 'pending');
         expect(entry.isPendingIncome, isTrue);
         expect(await dev.surplus(today), BigInt.zero);
-        final period = (await dev.periods.periodFor(today))!;
-        final listed = await dev.entries.entriesInPeriod(period.id);
+        final period = (await dev.periods.periodFor(today));
+        final listed = await dev.entries.entriesInPeriod(period);
         expect(listed.map((e) => e.id), [id]);
       },
     );
@@ -305,13 +315,13 @@ void main() {
     });
 
     test(
-      'início antes do primeiro período pede para criar os períodos (D4)',
+      'início em qualquer data é aceito e gera as atrasadas (D4 superada)',
       () async {
-        await expectLater(
-          dev.service.create(expense(9000, d(2026, 6, 5)), repeat: monthly),
-          throwsA(isA<PeriodMissingException>()),
-        );
-        expect(await dev.count('expense_recurrence_templates'), 0);
+        await dev.service.create(expense(9000, d(2026, 6, 5)), repeat: monthly);
+        expect(await dev.count('expense_recurrence_templates'), 1);
+        await dev.recurrenceRepo.generateDue(today);
+        // 05/06 (a própria) + jul, ago, set, out, nov.
+        expect(await dev.count('expense_entries'), 6);
       },
     );
   });
@@ -342,7 +352,6 @@ void main() {
     );
 
     test('mudar a data de uma recebida move para o outro período', () async {
-      await dev.periods.createCovering(d(2026, 12, 3));
       var e = (await dev.entries.entry(EntryKind.income, id))!;
       await dev.service.receive(e, d(2026, 11, 8));
       e = (await dev.entries.entry(EntryKind.income, id))!;
@@ -438,7 +447,6 @@ void main() {
         );
         var e = (await dev.entries.entry(EntryKind.expense, id))!;
         expect(e.dueOn, d(2026, 11, 5));
-        await dev.periods.createCovering(d(2026, 12, 3));
         await dev.service.update(
           e,
           expense(9000, d(2026, 11, 5), dueOn: d(2026, 12, 3)),
@@ -482,7 +490,6 @@ void main() {
     });
 
     test('pendente permanece no período original', () async {
-      await dev.periods.createCovering(d(2026, 12, 3));
       await dev.service.create(expense(9000, d(2026, 11, 5)), repeat: monthly);
       expect(await dev.surplus(d(2026, 11, 5)), c(-9000));
       expect(await dev.surplus(d(2026, 12, 3)), BigInt.zero);
@@ -494,21 +501,18 @@ void main() {
       await dev.service.create(expense(9000, d(2026, 11, 5)), repeat: monthly);
       final t = (await dev.recurrences.templates()).single;
       await dev.recurrences.stop(t);
-      await dev.periods.createCovering(d(2026, 12, 20));
       await dev.recurrenceRepo.generateDue(d(2026, 12, 20));
       expect(await dev.count('expense_entries'), 1);
       expect((await dev.recurrences.templates()).single.isActive, isFalse);
     });
 
     test('dois aparelhos offline geram a mesma ocorrência (mesmo id)', () async {
-      await dev.periods.createCovering(d(2026, 9, 5));
       await dev.service.create(expense(9000, d(2026, 9, 5)), repeat: monthly);
       await dev.recurrenceRepo.generateDue(today);
 
       // segundo aparelho recebe só o modelo (download) e gera sozinho
       final other = Device('y');
       await other.setUp();
-      await other.periods.createCovering(d(2026, 9, 5));
       final template = (await dev.rows(
         'expense_recurrence_templates',
         order: 'id',
@@ -543,7 +547,6 @@ void main() {
       await dev.service.create(expense(1000, d(2026, 11, 9)), repeat: monthly);
       // dia 10 ainda não chegou (dia 9 + um mês = 9/12): nada novo
       expect(await dev.recurrenceRepo.generateDue(d(2026, 12, 8)), 0);
-      await dev.periods.createCovering(d(2026, 12, 9));
       expect(await dev.recurrenceRepo.generateDue(d(2026, 12, 9)), 1);
     });
 
@@ -559,7 +562,7 @@ void main() {
         final gateway = RecordingGateway();
         await SyncService(dev.db, gateway).syncOnce('u1');
         expect(
-          gateway.calls.where((c) => c != 'create_accounting_period').toList(),
+          gateway.calls.where((c) => c != 'set_period_settings').toList(),
           [
             'create_recurrence_from_entry',
             'generate_due_recurrence_occurrences',
@@ -592,7 +595,6 @@ void main() {
         final after = (await dev.recurrences.templates()).single;
         expect(after.startsOn, d(2026, 12, 1));
         expect(after.defaultAmount, c(9500));
-        await dev.periods.createCovering(d(2026, 12, 31));
         await dev.recurrenceRepo.generateDue(d(2026, 11, 30));
         expect(await dev.count('expense_entries'), 1); // nada em novembro
         await dev.recurrenceRepo.generateDue(d(2026, 12, 31));
@@ -653,4 +655,4 @@ void main() {
 Future<List<OutboxOperation>> _queue(Device dev) async => (await SyncService(
   dev.db,
   RecordingGateway(),
-).operations('u1')).where((o) => o.rpc != 'create_accounting_period').toList();
+).operations('u1')).where((o) => o.rpc != 'set_period_settings').toList();

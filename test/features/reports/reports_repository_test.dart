@@ -27,15 +27,20 @@ BigInt c(int v) => BigInt.from(v);
 
 class _Source implements RemoteReportSource {
   _Source(this.json);
-  final Map<String, dynamic> Function(List<String> ids) json;
-  final calls = <List<String>>[];
+  final Map<String, dynamic> Function(List<PeriodRange> ranges) json;
+  final calls = <List<PeriodRange>>[];
 
   @override
-  Future<Map<String, dynamic>> fetch(List<String> periodIds) async {
-    calls.add(periodIds);
-    return json(periodIds);
+  Future<Map<String, dynamic>> fetch(List<PeriodRange> ranges) async {
+    calls.add(ranges);
+    return json(ranges);
   }
 }
+
+PeriodRange month(int y, int m) => PeriodRange(
+  CalendarDate(y, m, 1),
+  m == 12 ? CalendarDate(y + 1, 1, 1) : CalendarDate(y, m + 1, 1),
+);
 
 void main() {
   late PorquinhoDatabase db;
@@ -58,30 +63,26 @@ void main() {
     );
     periods = PeriodService(
       LocalPeriodRepository(db, 'u1', recorder, clock: clock),
-      newId: () => 'p${++ids}',
     );
     final catRepo = LocalCategoryRepository(db, 'u1', recorder, clock: clock);
     categories = CategoryService(catRepo, newId: () => 'c${++ids}');
     entries = EntryService(
       LocalEntryRepository(db, 'u1', recorder, clock: clock),
       catRepo,
-      periods,
       newId: () => 'e${++ids}',
     );
     investments = InvestmentService(
       LocalInvestmentRepository(db, 'u1', recorder, clock: clock),
-      periods,
       newId: () => 'i${++ids}',
     );
     reports = LocalReportsRepository(db, 'u1');
     totals = LocalTotalsRepository(db, 'u1');
-    await periods.setup(PeriodConfig.calendarMonth(), d(2026, 11, 10));
-    await periods.createCovering(d(2025, 12, 1));
+    await periods.setup(PeriodConfig.calendarMonth());
   });
   tearDown(() => db.close());
 
-  Future<String> pid(CalendarDate date) async =>
-      (await periods.periodFor(date))!.id;
+  Future<PeriodRange> pid(CalendarDate date) async =>
+      (await periods.periodFor(date));
 
   Future<String> category(CategoryKind kind, String name) async {
     await categories.createCategory(kind, name);
@@ -126,9 +127,11 @@ void main() {
 
       final nov = await pid(d(2026, 11, 10));
       final oct = await pid(d(2026, 10, 10));
-      final r = await reports.report([oct, nov, 'inexistente']);
+      // Período sem registro gravado: soma pelas datas do mesmo jeito.
+      final none = month(2030, 1);
+      final r = await reports.report([oct, nov, none]);
 
-      expect(r.periods.map((p) => p.periodId), [oct, nov, 'inexistente']);
+      expect(r.periods.map((p) => p.range), [oct, nov, none]);
       final novTotals = r.totalsOf(nov);
       expect(novTotals, await totals.totalsFor(nov));
       expect(novTotals.income, c(512000));
@@ -136,7 +139,7 @@ void main() {
       expect(novTotals.investment, c(30000));
       expect(novTotals.surplus, c(358000));
       expect(r.totalsOf(oct).income, c(1000));
-      expect(r.totalsOf('inexistente').surplus, BigInt.zero);
+      expect(r.totalsOf(none).surplus, BigInt.zero);
 
       final income = r.incomeOf(nov);
       expect(income.total, novTotals.income);
@@ -195,19 +198,20 @@ void main() {
     test(
       '12 períodos com ~5.000 lançamentos somam exato e rápido (RN043)',
       () async {
-        final all = <String>[];
-        final list = await periods.history();
-        // Doze períodos criados no setup (dezembro/2025 a novembro/2026).
-        for (final item in list) {
-          all.add(await pid(item.range.start));
-        }
+        // Doze períodos calculados: dezembro/2025 a novembro/2026.
+        final all = PeriodCalendar.between(
+          PeriodConfig.calendarMonth(),
+          d(2025, 12, 1),
+          d(2026, 11, 1),
+        );
+        expect(all, hasLength(12));
         await db.transaction(() async {
           for (var i = 0; i < 5000; i++) {
             final period = all[i % all.length];
             await db.customStatement(
               'INSERT INTO income_entries (id, owner_id, version, created_at, '
-              'updated_at, amount_centavos, status, received_on, '
-              'accounting_period_id) VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?)',
+              'updated_at, amount_centavos, status, received_on) '
+              'VALUES (?, ?, 1, ?, ?, ?, ?, ?)',
               [
                 'perf$i',
                 'u1',
@@ -215,8 +219,7 @@ void main() {
                 '2026-11-10T00:00:00Z',
                 '9007199254740993',
                 'received',
-                '2026-11-05',
-                period,
+                period.start.toIso(),
               ],
             );
           }
@@ -227,6 +230,11 @@ void main() {
         // 5.000 lançamentos de 2^53 + 1 centavos, divididos entre os períodos.
         final sum = r.periods.fold(BigInt.zero, (s, p) => s + p.totals.income);
         expect(sum, BigInt.parse('9007199254740993') * BigInt.from(5000));
+        // Cada período recebe a sua parte (5.000 / 12 = 416 ou 417).
+        for (final p in r.periods) {
+          final n = p.totals.income ~/ BigInt.parse('9007199254740993');
+          expect(n.toInt(), anyOf(416, 417), reason: '${p.range}');
+        }
         expect(sw.elapsedMilliseconds, lessThan(1000));
       },
     );
@@ -237,46 +245,45 @@ void main() {
       'lê os totais e as categorias em texto, sem perder precisão',
       () async {
         final source = _Source(
-          (ids) => {
-            'periods': [
+          (ranges) => {
+            'ranges': [
               {
-                'period_id': 'p1',
+                'index': 1,
                 'income': '9007199254740993',
                 'expense': '500',
                 'investment': '0',
               },
             ],
             'income_by_category': [
-              {
-                'period_id': 'p1',
-                'category_id': 'a',
-                'amount': '9007199254740000',
-              },
-              {'period_id': 'p1', 'category_id': null, 'amount': '993'},
+              {'index': 1, 'category_id': 'a', 'amount': '9007199254740000'},
+              {'index': 1, 'category_id': null, 'amount': '993'},
             ],
             'expense_by_category': [
-              {'period_id': 'p1', 'category_id': 'b', 'amount': '500'},
+              {'index': 1, 'category_id': 'b', 'amount': '500'},
             ],
           },
         );
-        final r = await RemoteReportsRepository(source).report(['p1', 'p2']);
-        expect(r.totalsOf('p1').income, BigInt.parse('9007199254740993'));
-        expect(r.totalsOf('p1').surplus, BigInt.parse('9007199254740493'));
-        expect(r.totalsOf('p2').surplus, BigInt.zero);
-        expect(r.incomeOf('p1').total, r.totalsOf('p1').income);
-        expect(r.incomeOf('p1').items.map((i) => i.categoryId), ['a', null]);
-        expect(r.expenseOf('p1').total, c(500));
+        final p1 = month(2026, 11);
+        final p2 = month(2026, 12);
+        final r = await RemoteReportsRepository(source).report([p1, p2]);
+        expect(source.calls.single, [p1, p2]);
+        expect(r.totalsOf(p1).income, BigInt.parse('9007199254740993'));
+        expect(r.totalsOf(p1).surplus, BigInt.parse('9007199254740493'));
+        expect(r.totalsOf(p2).surplus, BigInt.zero);
+        expect(r.incomeOf(p1).total, r.totalsOf(p1).income);
+        expect(r.incomeOf(p1).items.map((i) => i.categoryId), ['a', null]);
+        expect(r.expenseOf(p1).total, c(500));
       },
     );
 
     test('mais de 60 períodos viram várias chamadas, sem truncar', () async {
       final source = _Source(
-        (ids) => {
-          'periods': [
-            for (final id in ids)
+        (ranges) => {
+          'ranges': [
+            for (var i = 0; i < ranges.length; i++)
               {
-                'period_id': id,
-                'income': '100',
+                'index': i + 1,
+                'income': '${100 + i}',
                 'expense': '0',
                 'investment': '0',
               },
@@ -285,11 +292,16 @@ void main() {
           'expense_by_category': [],
         },
       );
-      final wanted = [for (var i = 0; i < 130; i++) 'p$i'];
+      final wanted = [
+        for (var i = 0; i < 130; i++) month(2020 + i ~/ 12, i % 12 + 1),
+      ];
       final r = await RemoteReportsRepository(source).report(wanted);
       expect(source.calls.map((x) => x.length), [60, 60, 10]);
       expect(r.periods.length, 130);
-      expect(r.periods.every((p) => p.totals.income == c(100)), isTrue);
+      // A posição devolvida pelo servidor é relativa a cada chamada.
+      expect(r.totalsOf(wanted[0]).income, c(100));
+      expect(r.totalsOf(wanted[61]).income, c(101));
+      expect(r.totalsOf(wanted[129]).income, c(109));
     });
 
     test('mesmos dados, mesmo resultado no celular e na Web', () async {
@@ -317,10 +329,10 @@ void main() {
       // O que o servidor devolveria para os mesmos dados.
       final web = RemoteReportsRepository(
         _Source(
-          (ids) => {
-            'periods': [
+          (ranges) => {
+            'ranges': [
               {
-                'period_id': nov,
+                'index': 1,
                 'income': local.income.toString(),
                 'expense': local.expense.toString(),
                 'investment': local.investment.toString(),
@@ -342,16 +354,19 @@ Future<EntryRecord> _record(
   EntryKind kind,
   String id,
 ) async {
+  final date =
+      (await db
+              .customSelect(
+                'SELECT ${kind.dateColumn} AS d FROM ${kind.table} WHERE id = ?',
+                variables: [Variable.withString(id)],
+              )
+              .getSingle())
+          .read<String>('d');
   final rows = await service.entriesInPeriod(
-    (await db
-            .customSelect(
-              'SELECT accounting_period_id AS p FROM '
-              '${kind == EntryKind.income ? 'income_entries' : 'expense_entries'} '
-              'WHERE id = ?',
-              variables: [Variable.withString(id)],
-            )
-            .getSingle())
-        .read<String>('p'),
+    PeriodCalendar.containing(
+      PeriodConfig.calendarMonth(),
+      CalendarDate.parse(date),
+    ),
   );
   return rows.firstWhere((e) => e.id == id);
 }

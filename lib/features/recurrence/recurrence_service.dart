@@ -58,10 +58,7 @@ class RecurrenceService {
       final facts = await _repo.scheduleFacts(current.kind, current.id);
       final floor = facts.lastScheduled == null
           ? null
-          : RecurrenceCalendar.scheduleChangeFloor(
-              facts.lastScheduled!,
-              lastPeriodEnd: facts.lastPeriodEnd,
-            );
+          : RecurrenceCalendar.scheduleChangeFloor(facts.lastScheduled!);
       startsOn = RecurrenceCalendar.effectiveStart(
         current.startsOn,
         today,

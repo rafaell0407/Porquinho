@@ -1,4 +1,5 @@
 import '../../core/domain/calendar_date.dart';
+import '../../core/domain/period_calendar.dart';
 import '../categories/category_models.dart';
 import '../sync/remote_table_reader.dart';
 import '../sync/sync_models.dart';
@@ -20,10 +21,13 @@ class RemoteInvestmentRepository implements InvestmentRepository {
   static const _table = 'investment_allocations';
 
   @override
-  Future<List<InvestmentRecord>> investmentsInPeriod(String periodId) async {
+  Future<List<InvestmentRecord>> investmentsInPeriod(PeriodRange range) async {
     final rows = await _reader.select(
       _table,
-      filters: [RemoteFilter.eq('accounting_period_id', periodId)],
+      filters: [
+        RemoteFilter.gte('allocated_on', range.start.toIso()),
+        RemoteFilter.lt('allocated_on', range.end.toIso()),
+      ],
       orderBy: 'allocated_on',
     );
     final result = rows.map(_fromRow).toList()
@@ -50,7 +54,6 @@ class RemoteInvestmentRepository implements InvestmentRepository {
           : BigInt.parse(amount.toString()),
       date: CalendarDate.parse(d['allocated_on'] as String),
       version: (d['version'] as num).toInt(),
-      periodId: d['accounting_period_id'] as String?,
       cancelled: d['cancelled_at'] != null,
       templateId: d['recurrence_template_id'] as String?,
       scheduledFor: scheduled == null ? null : CalendarDate.parse(scheduled),

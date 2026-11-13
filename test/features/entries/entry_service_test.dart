@@ -60,7 +60,7 @@ void main() {
       recorder,
       clock: () => DateTime.utc(2026, 11, 10),
     );
-    periods = PeriodService(periodRepo, newId: () => 'p${++ids}');
+    periods = PeriodService(periodRepo);
     final catRepo = LocalCategoryRepository(
       db,
       'u1',
@@ -74,17 +74,14 @@ void main() {
       recorder,
       clock: () => DateTime.utc(2026, 11, 10),
     );
-    service = EntryService(repo, catRepo, periods, newId: () => 'e${++ids}');
+    service = EntryService(repo, catRepo, newId: () => 'e${++ids}');
     totals = LocalTotalsRepository(db, 'u1');
-    await periods.setup(PeriodConfig.calendarMonth(), d(2026, 11, 10));
+    await periods.setup(PeriodConfig.calendarMonth());
   });
   tearDown(() => db.close());
 
-  Future<String> periodOf(CalendarDate date) async =>
-      (await periods.periodFor(date))!.id;
-
   Future<BigInt> surplus(CalendarDate date) async =>
-      (await totals.totalsFor(await periodOf(date))).surplus;
+      (await totals.totalsFor((await periods.periodFor(date)))).surplus;
 
   EntryDraft income(
     int cents,
@@ -130,36 +127,32 @@ void main() {
 
     test('data futura e passada são aceitas (RN004/RN008)', () async {
       await service.create(income(1000, d(2026, 11, 30)));
-      await periods.createCovering(d(2026, 12, 15));
       await service.create(income(2000, d(2026, 12, 15)));
       expect(await surplus(d(2026, 11, 30)), c(1000));
       expect(await surplus(d(2026, 12, 15)), c(2000));
     });
 
     test(
-      'período inexistente: pergunta antes; nada é gravado até confirmar',
+      'qualquer data tem período (RN002): salva direto, sem perguntar',
       () async {
-        await expectLater(
-          service.create(income(1000, d(2026, 8, 20))),
-          throwsA(
-            isA<PeriodMissingException>().having(
-              (e) => e.plan.question,
-              'pergunta',
-              'Criar os 3 períodos de agosto de 2026 a outubro de 2026?',
-            ),
-          ),
-        );
-        expect(await count('income_entries'), 0);
-        expect((await periods.planFor(d(2026, 8, 20)))!.count, 3);
-
-        await service.createMissingPeriods(d(2026, 8, 20));
         await service.create(income(1000, d(2026, 8, 20)));
+        await service.create(income(3000, d(1999, 1, 31)));
         expect(await surplus(d(2026, 8, 20)), c(1000));
+        expect(await surplus(d(1999, 1, 31)), c(3000));
+        // Nenhum período é gravado; o lançamento não guarda vínculo (P7).
+        final cols = await db
+            .customSelect(
+              "SELECT name FROM pragma_table_info('income_entries')",
+            )
+            .get();
+        expect(
+          cols.map((r) => r.read<String>('name')),
+          isNot(contains('accounting_period_id')),
+        );
       },
     );
 
     test('editar a data move o valor para o período certo', () async {
-      await periods.createCovering(d(2026, 10, 1));
       final id = await service.create(income(70000, d(2026, 11, 5)));
       final current = (await repo.entry(EntryKind.income, id))!;
       await service.update(current, income(70000, d(2026, 10, 20)));
@@ -167,7 +160,7 @@ void main() {
       expect(await surplus(d(2026, 10, 20)), c(70000));
       final moved = (await repo.entry(EntryKind.income, id))!;
       expect(moved.version, 2);
-      expect(moved.periodId, await periodOf(d(2026, 10, 20)));
+      expect(moved.date, d(2026, 10, 20));
     });
 
     test('editar o valor recalcula sem contar duas vezes', () async {
@@ -275,7 +268,6 @@ void main() {
 
     test('pagar em outro mês não move a despesa de período', () async {
       final id = await service.create(expense(50000, d(2026, 11, 5)));
-      await periods.createCovering(d(2026, 12, 10));
       await service.pay(
         (await repo.entry(EntryKind.expense, id))!,
         d(2026, 12, 3),
@@ -285,7 +277,6 @@ void main() {
     });
 
     test('vencimento em outro mês não muda o período', () async {
-      await periods.createCovering(d(2026, 12, 10));
       final id = await service.create(
         expense(50000, d(2026, 11, 5), dueOn: d(2026, 12, 5)),
       );
@@ -296,7 +287,6 @@ void main() {
 
     test('pendente permanece no período original', () async {
       await service.create(expense(40000, d(2026, 11, 5)));
-      await periods.createCovering(d(2027, 1, 10));
       expect(await surplus(d(2026, 11, 5)), c(-40000));
       expect(await surplus(d(2027, 1, 10)), BigInt.zero);
     });
@@ -490,19 +480,15 @@ void main() {
 
   group('fila e dependências', () {
     test(
-      'lançamento espera a categoria e o período criados no aparelho',
+      'lançamento espera a categoria criada no aparelho (sem período)',
       () async {
         await categories.createCategory(CategoryKind.income, 'Salário');
         final cat = (await categories.load()).categories.single;
-        await service.createMissingPeriods(d(2026, 10, 5));
         await service.create(income(100, d(2026, 10, 5), categoryId: cat.id));
 
         final ops = await SyncService(db, FakeGateway()).operations('u1');
         final entryOp = ops.firstWhere((o) => o.entityType == 'income_entry');
-        expect(
-          entryOp.dependsOn,
-          containsAll([cat.id, await periodOf(d(2026, 10, 5))]),
-        );
+        expect(entryOp.dependsOn, [cat.id]);
 
         // Categoria sem rede: o lançamento fica esperando, sem tentativa nem recusa.
         final gateway = FakeGateway()..failRpcs.add('apply_category_change');
@@ -526,18 +512,18 @@ void main() {
     );
 
     test(
-      'com rede, tudo sobe na ordem: período, categoria, lançamento',
+      'com rede, tudo sobe na ordem: configuração, categoria, lançamento',
       () async {
         await categories.createCategory(CategoryKind.income, 'Salário');
         final cat = (await categories.load()).categories.single;
-        await service.createMissingPeriods(d(2026, 10, 5));
         await service.create(income(100, d(2026, 10, 5), categoryId: cat.id));
         final gateway = FakeGateway();
         await SyncService(db, gateway).syncOnce('u1');
         final order = gateway.calls.map((c) => c.$1).toList();
         expect(order.last, 'apply_income_entry_change');
+        expect(order, isNot(contains('create_accounting_period')));
         expect(
-          order.indexOf('create_earlier_accounting_period') <
+          order.indexOf('set_period_settings') <
               order.indexOf('apply_income_entry_change'),
           isTrue,
         );

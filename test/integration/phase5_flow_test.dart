@@ -76,12 +76,7 @@ class _Device {
     final catRepo = LocalCategoryRepository(db, account.id, recorder);
     recurrenceRepo = LocalRecurrenceRepository(db, account.id, recorder);
     entryRepo = LocalEntryRepository(db, account.id, recorder);
-    entries = EntryService(
-      entryRepo,
-      catRepo,
-      periods,
-      recurrences: recurrenceRepo,
-    );
+    entries = EntryService(entryRepo, catRepo, recurrences: recurrenceRepo);
     sync = SyncService(db, SupabaseSyncGateway(account.client));
     totals = LocalTotalsRepository(db, account.id);
   }
@@ -172,8 +167,7 @@ void main() {
       final dev = _Device(a);
       addTearDown(dev.db.close);
 
-      await dev.periods.setup(PeriodConfig.calendarMonth(), today);
-      await dev.entries.createMissingPeriods(monthsAgo(3));
+      await dev.periods.setup(PeriodConfig.calendarMonth());
 
       // Offline: despesa fixa (3 meses atrás), variável e receita recorrente.
       final expenseStart = CalendarDate(
@@ -188,7 +182,7 @@ void main() {
       await dev.entries.create(
         draft(EntryKind.expense, null, monthsAgo(2)),
         repeat: const RepeatChoice(
-          frequency: RecurrenceFrequency.byPeriod,
+          frequency: RecurrenceFrequency.monthly,
           variableValue: true,
         ),
       );
@@ -263,11 +257,16 @@ void main() {
       final remoteTotals = RemoteTotalsRepository(
         RemoteReportsRepository(SupabaseReportSource(a.client)),
       );
-      for (final p in await dev.periodRepo.periods()) {
+      final devBounds = await dev.periods.bounds(today);
+      for (final p in PeriodCalendar.between(
+        PeriodConfig.calendarMonth(),
+        devBounds.first.start,
+        devBounds.last.start,
+      )) {
         expect(
-          await remoteTotals.totalsFor(p.id),
-          await dev.totals.totalsFor(p.id),
-          reason: p.range.toString(),
+          await remoteTotals.totalsFor(p),
+          await dev.totals.totalsFor(p),
+          reason: p.toString(),
         );
       }
 
@@ -290,8 +289,7 @@ void main() {
       final a = await _newAccount(r);
       final d1 = _Device(a);
       addTearDown(d1.db.close);
-      await d1.periods.setup(PeriodConfig.calendarMonth(), today);
-      await d1.entries.createMissingPeriods(monthsAgo(2));
+      await d1.periods.setup(PeriodConfig.calendarMonth());
       await d1.entries.create(
         draft(
           EntryKind.expense,
@@ -336,10 +334,15 @@ void main() {
       final remoteTotals = RemoteTotalsRepository(
         RemoteReportsRepository(SupabaseReportSource(a.client)),
       );
-      for (final p in await d1.periodRepo.periods()) {
-        final remote = await remoteTotals.totalsFor(p.id);
-        expect(await d1.totals.totalsFor(p.id), remote, reason: 'aparelho 1');
-        expect(await d2.totals.totalsFor(p.id), remote, reason: 'aparelho 2');
+      final d1Bounds = await d1.periods.bounds(today);
+      for (final p in PeriodCalendar.between(
+        PeriodConfig.calendarMonth(),
+        d1Bounds.first.start,
+        d1Bounds.last.start,
+      )) {
+        final remote = await remoteTotals.totalsFor(p);
+        expect(await d1.totals.totalsFor(p), remote, reason: 'aparelho 1');
+        expect(await d2.totals.totalsFor(p), remote, reason: 'aparelho 2');
       }
     },
     skip: _enabled ? false : skip,
@@ -358,10 +361,9 @@ void main() {
       final entries = EntryService(
         entryRepo,
         catRepo,
-        periods,
         recurrences: recurrenceRepo,
       );
-      await periods.setup(PeriodConfig.calendarMonth(), today);
+      await periods.setup(PeriodConfig.calendarMonth());
 
       final id = await entries.create(
         draft(EntryKind.income, 100000, today),
@@ -369,21 +371,21 @@ void main() {
       );
       final pending = (await entryRepo.entry(EntryKind.income, id))!;
       expect(pending.status, 'pending');
-      final period = (await periods.periodFor(today))!;
-      expect((await entryRepo.entriesInPeriod(period.id)).map((e) => e.id), [
+      final period = (await periods.periodFor(today));
+      expect((await entryRepo.entriesInPeriod(period)).map((e) => e.id), [
         id,
       ], reason: 'receita pendente aparece no período da data programada');
       expect(
         (await RemoteTotalsRepository(
           RemoteReportsRepository(SupabaseReportSource(a.client)),
-        ).totalsFor(period.id)).surplus,
+        ).totalsFor(period)).surplus,
         BigInt.zero,
       );
       await entries.receive(pending, today);
       expect(
         (await RemoteTotalsRepository(
           RemoteReportsRepository(SupabaseReportSource(a.client)),
-        ).totalsFor(period.id)).surplus,
+        ).totalsFor(period)).surplus,
         c(100000),
       );
 

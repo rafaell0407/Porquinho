@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/domain/calendar_date.dart';
+import '../../core/domain/period_calendar.dart';
 import '../../core/local_database/app_database.dart';
 import '../sync/local_change_recorder.dart';
 import 'entry_models.dart';
@@ -22,36 +23,31 @@ class LocalEntryRepository implements EntryRepository {
   final DateTime Function() _clock;
 
   @override
-  Future<List<EntryRecord>> entriesInPeriod(String periodId) async {
+  Future<List<EntryRecord>> entriesInPeriod(PeriodRange range) async {
     final result = <EntryRecord>[];
+    final start = Variable.withString(range.start.toIso());
+    final end = Variable.withString(range.end.toIso());
     for (final kind in EntryKind.values) {
-      // Receita recorrente pendente ainda não tem período: aparece no período
-      // que contém a data programada (RN011).
+      final date = kind.dateColumn;
+      // Receita recorrente pendente ainda não tem data de recebimento:
+      // aparece no período que contém a data programada (RN011).
       final scheduled = kind == EntryKind.income
-          ? 'OR (accounting_period_id IS NULL AND scheduled_for_date >= '
-                '(SELECT start_date FROM accounting_periods '
-                'WHERE owner_id = ? AND id = ?) '
-                'AND scheduled_for_date < '
-                '(SELECT end_date FROM accounting_periods '
-                'WHERE owner_id = ? AND id = ?)) '
+          ? 'OR ($date IS NULL AND scheduled_for_date >= ? '
+                'AND scheduled_for_date < ?) '
           : '';
       final order = kind == EntryKind.income
           ? 'COALESCE(received_on, scheduled_for_date)'
-          : kind.dateColumn;
+          : date;
       final rows = await _db
           .customSelect(
-            'SELECT * FROM ${kind.table} '
-            'WHERE owner_id = ? AND (accounting_period_id = ? $scheduled) '
+            'SELECT * FROM ${kind.table} WHERE owner_id = ? '
+            'AND (($date >= ? AND $date < ?) $scheduled) '
             'ORDER BY $order DESC, created_at DESC',
             variables: [
               Variable.withString(_ownerId),
-              Variable.withString(periodId),
-              if (kind == EntryKind.income) ...[
-                Variable.withString(_ownerId),
-                Variable.withString(periodId),
-                Variable.withString(_ownerId),
-                Variable.withString(periodId),
-              ],
+              start,
+              end,
+              if (kind == EntryKind.income) ...[start, end],
             ],
           )
           .get();
@@ -90,7 +86,6 @@ class LocalEntryRepository implements EntryRepository {
       subcategoryId: d['subcategory_id'] as String?,
       dueOn: due == null ? null : CalendarDate.parse(due),
       paidOn: paid == null ? null : CalendarDate.parse(paid),
-      periodId: d['accounting_period_id'] as String?,
       templateId: d['recurrence_template_id'] as String?,
       scheduledFor: scheduled == null ? null : CalendarDate.parse(scheduled),
     );
@@ -103,60 +98,32 @@ class LocalEntryRepository implements EntryRepository {
     }
   });
 
-  Future<String> _periodIdFor(CalendarDate date) async {
-    final row = await _db
-        .customSelect(
-          'SELECT id FROM accounting_periods WHERE owner_id = ? '
-          'AND start_date <= ? AND ? < end_date',
-          variables: [
-            Variable.withString(_ownerId),
-            Variable.withString(date.toIso()),
-            Variable.withString(date.toIso()),
-          ],
-        )
-        .getSingleOrNull();
-    if (row == null) {
-      throw StateError('Nenhum período cobre ${date.toIso()}.');
-    }
-    return row.read<String>('id');
-  }
-
   Future<void> _applyOne(EntryChange change) async {
     final call = entryRpcCallFor(change);
     final kind = call.kind;
     final now = _clock().toUtc().toIso8601String();
     final next = call.expectedVersion + 1;
 
-    String? periodId;
     EntryDraft? draft;
     EntryRecord? current;
     switch (change) {
       case CreateEntry(draft: final d):
         draft = d;
-        periodId = await _periodIdFor(d.date);
       case UpdateEntry(current: final c, draft: final d):
         draft = d;
         current = c;
-        // Receita recorrente pendente não tem data de recebimento nem período.
-        if (!c.isPendingIncome) periodId = await _periodIdFor(d.date);
       case PayExpense(current: final c):
         current = c;
-      case ReceiveIncome(current: final c, :final receivedOn):
+      case ReceiveIncome(current: final c):
         current = c;
-        periodId = await _periodIdFor(receivedOn);
       case CancelEntry(current: final c):
         current = c;
-      case CreateRecurrence(
-        draft: final d,
-        existing: final e,
-        periodId: final p,
-      ):
+      case CreateRecurrence(draft: final d, existing: final e):
         draft = d;
         current = e;
-        periodId = p;
     }
 
-    final newSnapshot = _newSnapshot(change, draft, current, periodId, next);
+    final newSnapshot = _newSnapshot(change, draft, current, next);
     await _recorder.record(
       ownerId: _ownerId,
       entityType: kind.entityType,
@@ -168,9 +135,7 @@ class LocalEntryRepository implements EntryRepository {
       dependsOn: [
         if (draft?.categoryId != null) draft!.categoryId!,
         if (draft?.subcategoryId != null) draft!.subcategoryId!,
-        ?periodId,
         ?(current?.templateId),
-        if (change is CreateRecurrence) ?change.scheduledPeriodId,
       ],
       extraAudits: [
         if (change is CreateRecurrence)
@@ -189,14 +154,14 @@ class LocalEntryRepository implements EntryRepository {
       oldSnapshot: current?.toSnapshot(),
       newSnapshot: newSnapshot,
       apply: () => switch (change) {
-        CreateEntry() => _insert(kind, call.entityId, draft!, periodId!, now),
-        UpdateEntry() => _update(
+        CreateEntry() => _insert(kind, call.entityId, draft!, now),
+        UpdateEntry(:final current) => _update(
           kind,
           call.entityId,
           draft!,
-          periodId,
           next,
           now,
+          pendingIncome: current.isPendingIncome,
         ),
         PayExpense(:final paidOn) => _db.customStatement(
           "UPDATE expense_entries SET status = 'paid', paid_on = ?, "
@@ -205,12 +170,10 @@ class LocalEntryRepository implements EntryRepository {
         ),
         ReceiveIncome(:final receivedOn, :final amount) => _db.customStatement(
           "UPDATE income_entries SET status = 'received', received_on = ?, "
-          'accounting_period_id = ?, '
           'amount_centavos = COALESCE(?, amount_centavos), '
           'version = ?, updated_at = ? WHERE owner_id = ? AND id = ?',
           [
             receivedOn.toIso(),
-            periodId,
             amount?.toString(),
             next,
             now,
@@ -232,7 +195,6 @@ class LocalEntryRepository implements EntryRepository {
     EntryChange change,
     EntryDraft? draft,
     EntryRecord? current,
-    String? periodId,
     int next,
   ) {
     if (change is PayExpense) {
@@ -249,7 +211,6 @@ class LocalEntryRepository implements EntryRepository {
         'status': 'received',
         'received_on': change.receivedOn.toIso(),
         if (change.amount != null) 'amount_centavos': change.amount.toString(),
-        'accounting_period_id': periodId,
         'version': next,
       };
     }
@@ -263,9 +224,6 @@ class LocalEntryRepository implements EntryRepository {
         'status': 'pending',
         'recurrence_template_id': change.templateId,
         'scheduled_for_date': change.scheduledFor.toIso(),
-        'accounting_period_id': change.kind == EntryKind.expense
-            ? periodId
-            : current?.periodId,
         'version': next,
       };
     }
@@ -278,25 +236,17 @@ class LocalEntryRepository implements EntryRepository {
           ? (draft!.kind == EntryKind.income ? 'received' : 'pending')
           : current!.status,
       ...draft!.toPayload(includeDate: !pendingIncome),
-      if (!pendingIncome) 'accounting_period_id': periodId,
       'version': next,
     };
   }
 
-  Future<void> _insert(
-    EntryKind kind,
-    String id,
-    EntryDraft d,
-    String periodId,
-    String now,
-  ) {
+  Future<void> _insert(EntryKind kind, String id, EntryDraft d, String now) {
     final income = kind == EntryKind.income;
     return _db.customStatement(
       'INSERT INTO ${kind.table} (id, owner_id, version, created_at, '
       'updated_at, description, amount_centavos, status, category_id, '
-      'subcategory_id, ${kind.dateColumn}, ${income ? '' : 'due_on, '}'
-      'accounting_period_id) '
-      "VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ${income ? '' : '?, '}?)",
+      'subcategory_id, ${kind.dateColumn}${income ? '' : ', due_on'}) '
+      "VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?${income ? '' : ', ?'})",
       [
         id,
         _ownerId,
@@ -309,7 +259,6 @@ class LocalEntryRepository implements EntryRepository {
         d.subcategoryId,
         d.date.toIso(),
         if (!income) d.dueOn?.toIso(),
-        periodId,
       ],
     );
   }
@@ -318,12 +267,12 @@ class LocalEntryRepository implements EntryRepository {
     EntryKind kind,
     String id,
     EntryDraft d,
-    String? periodId,
     int version,
-    String now,
-  ) {
+    String now, {
+    required bool pendingIncome,
+  }) {
     final income = kind == EntryKind.income;
-    if (periodId == null) {
+    if (pendingIncome) {
       // Receita recorrente pendente: só descrição, valor e categoria.
       return _db.customStatement(
         'UPDATE income_entries SET description = ?, amount_centavos = ?, '
@@ -344,7 +293,7 @@ class LocalEntryRepository implements EntryRepository {
     return _db.customStatement(
       'UPDATE ${kind.table} SET description = ?, amount_centavos = ?, '
       'category_id = ?, subcategory_id = ?, ${kind.dateColumn} = ?, '
-      '${income ? '' : 'due_on = ?, '}accounting_period_id = ?, '
+      '${income ? '' : 'due_on = ?, '}'
       'version = ?, updated_at = ? WHERE owner_id = ? AND id = ?',
       [
         d.description,
@@ -353,7 +302,6 @@ class LocalEntryRepository implements EntryRepository {
         d.subcategoryId,
         d.date.toIso(),
         if (!income) d.dueOn?.toIso(),
-        periodId,
         version,
         now,
         _ownerId,
@@ -397,13 +345,12 @@ class LocalEntryRepository implements EntryRepository {
     if (c.existing != null) {
       await _db.customStatement(
         'UPDATE ${kind.table} SET recurrence_template_id = ?, '
-        'scheduled_for_date = ?, scheduled_period_id = ?, '
+        'scheduled_for_date = ?, '
         '${income ? '' : 'competence_on = ?, due_on = COALESCE(due_on, ?), '}'
         'version = ?, updated_at = ? WHERE owner_id = ? AND id = ?',
         [
           c.templateId,
           scheduled,
-          c.scheduledPeriodId,
           if (!income) ...[scheduled, scheduled],
           next,
           now,
@@ -417,11 +364,10 @@ class LocalEntryRepository implements EntryRepository {
     await _db.customStatement(
       'INSERT INTO ${kind.table} (id, owner_id, version, created_at, '
       'updated_at, description, amount_centavos, status, category_id, '
-      'subcategory_id, recurrence_template_id, scheduled_for_date, '
-      "scheduled_period_id${income ? '' : ', competence_on, due_on, '
-                'accounting_period_id'}) "
-      "VALUES (?, ?, 1, ?, ?, ?, ?, 'pending', ?, ?, ?, ?, ?"
-      "${income ? '' : ', ?, ?, ?'})",
+      'subcategory_id, recurrence_template_id, scheduled_for_date'
+      "${income ? '' : ', competence_on, due_on'}) "
+      "VALUES (?, ?, 1, ?, ?, ?, ?, 'pending', ?, ?, ?, ?"
+      "${income ? '' : ', ?, ?'})",
       [
         c.entryId,
         _ownerId,
@@ -433,12 +379,7 @@ class LocalEntryRepository implements EntryRepository {
         c.draft.subcategoryId,
         c.templateId,
         scheduled,
-        c.scheduledPeriodId,
-        if (!income) ...[
-          scheduled,
-          (c.draft.dueOn ?? c.scheduledFor).toIso(),
-          c.periodId,
-        ],
+        if (!income) ...[scheduled, (c.draft.dueOn ?? c.scheduledFor).toIso()],
       ],
     );
   }

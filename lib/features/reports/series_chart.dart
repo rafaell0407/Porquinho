@@ -9,7 +9,7 @@ import 'reports_providers.dart';
 double _reais(BigInt cents) => cents.toDouble() / 100;
 
 String _label(SeriesItem item) {
-  final start = item.period.range.start.toBr();
+  final start = item.range.start.toBr();
   return start.length >= 5 ? start.substring(0, 5) : start;
 }
 

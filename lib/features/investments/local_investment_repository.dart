@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../core/domain/calendar_date.dart';
+import '../../core/domain/period_calendar.dart';
 import '../../core/local_database/app_database.dart';
 import '../sync/local_change_recorder.dart';
 import 'investment_models.dart';
@@ -22,15 +23,16 @@ class LocalInvestmentRepository implements InvestmentRepository {
   final DateTime Function() _clock;
 
   @override
-  Future<List<InvestmentRecord>> investmentsInPeriod(String periodId) async {
+  Future<List<InvestmentRecord>> investmentsInPeriod(PeriodRange range) async {
     final rows = await _db
         .customSelect(
           'SELECT * FROM investment_allocations '
-          'WHERE owner_id = ? AND accounting_period_id = ? '
+          'WHERE owner_id = ? AND allocated_on >= ? AND allocated_on < ? '
           'ORDER BY allocated_on DESC, created_at DESC',
           variables: [
             Variable.withString(_ownerId),
-            Variable.withString(periodId),
+            Variable.withString(range.start.toIso()),
+            Variable.withString(range.end.toIso()),
           ],
         )
         .get();
@@ -53,7 +55,6 @@ class LocalInvestmentRepository implements InvestmentRepository {
     amount: BigInt.parse(d['amount_centavos']! as String),
     date: CalendarDate.parse(d['allocated_on']! as String),
     version: d['version']! as int,
-    periodId: d['accounting_period_id'] as String?,
     cancelled: d['cancelled_at'] != null,
     templateId: d['recurrence_template_id'] as String?,
     scheduledFor: d['scheduled_for_date'] == null
@@ -69,24 +70,6 @@ class LocalInvestmentRepository implements InvestmentRepository {
         }
       });
 
-  Future<String> _periodIdFor(CalendarDate date) async {
-    final row = await _db
-        .customSelect(
-          'SELECT id FROM accounting_periods WHERE owner_id = ? '
-          'AND start_date <= ? AND ? < end_date',
-          variables: [
-            Variable.withString(_ownerId),
-            Variable.withString(date.toIso()),
-            Variable.withString(date.toIso()),
-          ],
-        )
-        .getSingleOrNull();
-    if (row == null) {
-      throw StateError('Nenhum período cobre ${date.toIso()}.');
-    }
-    return row.read<String>('id');
-  }
-
   Future<void> _applyOne(InvestmentChange change) async {
     final call = investmentRpcCallFor(change);
     final now = _clock().toUtc().toIso8601String();
@@ -98,19 +81,12 @@ class LocalInvestmentRepository implements InvestmentRepository {
       CancelInvestment(:final current) => current,
       CreateInvestmentRecurrence(:final existing) => existing,
     };
-    final periodId = switch (change) {
-      CreateInvestment(:final draft) => await _periodIdFor(draft.date),
-      UpdateInvestment(:final draft) => await _periodIdFor(draft.date),
-      CancelInvestment() => current!.periodId,
-      CreateInvestmentRecurrence(:final periodId) => periodId,
-    };
 
     final Map<String, dynamic> newSnapshot = switch (change) {
       CreateInvestment(:final id, :final draft) => {
         'id': id,
         'amount_centavos': draft.amount.toString(),
         'allocated_on': draft.date.toIso(),
-        'accounting_period_id': periodId,
         'cancelled': false,
         'version': next,
       },
@@ -118,7 +94,6 @@ class LocalInvestmentRepository implements InvestmentRepository {
         ...current!.toSnapshot(),
         'amount_centavos': draft.amount.toString(),
         'allocated_on': draft.date.toIso(),
-        'accounting_period_id': periodId,
         'version': next,
       },
       CancelInvestment() => {
@@ -131,7 +106,6 @@ class LocalInvestmentRepository implements InvestmentRepository {
         'id': c.entryId,
         'amount_centavos': c.draft.amount.toString(),
         'allocated_on': c.scheduledFor.toIso(),
-        'accounting_period_id': periodId,
         'cancelled': false,
         'recurrence_template_id': c.templateId,
         'scheduled_for_date': c.scheduledFor.toIso(),
@@ -147,11 +121,7 @@ class LocalInvestmentRepository implements InvestmentRepository {
       expectedVersion: call.expectedVersion,
       rpc: call.rpc,
       params: call.params,
-      dependsOn: [
-        ?periodId,
-        ?current?.templateId,
-        if (change is CreateInvestmentRecurrence) ?change.scheduledPeriodId,
-      ],
+      dependsOn: [?current?.templateId],
       extraAudits: [
         if (change is CreateInvestmentRecurrence)
           ExtraAudit(
@@ -171,8 +141,8 @@ class LocalInvestmentRepository implements InvestmentRepository {
       apply: () => switch (change) {
         CreateInvestment(:final draft) => _db.customStatement(
           'INSERT INTO investment_allocations (id, owner_id, version, '
-          'created_at, updated_at, amount_centavos, allocated_on, '
-          'accounting_period_id) VALUES (?, ?, 1, ?, ?, ?, ?, ?)',
+          'created_at, updated_at, amount_centavos, allocated_on) '
+          'VALUES (?, ?, 1, ?, ?, ?, ?)',
           [
             call.entityId,
             _ownerId,
@@ -180,17 +150,15 @@ class LocalInvestmentRepository implements InvestmentRepository {
             now,
             draft.amount.toString(),
             draft.date.toIso(),
-            periodId,
           ],
         ),
         UpdateInvestment(:final draft) => _db.customStatement(
           'UPDATE investment_allocations SET amount_centavos = ?, '
-          'allocated_on = ?, accounting_period_id = ?, version = ?, '
+          'allocated_on = ?, version = ?, '
           'updated_at = ? WHERE owner_id = ? AND id = ?',
           [
             draft.amount.toString(),
             draft.date.toIso(),
-            periodId,
             next,
             now,
             _ownerId,
@@ -236,26 +204,17 @@ class LocalInvestmentRepository implements InvestmentRepository {
     if (c.existing != null) {
       await _db.customStatement(
         'UPDATE investment_allocations SET recurrence_template_id = ?, '
-        'scheduled_for_date = ?, scheduled_period_id = ?, allocated_on = ?, '
+        'scheduled_for_date = ?, allocated_on = ?, '
         'version = ?, updated_at = ? WHERE owner_id = ? AND id = ?',
-        [
-          c.templateId,
-          scheduled,
-          c.scheduledPeriodId,
-          scheduled,
-          next,
-          now,
-          _ownerId,
-          c.entryId,
-        ],
+        [c.templateId, scheduled, scheduled, next, now, _ownerId, c.entryId],
       );
       return;
     }
     await _db.customStatement(
       'INSERT INTO investment_allocations (id, owner_id, version, created_at, '
-      'updated_at, amount_centavos, allocated_on, accounting_period_id, '
-      'recurrence_template_id, scheduled_for_date, scheduled_period_id) '
-      'VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'updated_at, amount_centavos, allocated_on, '
+      'recurrence_template_id, scheduled_for_date) '
+      'VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?)',
       [
         c.entryId,
         _ownerId,
@@ -263,10 +222,8 @@ class LocalInvestmentRepository implements InvestmentRepository {
         now,
         c.draft.amount.toString(),
         scheduled,
-        c.periodId,
         c.templateId,
         scheduled,
-        c.scheduledPeriodId,
       ],
     );
   }

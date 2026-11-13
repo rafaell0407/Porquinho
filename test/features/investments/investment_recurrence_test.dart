@@ -39,14 +39,9 @@ class Device {
     );
     periods = PeriodService(
       LocalPeriodRepository(db, 'u1', recorder, clock: clock),
-      newId: () => '$prefix-p${++ids}',
     );
     investments = LocalInvestmentRepository(db, 'u1', recorder, clock: clock);
-    service = InvestmentService(
-      investments,
-      periods,
-      newId: () => 'tpl-${++templates}',
-    );
+    service = InvestmentService(investments, newId: () => 'tpl-${++templates}');
     templatesRepo = LocalInvestmentRecurrenceRepository(
       db,
       'u1',
@@ -71,18 +66,17 @@ class Device {
   late final LocalTotalsRepository totals;
 
   Future<void> setUp() async {
-    await periods.setup(PeriodConfig.calendarMonth(), today);
-    await periods.createCovering(d(2026, 8, 1));
+    await periods.setup(PeriodConfig.calendarMonth());
   }
 
   Future<BigInt> surplus(CalendarDate date) async =>
-      (await totals.totalsFor((await periods.periodFor(date))!.id)).surplus;
+      (await totals.totalsFor((await periods.periodFor(date)))).surplus;
 
   Future<List<InvestmentRecord>> all() async {
     final result = <InvestmentRecord>[];
     for (var m = 8; m <= 11; m++) {
       final p = await periods.periodFor(d(2026, m, 5));
-      result.addAll(await investments.investmentsInPeriod(p!.id));
+      result.addAll(await investments.investmentsInPeriod(p));
     }
     return result..sort((a, b) => a.date.compareTo(b.date));
   }
@@ -150,7 +144,6 @@ void main() {
     });
 
     test('dia 31 em mês curto usa o último dia', () async {
-      await a.periods.createCovering(d(2026, 1, 1));
       await a.service.create(
         draft(100, d(2026, 8, 31)),
         repeat: RecurrenceFrequency.monthly,
@@ -186,20 +179,29 @@ void main() {
     });
   });
 
-  group('por período (D7)', () {
-    test('cada período tem uma ocorrência na data de início', () async {
-      await a.service.create(
-        draft(7000, d(2026, 9, 17)),
-        repeat: RecurrenceFrequency.byPeriod,
+  group('só "Todo mês" (13/11/2026)', () {
+    test('"Todo período" é recusado e nada é gravado', () async {
+      await expectLater(
+        a.service.create(
+          draft(7000, d(2026, 9, 17)),
+          repeat: RecurrenceFrequency.byPeriod,
+        ),
+        throwsA(isA<ChangeRejectedException>()),
       );
-      final first = (await a.all()).single;
-      expect(first.date, d(2026, 9, 1));
+      expect(await a.all(), isEmpty);
+    });
+
+    test('dia 31: em mês curto, último dia útil; uma por mês', () async {
+      await a.service.create(
+        draft(7000, d(2026, 8, 31)),
+        repeat: RecurrenceFrequency.monthly,
+      );
       await a.generator.generateDue(today);
-      final list = await a.all();
-      expect(list.map((i) => i.date), [
-        d(2026, 9, 1),
-        d(2026, 10, 1),
-        d(2026, 11, 1),
+      // 31/08 (seg), 30/09 (qua), 31/10 (sáb, existe: mantém).
+      expect((await a.all()).map((i) => i.date).toList()..sort(), [
+        d(2026, 8, 31),
+        d(2026, 9, 30),
+        d(2026, 10, 31),
       ]);
       expect(await a.generator.generateDue(today), 0);
     });
@@ -320,7 +322,6 @@ void main() {
       await a.recurrence.stop((await a.templatesRepo.template('tpl-1'))!);
       expect((await a.templatesRepo.template('tpl-1'))!.isActive, isFalse);
       expect((await a.all()).length, 3);
-      await a.periods.createCovering(d(2026, 12, 20));
       expect(await a.generator.generateDue(d(2026, 12, 20)), 0);
       expect((await a.all()).length, 3);
     });
@@ -387,15 +388,19 @@ void main() {
       });
     });
 
-    test('data sem período pergunta antes (nada é gravado)', () async {
-      await expectLater(
-        a.service.create(
-          draft(100, d(2026, 5, 5)),
-          repeat: RecurrenceFrequency.monthly,
-        ),
-        throwsA(isA<Object>()),
+    test('qualquer data é aceita (RN002): recorrência criada direto', () async {
+      await a.service.create(
+        draft(100, d(2026, 5, 5)),
+        repeat: RecurrenceFrequency.monthly,
       );
-      expect((await a.templatesRepo.templates()), isEmpty);
+      expect((await a.templatesRepo.templates()), hasLength(1));
+      await a.generator.generateDue(today);
+      // 05/05 (a própria) até 05/11: sete meses, uma por mês.
+      expect(
+        (await a.db.customSelect('SELECT * FROM investment_allocations').get())
+            .length,
+        7,
+      );
     });
   });
 
@@ -416,8 +421,6 @@ void main() {
             draft: draft(5000, d(2026, 9, 5)),
             frequency: RecurrenceFrequency.byPeriod,
             scheduledFor: d(2026, 9, 1),
-            periodId: 'p1',
-            scheduledPeriodId: 'p1',
           ),
         ]);
         final (rpc, params) = gateway.calls.single;

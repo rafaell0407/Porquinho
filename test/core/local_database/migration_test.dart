@@ -180,4 +180,276 @@ void main() {
     await verifier.migrateAndValidate(db, 6);
     await db.close();
   });
+
+  group('v6 -> v7 (reestruturação de períodos P6)', () {
+    void seedV6(dynamic raw) {
+      // Configuração em vigor (mensal desde 2026-01) e uma mudança agendada
+      // para o futuro (ciclo dia 20 em 2999): vale a de hoje.
+      raw.execute(
+        "INSERT INTO period_configurations (id, owner_id, version, created_at, "
+        "updated_at, mode, custom_start_day, effective_from) VALUES "
+        "('cfg1', 'u1', 1, 'x', 'x', 'calendar_month', NULL, '2026-01-01'), "
+        "('cfg2', 'u1', 2, 'x', 'x', 'custom_cycle', 20, '2999-01-01'), "
+        "('cfg3', 'u2', 1, 'x', 'x', 'custom_cycle', 5, '2026-03-05')",
+      );
+      raw.execute(
+        "INSERT INTO accounting_periods (id, owner_id, version, created_at, "
+        "updated_at, configuration_id, start_date, end_date) VALUES "
+        "('p1', 'u1', 1, 'x', 'x', 'cfg1', '2026-11-01', '2026-12-01')",
+      );
+      raw.execute(
+        "INSERT INTO income_entries (id, owner_id, version, created_at, "
+        "updated_at, amount_centavos, status, received_on, "
+        "accounting_period_id) VALUES "
+        "('i1', 'u1', 1, 'x', 'x', '1000', 'received', '2026-11-05', 'p1')",
+      );
+      raw.execute(
+        "INSERT INTO expense_entries (id, owner_id, version, created_at, "
+        "updated_at, amount_centavos, status, competence_on, "
+        "accounting_period_id) VALUES "
+        "('e1', 'u1', 2, 'x', 'x', '500', 'pending', '2026-11-06', 'p1')",
+      );
+      raw.execute(
+        "INSERT INTO investment_allocations (id, owner_id, version, "
+        "created_at, updated_at, amount_centavos, allocated_on, "
+        "accounting_period_id) VALUES "
+        "('v1', 'u1', 1, 'x', 'x', '300', '2026-11-07', 'p1')",
+      );
+    }
+
+    test('produz o esquema do snapshot v7', () async {
+      final schema = await verifier.schemaAt(6);
+      seedV6(schema.rawDatabase);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 7);
+      await db.close();
+    });
+
+    test(
+      'cria a configuração única com a de hoje e preserva os dados',
+      () async {
+        final schema = await verifier.schemaAt(6);
+        seedV6(schema.rawDatabase);
+        final db = PorquinhoDatabase(schema.newConnection());
+        await verifier.migrateAndValidate(db, 7);
+        final settings = await db
+            .customSelect('SELECT * FROM period_settings ORDER BY owner_id')
+            .get();
+        expect(settings.map((r) => r.data['owner_id']), ['u1', 'u2']);
+        expect(settings[0].data['id'], 'u1');
+        expect(settings[0].data['mode'], 'calendar_month');
+        expect(settings[0].data['custom_start_day'], isNull);
+        expect(settings[0].data['version'], 1);
+        expect(settings[1].data['mode'], 'custom_cycle');
+        expect(settings[1].data['custom_start_day'], 5);
+        // Lançamentos intactos, com o vínculo antigo preservado.
+        final e = await db
+            .customSelect('SELECT * FROM expense_entries')
+            .getSingle();
+        expect(e.data['version'], 2);
+        expect(e.data['accounting_period_id'], 'p1');
+        expect(
+          (await db.customSelect('SELECT * FROM income_entries').get()).length,
+          1,
+        );
+        expect(
+          (await db.customSelect('SELECT * FROM investment_allocations').get())
+              .length,
+          1,
+        );
+        await db.close();
+      },
+    );
+
+    test('depois da migração, lançamentos sem período são aceitos', () async {
+      final schema = await verifier.schemaAt(6);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 7);
+      await db.customStatement(
+        "INSERT INTO income_entries (id, owner_id, version, created_at, "
+        "updated_at, amount_centavos, status, received_on) VALUES "
+        "('i2', 'u1', 1, 'x', 'x', '1', 'received', '1999-01-31')",
+      );
+      await db.customStatement(
+        "INSERT INTO expense_entries (id, owner_id, version, created_at, "
+        "updated_at, amount_centavos, status, competence_on) VALUES "
+        "('e2', 'u1', 1, 'x', 'x', '1', 'pending', '2040-12-31')",
+      );
+      await db.customStatement(
+        "INSERT INTO investment_allocations (id, owner_id, version, "
+        "created_at, updated_at, amount_centavos, allocated_on) VALUES "
+        "('v2', 'u1', 1, 'x', 'x', '1', '2030-06-15')",
+      );
+      // A regra de status continua: recebida sem data é recusada.
+      await expectLater(
+        db.customStatement(
+          "INSERT INTO income_entries (id, owner_id, version, created_at, "
+          "updated_at, amount_centavos, status) VALUES "
+          "('i3', 'u1', 1, 'x', 'x', '1', 'received')",
+        ),
+        throwsA(anything),
+      );
+      await db.close();
+    });
+
+    test('criação direta na v7 equivale ao snapshot v7', () async {
+      final schema = await verifier.schemaAt(7);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 7);
+      await db.close();
+    });
+
+    test('v1 -> v7 (todos os passos)', () async {
+      final schema = await verifier.schemaAt(1);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 7);
+      await db.close();
+    });
+  });
+
+  group('v7 -> v8 (reestruturação de períodos P7)', () {
+    void seedV7(dynamic raw) {
+      raw.execute(
+        "INSERT INTO period_settings (id, owner_id, version, created_at, "
+        "updated_at, mode, custom_start_day) VALUES "
+        "('u1', 'u1', 2, 'x', 'x', 'custom_cycle', 20)",
+      );
+      raw.execute(
+        "INSERT INTO period_configurations (id, owner_id, version, created_at, "
+        "updated_at, mode, effective_from) VALUES "
+        "('cfg1', 'u1', 1, 'x', 'x', 'calendar_month', '2026-01-01')",
+      );
+      raw.execute(
+        "INSERT INTO accounting_periods (id, owner_id, version, created_at, "
+        "updated_at, configuration_id, start_date, end_date) VALUES "
+        "('p1', 'u1', 1, 'x', 'x', 'cfg1', '2026-11-01', '2026-12-01')",
+      );
+      raw.execute(
+        "INSERT INTO income_recurrence_templates (id, owner_id, version, "
+        "created_at, updated_at, frequency, starts_on, monthly_reference_day, "
+        "value_mode) VALUES ('t1', 'u1', 1, 'x', 'x', 'monthly', "
+        "'2026-11-05', 5, 'variable')",
+      );
+      raw.execute(
+        "INSERT INTO income_entries (id, owner_id, version, created_at, "
+        "updated_at, amount_centavos, status, received_on, "
+        "accounting_period_id) VALUES "
+        "('i1', 'u1', 3, 'x', 'x', '9223372036854775807', 'received', "
+        "'2026-11-05', 'p1')",
+      );
+      raw.execute(
+        "INSERT INTO income_entries (id, owner_id, version, created_at, "
+        "updated_at, status, recurrence_template_id, scheduled_for_date) "
+        "VALUES ('i2', 'u1', 1, 'x', 'x', 'pending', 't1', '2026-12-05')",
+      );
+      raw.execute(
+        "INSERT INTO expense_entries (id, owner_id, version, created_at, "
+        "updated_at, amount_centavos, status, competence_on, due_on, paid_on, "
+        "accounting_period_id) VALUES ('e1', 'u1', 2, 'x', 'x', '500', "
+        "'paid', '2026-11-06', '2026-11-10', '2026-11-09', 'p1')",
+      );
+      raw.execute(
+        "INSERT INTO investment_allocations (id, owner_id, version, "
+        "created_at, updated_at, amount_centavos, allocated_on, "
+        "accounting_period_id) VALUES "
+        "('v1', 'u1', 1, 'x', 'x', '300', '2026-11-07', 'p1')",
+      );
+      // Pendências antigas de período, sem destino depois da P7.
+      raw.execute(
+        "INSERT INTO sync_outbox (owner_id, idempotency_key, entity_type, "
+        "entity_id, expected_version, payload_json, state, attempts) VALUES "
+        "('u1', 'k1', 'accounting_period', 'p2', 0, '{}', 'pending', 0), "
+        "('u1', 'k2', 'income_entry', 'i1', 2, '{}', 'pending', 0)",
+      );
+      raw.execute(
+        "INSERT INTO sync_conflicts (id, owner_id, version, created_at, "
+        "updated_at, entity_type, entity_id, expected_version, remote_version, "
+        "local_snapshot_json, remote_snapshot_json, state) VALUES "
+        "('c1', 'u1', 1, 'x', 'x', 'period_configuration', 'cfg1', 1, 2, "
+        "'{}', '{}', 'open')",
+      );
+    }
+
+    test('produz o esquema do snapshot v8', () async {
+      final schema = await verifier.schemaAt(7);
+      seedV7(schema.rawDatabase);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 8);
+      await db.close();
+    });
+
+    test('remove períodos e vínculos e preserva o dinheiro', () async {
+      final schema = await verifier.schemaAt(7);
+      seedV7(schema.rawDatabase);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 8);
+      final tables = await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN "
+            "('accounting_periods', 'period_configurations')",
+          )
+          .get();
+      expect(tables, isEmpty);
+      for (final t in [
+        'income_entries',
+        'expense_entries',
+        'investment_allocations',
+      ]) {
+        final cols = await db
+            .customSelect("SELECT name FROM pragma_table_info('$t')")
+            .get();
+        final names = cols.map((r) => r.read<String>('name')).toList();
+        expect(names, isNot(contains('accounting_period_id')), reason: t);
+        expect(names, isNot(contains('scheduled_period_id')), reason: t);
+      }
+      final i1 = await db
+          .customSelect("SELECT * FROM income_entries WHERE id = 'i1'")
+          .getSingle();
+      expect(i1.data['amount_centavos'], '9223372036854775807');
+      expect(i1.data['version'], 3);
+      final i2 = await db
+          .customSelect("SELECT * FROM income_entries WHERE id = 'i2'")
+          .getSingle();
+      expect(i2.data['scheduled_for_date'], '2026-12-05');
+      final e1 = await db
+          .customSelect('SELECT * FROM expense_entries')
+          .getSingle();
+      expect(e1.data['paid_on'], '2026-11-09');
+      expect(e1.data['status'], 'paid');
+      expect(
+        (await db.customSelect('SELECT * FROM investment_allocations').get())
+            .length,
+        1,
+      );
+      final settings = await db
+          .customSelect('SELECT * FROM period_settings')
+          .getSingle();
+      expect(settings.data['custom_start_day'], 20);
+      expect(settings.data['version'], 2);
+      final outbox = await db
+          .customSelect('SELECT idempotency_key FROM sync_outbox')
+          .get();
+      expect(outbox.map((r) => r.read<String>('idempotency_key')), ['k2']);
+      expect(
+        await db.customSelect('SELECT * FROM sync_conflicts').get(),
+        isEmpty,
+      );
+      expect(await db.customSelect('PRAGMA foreign_key_check').get(), isEmpty);
+      await db.close();
+    });
+
+    test('criação direta na v8 equivale ao snapshot v8', () async {
+      final schema = await verifier.schemaAt(8);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 8);
+      await db.close();
+    });
+
+    test('v1 -> v8 (todos os passos)', () async {
+      final schema = await verifier.schemaAt(1);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 8);
+      await db.close();
+    });
+  });
 }

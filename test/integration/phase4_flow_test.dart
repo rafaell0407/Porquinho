@@ -81,10 +81,10 @@ void main() {
       final catRepo = LocalCategoryRepository(db, a.id, recorder);
       final categories = CategoryService(catRepo);
       final entryRepo = LocalEntryRepository(db, a.id, recorder);
-      final entries = EntryService(entryRepo, catRepo, periods);
+      final entries = EntryService(entryRepo, catRepo);
 
       // Tudo offline: ciclo dia 20, categorias, lançamentos e períodos para trás.
-      await periods.setup(PeriodConfig.customCycle(20), d(2026, 11, 10));
+      await periods.setup(PeriodConfig.customCycle(20));
       await categories.addSuggestions(
         income: ['Salário'],
         expense: ['Mercado'],
@@ -127,10 +127,8 @@ void main() {
       await entries.cancel(
         (await entryRepo.entry(EntryKind.expense, toCancel))!,
       );
-      // Data passada (cria períodos para trás) e futura.
-      await entries.createMissingPeriods(d(2026, 8, 25));
+      // Data passada e futura: todo dia tem período (calculado, RN002).
       final moved = await add(EntryKind.income, 70000, d(2026, 8, 25));
-      await entries.createMissingPeriods(d(2027, 1, 30));
       await add(EntryKind.income, 1000, d(2027, 1, 30));
       // Muda a data: o valor muda de período.
       await entries.update(
@@ -157,32 +155,40 @@ void main() {
       );
       expect(await sync.openConflicts(a.id), isEmpty);
 
-      // Servidor × celular: mesmo conjunto de períodos e mesmas sobras.
+      // Servidor × celular: mesma configuração, mesmos limites de navegação
+      // e mesmas sobras em todos os períodos calculados.
       final remoteTotals = RemoteTotalsRepository(
         RemoteReportsRepository(SupabaseReportSource(a.client)),
       );
       final localTotals = LocalTotalsRepository(db, a.id);
-      final localPeriods = await periodRepo.periods();
-      final serverPeriods = await RemotePeriodRepository(
-        SupabaseTableReader(a.client),
-        SupabaseSyncGateway(a.client),
-      ).periods();
-      expect(
-        serverPeriods.map((p) => p.range.toString()).toList(),
-        localPeriods.map((p) => p.range.toString()).toList(),
+      final web = PeriodService(
+        RemotePeriodRepository(
+          SupabaseTableReader(a.client),
+          SupabaseSyncGateway(a.client),
+        ),
       );
-      for (var i = 1; i < serverPeriods.length; i++) {
-        expect(serverPeriods[i].range.start, serverPeriods[i - 1].range.end);
+      expect(await web.currentConfig(), await periods.currentConfig());
+      final today = d(2026, 11, 10);
+      final localBounds = await periods.bounds(today);
+      expect(await web.bounds(today), localBounds);
+      final localPeriods = PeriodCalendar.between(
+        (await periods.currentConfig())!,
+        localBounds.first.start,
+        localBounds.last.start,
+      );
+      expect(localPeriods.length, 5); // set/2026 a jan/2027
+      for (var i = 1; i < localPeriods.length; i++) {
+        expect(localPeriods[i].start, localPeriods[i - 1].end);
       }
       for (final p in localPeriods) {
         expect(
-          await remoteTotals.totalsFor(p.id),
-          await localTotals.totalsFor(p.id),
-          reason: p.range.toString(),
+          await remoteTotals.totalsFor(p),
+          await localTotals.totalsFor(p),
+          reason: p.toString(),
         );
       }
-      final nov = (await periods.periodFor(d(2026, 11, 5)))!;
-      expect((await localTotals.totalsFor(nov.id)).surplus, c(350000));
+      final nov = (await periods.periodFor(d(2026, 11, 5)));
+      expect((await localTotals.totalsFor(nov)).surplus, c(350000));
 
       // Aparelho novo: baixa tudo e chega nos mesmos números.
       final db2 = PorquinhoDatabase(NativeDatabase.memory());
@@ -195,9 +201,9 @@ void main() {
       final totals2 = LocalTotalsRepository(db2, a.id);
       for (final p in localPeriods) {
         expect(
-          await totals2.totalsFor(p.id),
-          await localTotals.totalsFor(p.id),
-          reason: 'aparelho novo ${p.range}',
+          await totals2.totalsFor(p),
+          await localTotals.totalsFor(p),
+          reason: 'aparelho novo $p',
         );
       }
 
@@ -206,8 +212,7 @@ void main() {
       for (final t in [
         'categories',
         'subcategories',
-        'accounting_periods',
-        'period_configurations',
+        'period_settings',
         'income_entries',
         'expense_entries',
       ]) {
@@ -227,10 +232,10 @@ void main() {
       final catRepo = RemoteCategoryRepository(reader, gateway);
       final categories = CategoryService(catRepo);
       final entryRepo = RemoteEntryRepository(reader, gateway);
-      final entries = EntryService(entryRepo, catRepo, periods);
+      final entries = EntryService(entryRepo, catRepo);
 
       expect(await periods.needsSetup(), isTrue);
-      await periods.setup(PeriodConfig.calendarMonth(), d(2026, 11, 10));
+      await periods.setup(PeriodConfig.calendarMonth());
       expect(await periods.needsSetup(), isFalse);
 
       await categories.createCategory(CategoryKind.expense, 'Mercado');
@@ -253,32 +258,25 @@ void main() {
           categoryId: market.id,
         ),
       );
-      final period = (await periods.periodFor(d(2026, 11, 4)))!;
+      final period = (await periods.periodFor(d(2026, 11, 4)));
       final totals = RemoteTotalsRepository(
         RemoteReportsRepository(SupabaseReportSource(a.client)),
       );
-      expect((await totals.totalsFor(period.id)).surplus, c(60000));
+      expect((await totals.totalsFor(period)).surplus, c(60000));
 
       await entries.pay(
         (await entryRepo.entry(EntryKind.expense, expense))!,
         d(2026, 11, 9),
       );
       expect(
-        (await totals.totalsFor(period.id)).surplus,
+        (await totals.totalsFor(period)).surplus,
         c(60000),
         reason: 'pagar não muda',
       );
       await entries.cancel((await entryRepo.entry(EntryKind.income, income))!);
-      expect((await totals.totalsFor(period.id)).surplus, c(-40000));
+      expect((await totals.totalsFor(period)).surplus, c(-40000));
 
-      // Período inexistente: pergunta; períodos para trás pela RPC nova.
-      await expectLater(
-        entries.create(
-          EntryDraft(kind: EntryKind.income, amount: c(1), date: d(2026, 8, 2)),
-        ),
-        throwsA(isA<PeriodMissingException>()),
-      );
-      await entries.createMissingPeriods(d(2026, 8, 2));
+      // Data antiga: o período existe por cálculo (RN002), sem perguntar.
       await entries.create(
         EntryDraft(
           kind: EntryKind.income,
@@ -286,8 +284,8 @@ void main() {
           date: d(2026, 8, 2),
         ),
       );
-      final august = (await periods.periodFor(d(2026, 8, 2)))!;
-      expect((await totals.totalsFor(august.id)).surplus, c(5000));
+      final august = (await periods.periodFor(d(2026, 8, 2)));
+      expect((await totals.totalsFor(august)).surplus, c(5000));
 
       // Servidor recusa o que a validação local deixaria passar: vira mensagem.
       final other = await _newAccount(r);
@@ -300,12 +298,6 @@ void main() {
           RemoteCategoryRepository(
             SupabaseTableReader(other.client),
             SupabaseSyncGateway(other.client),
-          ),
-          PeriodService(
-            RemotePeriodRepository(
-              SupabaseTableReader(other.client),
-              SupabaseSyncGateway(other.client),
-            ),
           ),
         ).create(
           EntryDraft(

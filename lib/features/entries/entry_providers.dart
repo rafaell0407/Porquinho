@@ -37,7 +37,6 @@ final entryServiceProvider = FutureProvider<EntryService>((ref) async {
   return EntryService(
     await ref.watch(entryRepositoryProvider.future),
     await ref.watch(categoryRepositoryProvider.future),
-    await ref.watch(periodServiceProvider.future),
     recurrences: await ref.watch(recurrenceRepositoryProvider.future),
   );
 });
@@ -56,19 +55,17 @@ final totalsRepositoryProvider = FutureProvider<TotalsRepository>((ref) async {
 /// Lançamentos do período exibido (vazio se o período ainda não existe).
 final periodEntriesProvider = FutureProvider<List<EntryRecord>>((ref) async {
   final view = await ref.watch(selectedPeriodProvider.future);
-  final periodId = view?.record?.id;
-  if (periodId == null) return const [];
+  if (view == null) return const [];
   final service = await ref.watch(entryServiceProvider.future);
-  return service.entriesInPeriod(periodId);
+  return service.entriesInPeriod(view.range);
 });
 
 /// Sobra e totais do período exibido, sempre derivados dos lançamentos.
 final periodTotalsProvider = FutureProvider<PeriodTotals?>((ref) async {
   final view = await ref.watch(selectedPeriodProvider.future);
-  final periodId = view?.record?.id;
-  if (periodId == null) return null;
+  if (view == null) return null;
   final repo = await ref.watch(totalsRepositoryProvider.future);
-  return repo.totalsFor(periodId);
+  return repo.totalsFor(view.range);
 });
 
 /// Atualiza listas, totais e períodos depois de gravar.

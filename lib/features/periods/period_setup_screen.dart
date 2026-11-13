@@ -52,8 +52,8 @@ class _PeriodSetupScreenState extends ConsumerState<PeriodSetupScreen> {
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'Como você quer contar o seu mês? Uma mudança futura vale a '
-            'partir do próximo período.',
+            'Como você quer contar o seu mês? Você pode mudar quando quiser '
+            'em Mais → Período.',
           ),
           const SizedBox(height: 16),
           PeriodConfigFields(

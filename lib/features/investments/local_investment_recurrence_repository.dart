@@ -75,23 +75,7 @@ class LocalInvestmentRecurrenceRepository
         .getSingle();
     final last = row.data['last'] as String?;
     if (last == null) return const ScheduleFacts();
-    final period = await _db
-        .customSelect(
-          'SELECT end_date FROM accounting_periods WHERE owner_id = ? '
-          'AND start_date <= ? AND ? < end_date',
-          variables: [
-            Variable.withString(_ownerId),
-            Variable.withString(last),
-            Variable.withString(last),
-          ],
-        )
-        .getSingleOrNull();
-    return ScheduleFacts(
-      lastScheduled: CalendarDate.parse(last),
-      lastPeriodEnd: period == null
-          ? null
-          : CalendarDate.parse(period.read<String>('end_date')),
-    );
+    return ScheduleFacts(lastScheduled: CalendarDate.parse(last));
   }
 
   @override

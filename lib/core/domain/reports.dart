@@ -4,6 +4,7 @@
 /// mesmas regras do dinheiro livre (`surplus.dart`): nenhuma fórmula nova.
 library;
 
+import 'period_calendar.dart';
 import 'surplus.dart';
 
 /// Uma linha de relatório por categoria. [categoryId] nulo = "Sem categoria".
@@ -80,13 +81,13 @@ CategoryBreakdown expenseByCategory(Iterable<ExpenseLine> lines) {
 /// Lançamentos de um período, para os relatórios de vários períodos.
 class PeriodLines {
   const PeriodLines({
-    required this.periodId,
+    required this.range,
     this.incomes = const [],
     this.expenses = const [],
     this.investments = const [],
   });
 
-  final String periodId;
+  final PeriodRange range;
   final Iterable<IncomeLine> incomes;
   final Iterable<ExpenseLine> expenses;
   final Iterable<InvestmentLine> investments;
@@ -94,9 +95,9 @@ class PeriodLines {
 
 /// Totais de um período dentro de uma sequência (relatórios 3, 4 e 5).
 class PeriodSummary {
-  const PeriodSummary({required this.periodId, required this.totals});
+  const PeriodSummary({required this.range, required this.totals});
 
-  final String periodId;
+  final PeriodRange range;
   final PeriodTotals totals;
 }
 
@@ -105,7 +106,7 @@ class PeriodSummary {
 List<PeriodSummary> summarizePeriods(Iterable<PeriodLines> periods) => [
   for (final p in periods)
     PeriodSummary(
-      periodId: p.periodId,
+      range: p.range,
       totals: computePeriodTotals(
         incomes: p.incomes,
         expenses: p.expenses,

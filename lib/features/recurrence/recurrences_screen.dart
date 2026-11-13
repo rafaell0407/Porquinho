@@ -131,6 +131,7 @@ class _TemplateTile extends ConsumerWidget {
   Future<void> _actions(BuildContext context, WidgetRef ref) async {
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       builder: (sheet) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -245,6 +246,7 @@ class _InvestmentTemplateTile extends ConsumerWidget {
   Future<void> _actions(BuildContext context, WidgetRef ref) async {
     await showModalBottomSheet<void>(
       context: context,
+      isScrollControlled: true,
       builder: (sheet) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,

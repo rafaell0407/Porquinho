@@ -34,8 +34,8 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 5. Bloqueio opcional por PIN ou biometria no aplicativo móvel, solicitado ao abrir o app quando ativado.
 6. Navegação principal com três áreas: Dashboard, Lançamentos e Mais.
 7. Cadastro de receitas avulsas, com data de recebimento informada pelo usuário (passada ou futura — decisão de 10/11/2026).
-8. Cadastro de receitas recorrentes mensais ou por período, com valores fixos ou variáveis; ocorrência pendente até confirmação do recebimento.
-9. Cadastro de despesas avulsas e recorrentes mensais ou por período, com valores fixos ou variáveis.
+8. Cadastro de receitas recorrentes mensais, com valores fixos ou variáveis; ocorrência pendente até confirmação do recebimento.
+9. Cadastro de despesas avulsas e recorrentes mensais, com valores fixos ou variáveis.
 10. Status de despesa pendente/paga e registro da data de pagamento.
 11. Fatura de cartão representada por despesa recorrente variável, sem módulo próprio de cartão.
 12. Categorias personalizáveis de receitas e despesas, com subcategorias opcionais.
@@ -104,11 +104,11 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF003 | Bloqueio móvel opcional por PIN ou biometria ao abrir o app | Alta | APROVADO |
 | RF004 | Navegação principal Dashboard, Lançamentos e Mais | Essencial | APROVADO |
 | RF005 | Registrar receitas avulsas com data de recebimento informada (passada ou futura) | Essencial | APROVADO (revisado em 10/11/2026) |
-| RF006 | Criar receitas recorrentes mensais ou por período, fixas ou variáveis, ativando "Repetir" no formulário do lançamento (o lançamento é a primeira ocorrência); consultar em Mais → Recorrências | Alta | APROVADO (D8, 11/11/2026) |
+| RF006 | Criar receitas recorrentes mensais ("Todo mês"; por período retirado em 13/11/2026), fixas ou variáveis, ativando "Repetir" no formulário do lançamento (o lançamento é a primeira ocorrência); consultar em Mais → Recorrências | Alta | APROVADO (D8, 11/11/2026) |
 | RF007 | Gerar ocorrência pendente de receita recorrente e contabilizar somente após confirmação de recebimento | Essencial | APROVADO |
 | RF008 | Permitir editar o valor de uma ocorrência de receita sem alterar recorrência ou outras ocorrências | Alta | APROVADO |
 | RF009 | Registrar despesas avulsas, contabilizando-as no momento do cadastro | Essencial | APROVADO |
-| RF010 | Criar despesas recorrentes mensais ou por período, fixas ou variáveis, ativando "Repetir" no formulário; editar "só esta" ocorrência ou "a recorrência" e parar de repetir | Essencial | APROVADO (D8, 11/11/2026) |
+| RF010 | Criar despesas recorrentes mensais ("Todo mês"; por período retirado em 13/11/2026), fixas ou variáveis, ativando "Repetir" no formulário; editar "só esta" ocorrência ou "a recorrência" e parar de repetir | Essencial | APROVADO (D8, 11/11/2026) |
 | RF011 | Contabilizar despesa recorrente ao gerar a ocorrência e, se variável, após informar seu valor | Essencial | APROVADO |
 | RF012 | Confirmar pagamento de despesa, alterando status e registrando data sem nova dedução | Essencial | APROVADO |
 | RF013 | Representar fatura de cartão como despesa recorrente variável | Alta | APROVADO |
@@ -117,7 +117,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF016 | Registrar valor total destinado a investimentos, com dedução imediata do dinheiro livre | Alta | APROVADO |
 | RF017 | Registrar rendimento efetivamente recebido como receita comum | Média | APROVADO |
 | RF018 | Editar ou cancelar qualquer lançamento, qualquer que seja seu status, preservando auditoria | Alta | APROVADO |
-| RF019 | Permitir controle por mês-calendário ou ciclo personalizado | Essencial | APROVADO |
+| RF019 | Permitir controle por mês-calendário ou ciclo personalizado, com troca a qualquer momento valendo para todos os períodos | Essencial | APROVADO (revisado em 13/11/2026) |
 | RF020 | Calcular e apresentar somente o dinheiro livre do período como indicador de resultado | Essencial | APROVADO |
 | RF021 | Realizar operações financeiras previstas mesmo sem conexão | Essencial | APROVADO |
 | RF022 | Sincronizar operações pendentes com idempotência e detecção de conflitos | Essencial | APROVADO |
@@ -132,7 +132,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 **RF005–RF008 — Receitas**
 - Receita avulsa aceita data de recebimento passada ou futura; o aplicativo não verifica se foi de fato recebida (decisão de 10/11/2026).
 - A data de recebimento determina o período da receita.
-- Uma recorrência mensal ou por período gera uma ocorrência pendente.
+- Uma recorrência mensal gera uma ocorrência pendente.
 - Uma ocorrência recorrente só entra no dinheiro livre quando o usuário confirma o recebimento.
 - Se fixa, o valor padrão é preenchido automaticamente; se variável, o usuário informa o valor.
 - O usuário pode alterar o valor da ocorrência, inclusive quando fixa, sem alterar o modelo da recorrência nem ocorrências futuras.
@@ -140,7 +140,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 
 **RF009–RF013 — Despesas**
 - Despesa avulsa entra no cálculo do dinheiro livre no momento do cadastro, no período da data informada (passada ou futura; padrão hoje).
-- Despesa recorrente gera uma ocorrência no calendário escolhido (mensal ou por período).
+- Despesa recorrente gera uma ocorrência por mês, no dia do lançamento original; dia inexistente (29–31) vai para o dia útil anterior mais próximo (RN038), com o vencimento na mesma data.
 - Despesa fixa utiliza o valor padrão; despesa variável solicita o valor da ocorrência.
 - O valor da despesa recorrente é contabilizado quando a ocorrência é gerada e o valor está definido.
 - A despesa fica pendente até a confirmação do pagamento.
@@ -159,7 +159,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 **RF016–RF017 — Investimentos e rendimentos**
 - O usuário registra somente o valor destinado a investimentos e a data (padrão hoje; passada ou futura — decisão de 11/11/2026). O total de investimentos por período aparece no relatório da Fase 7 e, desde 11/11/2026 (D1 da Fase 7, revisa a D3 da Fase 6), também no Dashboard como parte da composição do dinheiro livre; sem discriminação por ativo ou categoria.
 - O valor é deduzido imediatamente do dinheiro livre do período da data do investimento.
-- O investimento pode se repetir todo mês ou todo período, com valor fixo e valor alterável por ocorrência; cada ocorrência gerada entra no dinheiro livre sem confirmação (decisão de 11/11/2026).
+- O investimento pode se repetir todo mês (por período retirado em 13/11/2026), com valor fixo e valor alterável por ocorrência; cada ocorrência gerada entra no dinheiro livre sem confirmação (decisão de 11/11/2026).
 - O sistema não solicita classe de ativo, instituição, quantidade, posição, status de pagamento ou rentabilidade.
 - Rendimentos efetivamente recebidos podem ser lançados como receitas comuns.
 - Nenhuma estimativa de rendimento é calculada automaticamente.
@@ -173,9 +173,9 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 **RF019–RF020 — Períodos e dinheiro livre**
 - O usuário escolhe mês-calendário ou ciclo personalizado.
 - O ciclo personalizado usa um dia inicial configurável; exemplo: 20/11 a 19/12.
-- Alterações de modalidade ou dia inicial só passam a valer no próximo período.
-- Períodos anteriores mantêm a configuração usada na criação.
-- O dinheiro livre é calculado com receitas recebidas no período, despesas cadastradas/geradas no período e investimentos lançados no período.
+- Há uma única configuração; o usuário pode alterá-la a qualquer momento e a alteração recalcula imediatamente todos os períodos, passados e futuros (RN002, 13/11/2026). Totais de períodos antigos podem mudar.
+- O período é um intervalo de datas calculado, nunca criado: todo lançamento, de qualquer data, pertence a um período. Não existe pergunta para criar períodos.
+- O dinheiro livre de um período soma os lançamentos cuja data está entre o início e o fim do período: receitas pela data de recebimento, despesas pela data do lançamento e investimentos pela data do investimento.
 - Não há indicador de saldo atual ou saldo disponível; o dinheiro livre do período é somente o indicador único do §5.
 - Para ciclos personalizados, preservar o dia original e usar o último dia disponível em meses curtos; retornar ao dia original quando possível no mês seguinte.
 
@@ -240,8 +240,8 @@ As regras funcionais desta baseline estão aprovadas. Não há decisão pendente
 
 | Tema | Regra vigente |
 |---|---|
-| Períodos `[início, fim)`, ciclo personalizado, meses curtos e mudança de configuração | RN001–RN004, RN036–RN037 |
-| Recorrências: frequências, primeira ocorrência, idempotência, zona `America/Sao_Paulo`, geração ao abrir e sincronizar | RN010–RN011, RN014, RN038 |
+| Períodos calculados `[início, fim)`, ciclo personalizado, meses curtos e troca de configuração | RN001–RN004, RN036–RN037 |
+| Recorrências: só mensal, dia útil anterior em dia inexistente, primeira ocorrência, idempotência, zona `America/Sao_Paulo`, geração ao abrir e sincronizar | RN010–RN011, RN014, RN038 |
 | Pagamento integral (pagamento parcial FORA DO MVP) | RN015, RN039 |
 | Categorias: desativação, categoria opcional e grupo "Sem categoria" | RN024–RN027, RN040, RN044 |
 | Alertas e períodos históricos (sem encerramento manual) | RN016, RN018, RN041, RN042 |

@@ -26,12 +26,6 @@ BEGIN
         RAISE EXCEPTION 'cash-entry functions must use reviewed SECURITY DEFINER settings';
     END IF;
 
-    PERFORM public.create_accounting_period('72000000-0000-0000-0000-000000000001',
-        '73000000-0000-0000-0000-000000000001','74000000-0000-0000-0000-000000000001',
-        '2026-11-01','calendar_month',NULL);
-    PERFORM public.create_accounting_period('72000000-0000-0000-0000-000000000002',
-        '73000000-0000-0000-0000-000000000002','74000000-0000-0000-0000-000000000001',
-        '2026-12-01','calendar_month',NULL);
     PERFORM public.apply_category_change('75000000-0000-0000-0000-000000000001','create',
         '76000000-0000-0000-0000-000000000001',0,'income','Renda');
     PERFORM public.apply_category_change('75000000-0000-0000-0000-000000000002','create',
@@ -41,7 +35,7 @@ BEGIN
         '78000000-0000-0000-0000-000000000001',0,
         '{"amount_centavos":12345,"received_on":"2026-11-30","category_id":"76000000-0000-0000-0000-000000000001"}'::JSONB);
     IF income->>'status'<>'applied' OR income#>>'{entry,status}'<>'received'
-        OR income#>>'{entry,accounting_period_id}'<>'73000000-0000-0000-0000-000000000001' THEN
+        OR income#>>'{entry,accounting_period_id}' IS NOT NULL THEN
         RAISE EXCEPTION 'income creation or period assignment failed: %',income;
     END IF;
     replay:=public.apply_income_entry_change('77000000-0000-0000-0000-000000000001','create',
@@ -51,7 +45,7 @@ BEGIN
 
     income:=public.apply_income_entry_change('77000000-0000-0000-0000-000000000002','update',
         '78000000-0000-0000-0000-000000000001',1,'{"received_on":"2026-12-01"}'::JSONB);
-    IF income#>>'{entry,accounting_period_id}'<>'73000000-0000-0000-0000-000000000002'
+    IF income#>>'{entry,accounting_period_id}' IS NOT NULL
         OR income#>>'{entry,version}'<>'2' THEN RAISE EXCEPTION 'income date edit did not move period: %',income; END IF;
     conflict_response:=public.apply_income_entry_change('77000000-0000-0000-0000-000000000003','update',
         '78000000-0000-0000-0000-000000000001',1,'{"amount_centavos":999}'::JSONB);
@@ -63,13 +57,13 @@ BEGIN
         '7a000000-0000-0000-0000-000000000001',0,
         '{"amount_centavos":5000,"competence_on":"2026-11-30","due_on":"2026-12-03","category_id":"76000000-0000-0000-0000-000000000002"}'::JSONB);
     IF expense#>>'{entry,status}'<>'pending'
-        OR expense#>>'{entry,accounting_period_id}'<>'73000000-0000-0000-0000-000000000001' THEN
+        OR expense#>>'{entry,accounting_period_id}' IS NOT NULL THEN
         RAISE EXCEPTION 'expense creation or competence assignment failed: %',expense;
     END IF;
     expense:=public.apply_expense_entry_change('79000000-0000-0000-0000-000000000002','pay',
         '7a000000-0000-0000-0000-000000000001',1,'{"paid_on":"2026-12-03"}'::JSONB);
     IF expense#>>'{entry,status}'<>'paid' OR expense#>>'{entry,paid_on}'<>'2026-12-03'
-        OR expense#>>'{entry,accounting_period_id}'<>'73000000-0000-0000-0000-000000000001' THEN
+        OR expense#>>'{entry,accounting_period_id}' IS NOT NULL THEN
         RAISE EXCEPTION 'expense payment changed status/date or accounting period incorrectly: %',expense;
     END IF;
     expense:=public.apply_expense_entry_change('79000000-0000-0000-0000-000000000003','update',

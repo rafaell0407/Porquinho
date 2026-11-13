@@ -1,6 +1,5 @@
 import '../../core/domain/calendar_date.dart';
 import '../../core/domain/recurrence_schedule.dart';
-import '../periods/period_service.dart';
 
 enum EntryKind {
   income('income_entry', 'Receita'),
@@ -45,7 +44,6 @@ class EntryRecord {
     this.subcategoryId,
     this.dueOn,
     this.paidOn,
-    this.periodId,
     this.templateId,
     this.scheduledFor,
   });
@@ -66,7 +64,6 @@ class EntryRecord {
   final String? subcategoryId;
   final CalendarDate? dueOn;
   final CalendarDate? paidOn;
-  final String? periodId;
 
   /// Modelo recorrente de que esta ocorrência vem (`null` = lançamento avulso).
   final String? templateId;
@@ -90,7 +87,6 @@ class EntryRecord {
     subcategoryId: subcategoryId,
     dueOn: dueOn,
     paidOn: paidOn,
-    periodId: periodId,
     templateId: templateId,
     scheduledFor: scheduledFor,
   );
@@ -105,7 +101,6 @@ class EntryRecord {
     'subcategory_id': subcategoryId,
     'due_on': dueOn?.toIso(),
     'paid_on': paidOn?.toIso(),
-    'accounting_period_id': periodId,
     'recurrence_template_id': templateId,
     'scheduled_for_date': scheduledFor?.toIso(),
     'version': version,
@@ -199,8 +194,6 @@ class CreateRecurrence extends EntryChange {
     required this.draft,
     required this.choice,
     required this.scheduledFor,
-    required this.periodId,
-    this.scheduledPeriodId,
     this.existing,
   });
 
@@ -209,15 +202,8 @@ class CreateRecurrence extends EntryChange {
   final EntryDraft draft;
   final RepeatChoice choice;
 
-  /// Data programada da primeira ocorrência (mensal: a data do lançamento;
-  /// por período: início do período).
+  /// Data programada da primeira ocorrência: a data do lançamento (D8).
   final CalendarDate scheduledFor;
-
-  /// Período que contém a data do lançamento.
-  final String periodId;
-
-  /// Período programado (só "todo período").
-  final String? scheduledPeriodId;
   final EntryRecord? existing;
 
   EntryKind get kind => draft.kind;
@@ -345,13 +331,3 @@ EntryRpcCall entryRpcCallFor(EntryChange change) => switch (change) {
     },
   ),
 };
-
-/// Falta o período da data do lançamento: o usuário precisa confirmar a
-/// criação dos períodos antes de salvar (RN002).
-class PeriodMissingException implements Exception {
-  const PeriodMissingException(this.date, this.plan);
-  final CalendarDate date;
-  final PeriodPlan plan;
-  @override
-  String toString() => 'Não existe período para ${date.toBr()}.';
-}

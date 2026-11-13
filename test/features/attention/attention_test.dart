@@ -85,17 +85,20 @@ void main() {
         reason: 'criação só aceita servidor',
       );
 
-      final period = AttentionItem(
+      final settings = AttentionItem(
         kind: AttentionKind.conflict,
         id: 'z',
-        entityType: 'accounting_period',
-        entityId: 'p1',
-        request: {'start_date': '2026-11-01'},
-        remote: {'start_date': '2026-11-01', 'end_date': '2026-12-01'},
+        entityType: 'period_settings',
+        entityId: 'u1',
+        request: {'expected_version': 0, 'mode': 'calendar_month'},
+        remote: {'mode': 'custom_cycle', 'custom_start_day': 20},
       );
-      expect(period.canKeepLocal, isFalse);
-      expect(period.canEdit, isFalse);
-      expect(period.mineSummary, contains('01/11/2026'));
+      // Criação da configuração (primeiro acesso em dois aparelhos): só a do
+      // servidor.
+      expect(settings.canKeepLocal, isFalse);
+      expect(settings.canEdit, isFalse);
+      expect(settings.mineSummary, 'Mudar para Mês-calendário');
+      expect(settings.serverSummary, 'Ciclo personalizado (dia 20)');
 
       final entry = AttentionItem(
         kind: AttentionKind.conflict,
@@ -360,14 +363,9 @@ void main() {
       () async {
         await db.customStatement('PRAGMA foreign_keys = OFF');
         await db.customStatement(
-          'INSERT INTO accounting_periods (id, owner_id, version, created_at, '
-          "updated_at, configuration_id, start_date, end_date) VALUES ('p1', 'u1', "
-          "1, 'x', 'x', 'cfg', '2026-11-01', '2026-12-01')",
-        );
-        await db.customStatement(
           'INSERT INTO investment_allocations (id, owner_id, version, created_at, '
-          "updated_at, amount_centavos, allocated_on, accounting_period_id) "
-          "VALUES ('a1', 'u1', 2, 'x', 'x', '100000', '2026-11-05', 'p1')",
+          "updated_at, amount_centavos, allocated_on) "
+          "VALUES ('a1', 'u1', 2, 'x', 'x', '100000', '2026-11-05')",
         );
         await sync.enqueue(
           OutboxOperation(
@@ -526,42 +524,87 @@ void main() {
       expect(await sync.operations('u1'), isEmpty);
     });
 
-    test('conflito de período: servidor substitui o local e quem o usava', () async {
+    test(
+      'conflito da configuração de período: manter a do aparelho reaplica',
+      () async {
+        // Este aparelho trocou para ciclo dia 20 (versão 1 → 2); outro
+        // aparelho já tinha trocado para dia 5 (servidor na versão 2).
+        await db.customStatement(
+          'INSERT INTO period_settings (id, owner_id, version, created_at, '
+          "updated_at, mode, custom_start_day) VALUES "
+          "('u1', 'u1', 2, 'x', 'x', 'custom_cycle', 20)",
+        );
+        await db.customStatement(
+          'INSERT INTO sync_conflicts (id, owner_id, version, created_at, '
+          'updated_at, entity_type, entity_id, expected_version, '
+          'remote_version, local_snapshot_json, remote_snapshot_json, state) '
+          "VALUES ('cfs', 'u1', 1, 'x', 'x', 'period_settings', 'u1', 1, 2, "
+          "'{\"p_expected_version\":1,\"p_mode\":\"custom_cycle\","
+          "\"p_custom_start_day\":20}', "
+          "'{\"id\":\"u1\",\"mode\":\"custom_cycle\","
+          "\"custom_start_day\":5,\"version\":2}', 'open')",
+        );
+        gateway.handlers['resolve_sync_conflict'] = (_) async => {
+          'status': 'resolved',
+          'result': {
+            'status': 'applied',
+            'settings': {
+              'id': 'u1',
+              'mode': 'custom_cycle',
+              'custom_start_day': 20,
+              'version': 3,
+              'created_at': 'x',
+              'updated_at': 'z',
+            },
+          },
+        };
+        final item = (await repo.items()).single;
+        expect(item.title, 'Configuração de período');
+        expect(item.mineSummary, 'Mudar para Ciclo personalizado (dia 20)');
+        expect(item.serverSummary, 'Ciclo personalizado (dia 5)');
+        expect(item.canKeepLocal, isTrue);
+        expect(item.canEdit, isFalse);
+        await repo.resolve(item, ConflictResolution.keepLocal);
+        final row = await db
+            .customSelect('SELECT * FROM period_settings')
+            .getSingle();
+        expect(row.data['custom_start_day'], 20);
+        expect(row.data['version'], 3);
+      },
+    );
+
+    test('conflito da configuração de período: manter a do servidor', () async {
       await db.customStatement(
-        'INSERT INTO period_configurations (id, owner_id, version, created_at, '
-        "updated_at, mode, effective_from) VALUES ('cfgL', 'u1', 1, 'x', 'x', 'calendar_month', '2026-11-01')",
+        'INSERT INTO period_settings (id, owner_id, version, created_at, '
+        "updated_at, mode, custom_start_day) VALUES "
+        "('u1', 'u1', 2, 'x', 'x', 'custom_cycle', 20)",
       );
       await db.customStatement(
-        'INSERT INTO accounting_periods (id, owner_id, version, created_at, '
-        "updated_at, configuration_id, start_date, end_date) "
-        "VALUES ('pL', 'u1', 1, 'x', 'x', 'cfgL', '2026-11-01', '2026-12-01')",
-      );
-      await db.customStatement(
-        'INSERT INTO sync_conflicts (id, owner_id, version, created_at, updated_at, '
-        'entity_type, entity_id, expected_version, remote_version, '
-        'local_snapshot_json, remote_snapshot_json, state) VALUES '
-        "('cfp', 'u1', 1, 'x', 'x', 'accounting_period', 'pL', 0, 1, "
-        "'{\"p_start_date\":\"2026-11-01\"}', '{\"id\":\"pR\"}', 'open')",
+        'INSERT INTO sync_conflicts (id, owner_id, version, created_at, '
+        'updated_at, entity_type, entity_id, expected_version, '
+        'remote_version, local_snapshot_json, remote_snapshot_json, state) '
+        "VALUES ('cfs', 'u1', 1, 'x', 'x', 'period_settings', 'u1', 1, 2, "
+        "'{\"p_expected_version\":1,\"p_mode\":\"custom_cycle\","
+        "\"p_custom_start_day\":20}', '{}', 'open')",
       );
       gateway.handlers['resolve_sync_conflict'] = (_) async => {
         'status': 'resolved',
         'record': {
-          'id': 'pR',
-          'configuration_id': 'cfgL',
-          'start_date': '2026-11-01',
-          'end_date': '2026-12-01',
-          'version': 1,
+          'id': 'u1',
+          'mode': 'calendar_month',
+          'custom_start_day': null,
+          'version': 2,
           'created_at': 'x',
           'updated_at': 'y',
         },
       };
       final item = (await repo.items()).single;
-      expect(item.canKeepLocal, isFalse);
       await repo.resolve(item, ConflictResolution.keepRemote);
-      final rows = await db
-          .customSelect('SELECT id FROM accounting_periods')
-          .get();
-      expect(rows.map((r) => r.read<String>('id')), ['pR']);
+      final row = await db
+          .customSelect('SELECT * FROM period_settings')
+          .getSingle();
+      expect(row.data['mode'], 'calendar_month');
+      expect(row.data['custom_start_day'], isNull);
     });
   });
 

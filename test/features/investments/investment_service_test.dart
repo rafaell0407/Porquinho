@@ -8,7 +8,6 @@ import 'package:porquinho/core/domain/money.dart';
 import 'package:porquinho/core/domain/period_calendar.dart';
 import 'package:porquinho/core/local_database/app_database.dart';
 import 'package:porquinho/features/categories/category_models.dart';
-import 'package:porquinho/features/entries/entry_models.dart';
 import 'package:porquinho/features/investments/investment_models.dart';
 import 'package:porquinho/features/investments/investment_service.dart';
 import 'package:porquinho/features/investments/local_investment_repository.dart';
@@ -71,17 +70,16 @@ void main() {
     );
     periods = PeriodService(
       LocalPeriodRepository(db, 'u1', recorder, clock: clock),
-      newId: () => 'p${++ids}',
     );
     repo = LocalInvestmentRepository(db, 'u1', recorder, clock: clock);
-    service = InvestmentService(repo, periods, newId: () => 'i${++ids}');
+    service = InvestmentService(repo, newId: () => 'i${++ids}');
     totals = LocalTotalsRepository(db, 'u1');
-    await periods.setup(PeriodConfig.calendarMonth(), d(2026, 11, 10));
+    await periods.setup(PeriodConfig.calendarMonth());
   });
   tearDown(() => db.close());
 
   Future<BigInt> surplus(CalendarDate date) async =>
-      (await totals.totalsFor((await periods.periodFor(date))!.id)).surplus;
+      (await totals.totalsFor((await periods.periodFor(date)))).surplus;
 
   InvestmentDraft draft(int cents, CalendarDate date) =>
       InvestmentDraft(amount: c(cents), date: date);
@@ -129,13 +127,7 @@ void main() {
       expect(parseBrlToCentavos('0'), BigInt.zero);
     });
 
-    test('período inexistente: pergunta antes; nada é gravado', () async {
-      await expectLater(
-        service.create(draft(1000, d(2026, 8, 20))),
-        throwsA(isA<PeriodMissingException>()),
-      );
-      expect(await count('investment_allocations'), 0);
-      await service.createMissingPeriods(d(2026, 8, 20));
+    test('qualquer data tem período (RN002): salva direto', () async {
       await service.create(draft(1000, d(2026, 8, 20)));
       expect(await surplus(d(2026, 8, 20)), c(-1000));
     });
@@ -154,7 +146,6 @@ void main() {
     );
 
     test('data futura e passada são aceitas (D1)', () async {
-      await periods.createCovering(d(2026, 12, 15));
       await service.create(draft(1000, d(2026, 11, 30)));
       await service.create(draft(2000, d(2026, 12, 15)));
       expect(await surplus(d(2026, 11, 30)), c(-1000));
@@ -162,7 +153,6 @@ void main() {
     });
 
     test('editar a data move o valor de período', () async {
-      await periods.createCovering(d(2026, 10, 1));
       final id = await service.create(draft(70000, d(2026, 11, 5)));
       await service.update(
         (await repo.investment(id))!,
@@ -203,7 +193,6 @@ void main() {
     test(
       'cancelar um investimento antigo devolve ao período original (D5)',
       () async {
-        await periods.createCovering(d(2026, 10, 1));
         final id = await service.create(draft(5000, d(2026, 10, 10)));
         await service.cancel((await repo.investment(id))!);
         expect(await surplus(d(2026, 10, 10)), BigInt.zero);
@@ -255,7 +244,7 @@ void main() {
         expect(ops[1].params['p_allocated_on'], '2026-11-06');
         expect(ops[2].params['p_amount_centavos'], isNull);
         expect(ops[2].params['p_allocated_on'], isNull);
-        expect(ops[0].dependsOn, isNotEmpty, reason: 'depende do período');
+        expect(ops[0].dependsOn, isEmpty, reason: 'não depende de período');
       },
     );
 
@@ -342,7 +331,9 @@ void main() {
         ]),
         FakeGateway(),
       );
-      final list = await remote.investmentsInPeriod('p1');
+      final list = await remote.investmentsInPeriod(
+        PeriodRange(CalendarDate(2026, 11, 1), CalendarDate(2026, 12, 1)),
+      );
       expect(list.map((r) => r.id), ['b', 'a']);
       expect(list.last.cancelled, isTrue);
       expect(list.first.amount, c(2000));

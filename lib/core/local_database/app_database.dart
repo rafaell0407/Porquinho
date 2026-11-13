@@ -59,30 +59,18 @@ class UserPreferences extends Table {
   Set<Column<Object>> get primaryKey => {ownerId};
 }
 
-class PeriodConfigurations extends OwnedRecord {
+/// Configuração única de período (reestruturação P6, RN001/RN002): uma linha
+/// por usuário, `id` = dono. Os períodos são calculados a partir dela.
+class PeriodSettings extends OwnedRecord {
   TextColumn get mode => text()();
   IntColumn get customStartDay => integer().nullable()();
-  TextColumn get effectiveFrom => text()();
 
   @override
   List<String> get customConstraints => [
     '''CHECK ((mode = 'calendar_month' AND custom_start_day IS NULL) OR
             (mode = 'custom_cycle' AND custom_start_day BETWEEN 1 AND 31))''',
     "CHECK (mode IN ('calendar_month', 'custom_cycle'))",
-  ];
-}
-
-class AccountingPeriods extends OwnedRecord {
-  TextColumn get configurationId => text()();
-  TextColumn get startDate => text()();
-  TextColumn get endDate => text()();
-
-  @override
-  List<String> get customConstraints => [
-    'CHECK (start_date < end_date)',
-    'UNIQUE (owner_id, start_date)',
-    'FOREIGN KEY (owner_id, configuration_id) '
-        'REFERENCES period_configurations (owner_id, id) ON DELETE RESTRICT',
+    'CHECK (id = owner_id)',
   ];
 }
 
@@ -166,7 +154,6 @@ abstract class CashEntry extends OwnedRecord {
   TextColumn get subcategoryId => text().nullable()();
   TextColumn get recurrenceTemplateId => text().nullable()();
   TextColumn get scheduledForDate => text().nullable()();
-  TextColumn get scheduledPeriodId => text().nullable()();
 }
 
 @TableIndex.sql('''
@@ -174,18 +161,11 @@ abstract class CashEntry extends OwnedRecord {
   ON income_entries (owner_id, recurrence_template_id, scheduled_for_date)
   WHERE recurrence_template_id IS NOT NULL
 ''')
-@TableIndex(
-  name: 'income_entries_period_idx',
-  columns: {#ownerId, #accountingPeriodId},
-)
 class IncomeEntries extends CashEntry {
   TextColumn get receivedOn => text().nullable()();
-  TextColumn get accountingPeriodId => text().nullable()();
 
   @override
   List<String> get customConstraints => [
-    'FOREIGN KEY (owner_id, accounting_period_id) '
-        'REFERENCES accounting_periods (owner_id, id) ON DELETE RESTRICT',
     'FOREIGN KEY (owner_id, recurrence_template_id) '
         'REFERENCES income_recurrence_templates (owner_id, id) ON DELETE RESTRICT',
     'FOREIGN KEY (owner_id, category_id) '
@@ -204,11 +184,9 @@ class IncomeEntries extends CashEntry {
     )''',
     '''CHECK (status IN ('pending', 'received', 'cancelled'))''',
     '''CHECK (status <> 'received' OR
-            (received_on IS NOT NULL AND accounting_period_id IS NOT NULL
-            AND amount_centavos IS NOT NULL))''',
+            (received_on IS NOT NULL AND amount_centavos IS NOT NULL))''',
     '''CHECK (amount_centavos IS NOT NULL OR recurrence_template_id IS NOT NULL)''',
-    '''CHECK (status <> 'pending' OR
-        (received_on IS NULL AND accounting_period_id IS NULL))''',
+    '''CHECK (status <> 'pending' OR received_on IS NULL)''',
     'CHECK (subcategory_id IS NULL OR category_id IS NOT NULL)',
   ];
 }
@@ -218,20 +196,13 @@ class IncomeEntries extends CashEntry {
   ON expense_entries (owner_id, recurrence_template_id, scheduled_for_date)
   WHERE recurrence_template_id IS NOT NULL
 ''')
-@TableIndex(
-  name: 'expense_entries_period_idx',
-  columns: {#ownerId, #accountingPeriodId},
-)
 class ExpenseEntries extends CashEntry {
-  TextColumn get accountingPeriodId => text()();
   TextColumn get competenceOn => text()();
   TextColumn get dueOn => text().nullable()();
   TextColumn get paidOn => text().nullable()();
 
   @override
   List<String> get customConstraints => [
-    'FOREIGN KEY (owner_id, accounting_period_id) '
-        'REFERENCES accounting_periods (owner_id, id) ON DELETE RESTRICT',
     'FOREIGN KEY (owner_id, recurrence_template_id) '
         'REFERENCES expense_recurrence_templates (owner_id, id) ON DELETE RESTRICT',
     'FOREIGN KEY (owner_id, category_id) '
@@ -287,18 +258,13 @@ class InvestmentRecurrenceTemplates extends OwnedRecord {
   ON investment_allocations (owner_id, recurrence_template_id, scheduled_for_date)
   WHERE recurrence_template_id IS NOT NULL
 ''')
-@TableIndex(
-  name: 'investment_allocations_period_idx',
-  columns: {#ownerId, #accountingPeriodId},
-)
 class InvestmentAllocations extends OwnedRecord {
   TextColumn get amountCentavos => text().map(const BigIntTextConverter())();
   TextColumn get allocatedOn => text()();
-  TextColumn get accountingPeriodId => text()();
+
   TextColumn get cancelledAt => text().nullable()();
   TextColumn get recurrenceTemplateId => text().nullable()();
   TextColumn get scheduledForDate => text().nullable()();
-  TextColumn get scheduledPeriodId => text().nullable()();
 
   @override
   List<String> get customConstraints => [
@@ -312,16 +278,11 @@ class InvestmentAllocations extends OwnedRecord {
             amount_centavos <= '9223372036854775807')
       )
     )''',
-    'FOREIGN KEY (owner_id, accounting_period_id) '
-        'REFERENCES accounting_periods (owner_id, id) ON DELETE RESTRICT',
     'FOREIGN KEY (owner_id, recurrence_template_id) '
         'REFERENCES investment_recurrence_templates (owner_id, id) '
         'ON DELETE RESTRICT',
-    'FOREIGN KEY (owner_id, scheduled_period_id) '
-        'REFERENCES accounting_periods (owner_id, id) ON DELETE RESTRICT',
     '''CHECK (
-      (recurrence_template_id IS NULL AND scheduled_for_date IS NULL
-        AND scheduled_period_id IS NULL)
+      (recurrence_template_id IS NULL AND scheduled_for_date IS NULL)
       OR (recurrence_template_id IS NOT NULL AND scheduled_for_date IS NOT NULL)
     )''',
   ];
@@ -393,8 +354,7 @@ class SyncCursors extends Table {
 @DriftDatabase(
   tables: [
     UserPreferences,
-    PeriodConfigurations,
-    AccountingPeriods,
+    PeriodSettings,
     Categories,
     Subcategories,
     IncomeRecurrenceTemplates,
@@ -416,7 +376,7 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
   PorquinhoDatabase(super.executor);
 
   @override
-  int get schemaVersion => 6;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -490,6 +450,56 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
       from5To6: (migrator, schema) async {
         await migrator.addColumn(schema.categories, schema.categories.iconKey);
         await migrator.addColumn(schema.categories, schema.categories.colorKey);
+      },
+      // v7 (Reestruturação de períodos P6): configuração única de período
+      // (a que vale hoje, como no servidor) e vínculo com o período opcional.
+      from6To7: (migrator, schema) async {
+        await migrator.create(schema.periodSettings);
+        final now = DateTime.now().toUtc().toIso8601String();
+        await customStatement(
+          'INSERT INTO period_settings (id, owner_id, version, created_at, '
+          'updated_at, mode, custom_start_day) '
+          'SELECT c.owner_id, c.owner_id, 1, ?, ?, c.mode, c.custom_start_day '
+          'FROM period_configurations c WHERE c.rowid = ('
+          'SELECT c2.rowid FROM period_configurations c2 '
+          'WHERE c2.owner_id = c.owner_id ORDER BY '
+          "(c2.effective_from <= date('now', 'localtime')) DESC, "
+          "CASE WHEN c2.effective_from <= date('now', 'localtime') "
+          'THEN c2.effective_from END DESC, c2.effective_from ASC LIMIT 1)',
+          [now, now],
+        );
+        await migrator.alterTable(TableMigration(schema.incomeEntries));
+        await migrator.alterTable(TableMigration(schema.expenseEntries));
+        await migrator.alterTable(TableMigration(schema.investmentAllocations));
+      },
+      // v8 (Reestruturação de períodos P7): sem períodos gravados nem vínculo
+      // do lançamento com o período. Operações e conflitos pendentes de
+      // períodos antigos não têm mais destino no servidor e são descartados.
+      from7To8: (migrator, schema) async {
+        await customStatement(
+          'DELETE FROM sync_outbox WHERE entity_type IN '
+          "('accounting_period', 'period_configuration')",
+        );
+        await customStatement(
+          'DELETE FROM sync_conflicts WHERE entity_type IN '
+          "('accounting_period', 'period_configuration')",
+        );
+        await customStatement(
+          "DELETE FROM sync_cursors WHERE source_table IN "
+          "('accounting_periods', 'period_configurations')",
+        );
+        for (final index in [
+          'income_entries_period_idx',
+          'expense_entries_period_idx',
+          'investment_allocations_period_idx',
+        ]) {
+          await customStatement('DROP INDEX IF EXISTS $index');
+        }
+        await migrator.alterTable(TableMigration(schema.incomeEntries));
+        await migrator.alterTable(TableMigration(schema.expenseEntries));
+        await migrator.alterTable(TableMigration(schema.investmentAllocations));
+        await customStatement('DROP TABLE IF EXISTS accounting_periods');
+        await customStatement('DROP TABLE IF EXISTS period_configurations');
       },
     ),
     beforeOpen: (_) async => customStatement('PRAGMA foreign_keys = ON'),

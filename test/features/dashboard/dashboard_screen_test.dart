@@ -40,19 +40,15 @@ void main() {
     ids = 0;
     db = PorquinhoDatabase(NativeDatabase.memory());
     final recorder = LocalChangeRecorder(db, newId: () => 'a${++ids}');
-    periods = PeriodService(
-      LocalPeriodRepository(db, 'u1', recorder),
-      newId: () => 'p${++ids}',
-    );
+    periods = PeriodService(LocalPeriodRepository(db, 'u1', recorder));
     final cats = LocalCategoryRepository(db, 'u1', recorder);
     repo = LocalEntryRepository(db, 'u1', recorder);
     investments = InvestmentService(
       LocalInvestmentRepository(db, 'u1', recorder),
-      periods,
       newId: () => 'i${++ids}',
     );
-    service = EntryService(repo, cats, periods, newId: () => 'e${++ids}');
-    await periods.setup(PeriodConfig.calendarMonth(), d(2026, 11, 10));
+    service = EntryService(repo, cats, newId: () => 'e${++ids}');
+    await periods.setup(PeriodConfig.calendarMonth());
     CategoryService(cats); // garante o mesmo conjunto de dependências
   });
   tearDown(() => db.close());
@@ -112,7 +108,6 @@ void main() {
   testWidgets('editar um período antigo recalcula aquele período', (
     tester,
   ) async {
-    await periods.createCovering(d(2026, 10, 1));
     await add(EntryKind.income, 100000, d(2026, 10, 5));
     await add(EntryKind.income, 40000, d(2026, 11, 5));
     final container = await pump(tester);
@@ -125,8 +120,8 @@ void main() {
     expect(shown(tester, 'valor-sobra'), 'R\$ 1.000,00');
 
     // Edita a receita de outubro para 1.500,00 e recalcula só outubro.
-    final october = (await periods.periodFor(d(2026, 10, 5)))!;
-    final entry = (await repo.entriesInPeriod(october.id)).single;
+    final october = (await periods.periodFor(d(2026, 10, 5)));
+    final entry = (await repo.entriesInPeriod(october)).single;
     await service.update(
       entry,
       EntryDraft(
@@ -198,7 +193,7 @@ void main() {
         InvestmentDraft(amount: BigInt.from(10000), date: d(2026, 11, 7)),
       );
       final container = await pump(tester);
-      final period = (await periods.periodFor(d(2026, 11, 6)))!;
+      final period = (await periods.periodFor(d(2026, 11, 6)));
       expect(shown(tester, 'valor-sobra'), 'R\$ 500,00');
 
       void refresh() {
@@ -209,7 +204,7 @@ void main() {
 
       // Pagar: status muda, valores iguais (sem segunda dedução).
       final expense = (await repo.entriesInPeriod(
-        period.id,
+        period,
       )).firstWhere((e) => e.id == expenseId);
       await service.pay(expense, d(2026, 11, 8));
       refresh();
@@ -219,9 +214,8 @@ void main() {
       expectConsistent(tester);
 
       // Mudar a data do investimento para outubro tira do mês atual.
-      await periods.createCovering(d(2026, 10, 1));
       final investment = (await investments.investmentsInPeriod(
-        period.id,
+        period,
       )).firstWhere((i) => i.id == investmentId);
       await investments.update(
         investment,
@@ -235,7 +229,7 @@ void main() {
 
       // Cancelar a despesa tira do cálculo.
       final paid = (await repo.entriesInPeriod(
-        period.id,
+        period,
       )).firstWhere((e) => e.id == expenseId);
       await service.cancel(paid);
       refresh();
@@ -248,7 +242,6 @@ void main() {
     testWidgets('período anterior mostra a composição daquele período', (
       tester,
     ) async {
-      await periods.createCovering(d(2026, 10, 1));
       await investments.create(
         InvestmentDraft(amount: BigInt.from(25000), date: d(2026, 10, 7)),
       );
@@ -264,16 +257,47 @@ void main() {
     });
   });
 
-  testWidgets('período futuro inexistente: pergunta antes de criar', (
+  testWidgets('navegação vai do lançamento mais antigo ao mais distante', (
     tester,
   ) async {
+    IconButton arrow(String key) =>
+        tester.widget<IconButton>(find.byKey(Key(key)));
+
+    // Sem lançamentos: só o período atual.
     await pump(tester);
-    await tester.tap(find.byKey(const Key('periodo-proximo')));
-    await tester.pumpAndSettle();
+    expect(arrow('periodo-anterior').onPressed, isNull);
+    expect(arrow('periodo-proximo').onPressed, isNull);
+    expect(find.textContaining('Criar'), findsNothing);
+  });
+
+  testWidgets('período futuro com lançamento é calculado, nunca criado', (
+    tester,
+  ) async {
+    IconButton arrow(String key) =>
+        tester.widget<IconButton>(find.byKey(Key(key)));
+
+    await add(EntryKind.expense, 25000, d(2027, 1, 10));
+    await add(EntryKind.income, 1000, d(2026, 10, 5));
+    await pump(tester);
+    expect(arrow('periodo-anterior').onPressed, isNotNull);
+    expect(arrow('periodo-proximo').onPressed, isNotNull);
+    for (var i = 0; i < 2; i++) {
+      await tester.tap(find.byKey(const Key('periodo-proximo')));
+      await tester.pumpAndSettle();
+    }
+    expect(find.text('Janeiro 2027'), findsOneWidget);
+    expect(shown(tester, 'valor-sobra'), '-R\$ 250,00');
+    // Último período navegável: a seta para frente para.
+    expect(arrow('periodo-proximo').onPressed, isNull);
+    expect(find.textContaining('Criar'), findsNothing);
+    // Nem existe tabela de períodos (P7).
     expect(
-      find.text('Criar o período de 01/12/2026 a 31/12/2026?'),
-      findsOneWidget,
+      await db
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE name = 'accounting_periods'",
+          )
+          .get(),
+      isEmpty,
     );
-    expect(await periods.periodFor(d(2026, 12, 5)), isNull);
   });
 }

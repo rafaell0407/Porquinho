@@ -31,9 +31,8 @@ void main() {
         'u1',
         LocalChangeRecorder(db, newId: () => 'a${++ids}'),
       ),
-      newId: () => 'p${++ids}',
     );
-    await periods.setup(PeriodConfig.calendarMonth(), d(2026, 11, 10));
+    await periods.setup(PeriodConfig.calendarMonth());
   });
   tearDown(() => db.close());
 
@@ -55,50 +54,70 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('mostra a configuração atual, a data de início e o histórico', (
-    tester,
-  ) async {
+  testWidgets('mostra a configuração atual e o período atual', (tester) async {
     await pump(tester);
     expect(find.text('Mês-calendário'), findsWidgets);
     expect(
       find.text(
-        'A nova configuração começa em 01/12/2026. O período atual não muda.',
+        'Com esta configuração, o período atual vai de 01/11/2026 a '
+        '30/11/2026. A mudança vale na hora para todos os períodos, passados '
+        'e futuros.',
       ),
       findsOneWidget,
     );
-    expect(find.byKey(const Key('historico-2026-11-01')), findsOneWidget);
-    expect(find.byKey(const Key('mudanca-agendada')), findsNothing);
-    // Sem alteração, não há o que salvar.
+    // Sem alteração, não há o que salvar; não existe mais histórico nem
+    // mudança agendada.
     final button = tester.widget<FilledButton>(
       find.byKey(const Key('salvar-mudanca')),
     );
     expect(button.onPressed, isNull);
+    expect(find.textContaining('Histórico'), findsNothing);
   });
 
-  testWidgets('agenda, confirma com a data e mostra a mudança agendada', (
+  testWidgets('troca na hora, depois de avisar que os totais podem mudar', (
     tester,
   ) async {
     await pump(tester);
     await tester.tap(find.text('Ciclo personalizado'));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('dia-inicial')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Dia 20').last);
+    await tester.pumpAndSettle();
+    // Prévia já com a configuração escolhida.
+    expect(find.textContaining('de 20/10/2026 a 19/11/2026'), findsOneWidget);
+
     await tester.tap(find.byKey(const Key('salvar-mudanca')));
     await tester.pumpAndSettle();
     expect(find.text('Mudar a configuração?'), findsOneWidget);
+    expect(
+      find.textContaining('todos os períodos, inclusive os passados'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('totais de períodos antigos podem mudar'),
+      findsOneWidget,
+    );
     await tester.tap(find.byKey(const Key('confirmar-mudanca')));
     await tester.pumpAndSettle();
 
-    expect(find.byKey(const Key('mudanca-agendada')), findsOneWidget);
-    expect(find.textContaining('Começa em 01/12/2026'), findsOneWidget);
-    // O período atual e o histórico continuam iguais.
-    expect(find.byKey(const Key('historico-2026-11-01')), findsOneWidget);
-    expect(find.byKey(const Key('config-atual')), findsOneWidget);
+    expect(await periods.currentConfig(), PeriodConfig.customCycle(20));
     expect(
-      (await periods.scheduledChange())!.config.mode,
-      PeriodMode.customCycle,
+      find.descendant(
+        of: find.byKey(const Key('config-atual')),
+        matching: find.text('Ciclo personalizado (dia 20)'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Configuração de período alterada.'), findsOneWidget);
+    // Um período antigo já usa a nova configuração.
+    expect(
+      await periods.periodFor(d(2025, 3, 25)),
+      PeriodRange(d(2025, 3, 20), d(2025, 4, 20)),
     );
   });
 
-  testWidgets('voltar na confirmação não agenda nada', (tester) async {
+  testWidgets('voltar na confirmação não muda nada', (tester) async {
     await pump(tester);
     await tester.tap(find.text('Ciclo personalizado'));
     await tester.pumpAndSettle();
@@ -106,40 +125,6 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Voltar'));
     await tester.pumpAndSettle();
-    expect(await periods.scheduledChange(), isNull);
-  });
-
-  testWidgets('cancelar a mudança agendada', (tester) async {
-    await periods.scheduleChange(PeriodConfig.customCycle(20), d(2026, 11, 10));
-    await pump(tester);
-    expect(find.byKey(const Key('mudanca-agendada')), findsOneWidget);
-    expect(find.textContaining('Ciclo personalizado (dia 20)'), findsWidgets);
-
-    await tester.tap(find.byKey(const Key('cancelar-mudanca')));
-    await tester.pumpAndSettle();
-    expect(find.byKey(const Key('mudanca-agendada')), findsNothing);
-    expect(await periods.scheduledChange(), isNull);
-  });
-
-  testWidgets('histórico mostra a configuração de cada período', (
-    tester,
-  ) async {
-    await periods.scheduleChange(PeriodConfig.customCycle(20), d(2026, 11, 10));
-    await periods.ensureUpTo(d(2026, 12, 25));
-    await pump(tester);
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('historico-2026-12-01')),
-        matching: find.text('Ciclo personalizado (dia 20)'),
-      ),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(
-        of: find.byKey(const Key('historico-2026-11-01')),
-        matching: find.text('Mês-calendário'),
-      ),
-      findsOneWidget,
-    );
+    expect(await periods.currentConfig(), PeriodConfig.calendarMonth());
   });
 }

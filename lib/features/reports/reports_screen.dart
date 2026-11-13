@@ -75,7 +75,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 if (v == null) {
                   return const Center(child: Text('Nenhum período ainda.'));
                 }
-                if (!v.exists) return MissingPeriodCard(view: v);
                 return _kind.isSeries
                     ? _SeriesReport(kind: _kind)
                     : _PeriodReport(kind: _kind);
@@ -114,7 +113,7 @@ class _PeriodReport extends ConsumerWidget {
           _failure(() => ref.invalidate(selectedPeriodReportProvider)),
       data: (r) {
         if (r == null) return const SizedBox.shrink();
-        final id = r.periods.single.periodId;
+        final id = r.periods.single.range;
         return switch (kind) {
           ReportKind.incomeByCategory => _CategoryList(
             key: const Key('relatorio-receitas'),
@@ -304,8 +303,8 @@ class _SeriesReport extends ConsumerWidget {
 }
 
 String _rangeLabel(SeriesItem item) =>
-    '${item.period.range.start.toBr()} a '
-    '${item.period.range.end.addDays(-1).toBr()}';
+    '${item.range.start.toBr()} a '
+    '${item.range.end.addDays(-1).toBr()}';
 
 double _ratio(BigInt value, BigInt scale) => scale == BigInt.zero
     ? 0
@@ -322,7 +321,7 @@ class _EvolutionRow extends StatelessWidget {
     final value = item.totals.surplus;
     final scheme = Theme.of(context).colorScheme;
     return Padding(
-      key: Key('evolucao-${item.period.range.start.toIso()}'),
+      key: Key('evolucao-${item.range.start.toIso()}'),
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -376,7 +375,7 @@ class _ComparisonRow extends StatelessWidget {
         ],
       ),
     );
-    final start = item.period.range.start.toIso();
+    final start = item.range.start.toIso();
     return Card(
       key: Key('comparativo-$start'),
       child: Padding(

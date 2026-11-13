@@ -3,16 +3,20 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 
 import 'calendar_date.dart';
-import 'period_calendar.dart';
 
 /// Frequência de uma recorrência (RN010, RN014). Valores de texto = banco.
+/// Só "Todo mês" pode ser escolhida (13/11/2026). [byPeriod] existe apenas
+/// para ler modelos antigos, que o servidor desativou: não gera ocorrências.
 enum RecurrenceFrequency {
   monthly('monthly', 'Todo mês'),
-  byPeriod('by_period', 'Todo período');
+  byPeriod('by_period', 'Todo período (descontinuado)');
 
   const RecurrenceFrequency(this.dbValue, this.label);
   final String dbValue;
   final String label;
+
+  /// Frequências que o usuário pode escolher.
+  static const selectable = [RecurrenceFrequency.monthly];
 
   static RecurrenceFrequency fromDb(String value) =>
       RecurrenceFrequency.values.firstWhere((f) => f.dbValue == value);
@@ -57,10 +61,20 @@ class RecurrenceSchedule {
 /// Cálculo das datas programadas (RN038, decisões D1–D6 da Fase 5). As mesmas
 /// regras da função `generate_due_recurrence_occurrences` do servidor.
 abstract final class RecurrenceCalendar {
-  /// Data de referência do mês [year]/[month]: o dia [day] ou, em mês curto, o
-  /// último dia disponível (31 → 30/28/29), sem alterar os meses seguintes.
-  static CalendarDate monthlyDate(int year, int month, int day) =>
-      CalendarDate.clamped(year, month, day);
+  /// Data de referência do mês [year]/[month] (RN038, 13/11/2026): o dia
+  /// [day], mesmo em sábado ou domingo. Se o dia não existe no mês (29–31), o
+  /// último dia do mês se for dia útil; senão, o dia útil (seg–sex) anterior.
+  /// Os meses seguintes voltam ao dia original. Mesma regra da função
+  /// `recurrence_monthly_date` do servidor.
+  static CalendarDate monthlyDate(int year, int month, int day) {
+    final clamped = CalendarDate.clamped(year, month, day);
+    if (clamped.day == day) return clamped;
+    var date = clamped;
+    while (!date.isBusinessDay) {
+      date = date.addDays(-1);
+    }
+    return date;
+  }
 
   /// Primeira data de referência maior ou igual ao início (RN038): criada em
   /// 10/05 com dia 31 → 31/05; criada em 31/05 com dia 10 → 10/06.
@@ -89,48 +103,16 @@ abstract final class RecurrenceCalendar {
     return result;
   }
 
-  /// Períodos que geram ocorrência por período: os que terminam depois do
-  /// início e começam até hoje (inclui o período atual, mesmo se o modelo foi
-  /// criado no meio dele). A data da ocorrência é o início do período.
-  static List<PeriodRange> periodsUntil(
-    CalendarDate startsOn,
-    Iterable<PeriodRange> periods,
-    CalendarDate today,
-  ) =>
-      periods
-          .where((p) => p.end.isAfter(startsOn) && !p.start.isAfter(today))
-          .toList()
-        ..sort((a, b) => a.start.compareTo(b.start));
-
-  /// Data programada da primeira ocorrência ao criar a recorrência a partir
-  /// de um lançamento com data [entryDate] (D8): mensal = a própria data;
-  /// por período = início do período que contém a data.
-  static CalendarDate firstOccurrenceDate(
-    RecurrenceFrequency frequency,
-    CalendarDate entryDate,
-    PeriodRange? containingPeriod,
-  ) => frequency == RecurrenceFrequency.monthly
-      ? entryDate
-      : containingPeriod!.start;
-
   /// Primeiro dia a partir do qual a agenda alterada pode gerar (D2): nunca
-  /// no mesmo mês nem no mesmo período da última ocorrência já gerada.
-  /// [lastScheduled] é a maior data programada do modelo; [lastPeriodEnd] é o
-  /// fim do período que contém essa data, se existir.
-  static CalendarDate scheduleChangeFloor(
-    CalendarDate lastScheduled, {
-    CalendarDate? lastPeriodEnd,
-  }) {
+  /// no mesmo mês da última ocorrência já gerada ([lastScheduled], a maior
+  /// data programada do modelo).
+  static CalendarDate scheduleChangeFloor(CalendarDate lastScheduled) {
     final next = CalendarDate.addMonthsTo(
       lastScheduled.year,
       lastScheduled.month,
       1,
     );
-    final monthStart = CalendarDate(next.$1, next.$2, 1);
-    if (lastPeriodEnd != null && lastPeriodEnd.isAfter(monthStart)) {
-      return lastPeriodEnd;
-    }
-    return monthStart;
+    return CalendarDate(next.$1, next.$2, 1);
   }
 
   /// Início efetivo de uma agenda alterada: o pedido, nunca antes de hoje

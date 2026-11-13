@@ -1,6 +1,6 @@
 # Estado atual — Norte
 
-**Atualizado em:** 12/11/2026.
+**Atualizado em:** 13/11/2026.
 
 ## Fase
 - Fases 1–7: CONCLUÍDAS e validadas (detalhe em `historico/`).
@@ -30,8 +30,16 @@ Cabeçalho com título centralizado e botão fechar, seletor de tipo em pílula 
 ## Entrega 79 — parcial (12/11/2026), aguardando validação
 Feito: tratamento global de erros, sem valores nos registros. O restante (produção, SMTP, monitoramento externo) depende das Entregas 77/78, de domínio e de autorização.
 
+## Reestruturação de períodos (13/11/2026) — P2–P7 feitas, aguardando validação
+Aprovada pelo responsável: configuração única trocável a qualquer momento (vale para todos os períodos), período calculado por datas, repetição só "Todo mês" com último dia útil em dia inexistente. Plano em `pendencias.md` §P (P1 validada).
+- **O que mudou para o usuário:** não existe mais "Criar os períodos…?"; qualquer data tem período. Mais → Período troca a configuração na hora, com aviso de que totais de períodos antigos podem mudar. As setas navegam do lançamento mais antigo ao mais distante. "Repetir" oferece só "Todo mês"; dia 29–31 em mês sem esse dia cai no último dia útil do mês (vencimento junto). Modelos antigos "Todo período" ficaram desativados.
+- **Servidor (só Supabase local):** migrations `20261113000400` (relatório por datas), `0500` (recorrência só mensal + dia útil), `0600` (configuração única `period_settings`, vínculo opcional, RPCs sem período), `0700` (remove tabelas de período, vínculos e RPCs antigas).
+- **Celular:** Drift v8 (v7: `period_settings`; v8: sem tabelas/vínculos de período), migrações testadas com dados.
+- **Rede de segurança (P4):** antes de remover qualquer coisa, soma pelo período gravado = soma pelas datas em todos os períodos (celular, servidor e 4.439 lançamentos reais do banco local); nenhuma diferença.
+- **Testes:** `flutter analyze` sem problemas; 1.086 testes do app; suíte SQL completa (inclui 360 casos compartilhados da data mensal); 31 de integração com o Supabase local; catálogo de segurança no Supabase local.
+
 ## Próximo passo
-Validar a 76; decidir D1/D5; depois Entrega 77 (backup).
+Validar P2–P7 no emulador e na Web (P8; roteiro T7). Homologação só com autorização (R2). Fase 8 (76, D1/D5, 77) retoma depois.
 
 ## Testar no Android (máquina do responsável)
 Emulador `Medium_Phone_API_37.0`, sem flags gráficas; app com `--dart-define=SUPABASE_URL=http://10.0.2.2:54321` e chave publicável local. Login Google exige `adb reverse tcp:54321 tcp:54321`.

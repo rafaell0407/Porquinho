@@ -76,20 +76,18 @@ final periodServiceProvider = FutureProvider<PeriodService>(
       PeriodService(await ref.watch(periodRepositoryProvider.future)),
 );
 
-/// Primeiro acesso e períodos até hoje, ao abrir o app (Entrega 34A).
-/// `true` = falta escolher a configuração de período.
+/// Primeiro acesso, ao abrir o app (Entrega 34A). `true` = falta escolher a
+/// configuração de período. Períodos não são criados: são calculados.
 class PeriodGateNotifier extends AsyncNotifier<bool> {
   @override
   Future<bool> build() async {
     final service = await ref.watch(periodServiceProvider.future);
-    if (await service.needsSetup()) return true;
-    await service.ensureUpTo(ref.read(userClockProvider).today());
-    return false;
+    return service.needsSetup();
   }
 
   Future<void> setup(PeriodConfig config) async {
     final service = await ref.read(periodServiceProvider.future);
-    await service.setup(config, ref.read(userClockProvider).today());
+    await service.setup(config);
     // Primeiro acesso: depois do período, oferece as categorias sugeridas.
     ref.read(pendingSuggestionsProvider.notifier).show();
     state = const AsyncData(false);

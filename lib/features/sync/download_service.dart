@@ -66,18 +66,12 @@ const _templateColumns = [
   _Col('is_active', _Kind.boolean),
 ];
 
-/// Ordem de dependência: cada tabela só referencia as anteriores.
+/// Ordem de dependência: cada tabela só referencia as anteriores. Períodos
+/// não são baixados: são calculados a partir de `period_settings` (P6).
 const _specs = [
-  _TableSpec('period_configurations', 'period_configuration', [
+  _TableSpec('period_settings', 'period_settings', [
     _Col('mode'),
     _Col('custom_start_day', _Kind.integer),
-    _Col('effective_from'),
-    ..._common,
-  ]),
-  _TableSpec('accounting_periods', 'accounting_period', [
-    _Col('configuration_id'),
-    _Col('start_date'),
-    _Col('end_date'),
     ..._common,
   ]),
   _TableSpec('categories', 'category', [
@@ -121,10 +115,8 @@ const _specs = [
     _Col('received_on'),
     _Col('category_id'),
     _Col('subcategory_id'),
-    _Col('accounting_period_id'),
     _Col('recurrence_template_id'),
     _Col('scheduled_for_date'),
-    _Col('scheduled_period_id'),
     ..._common,
   ]),
   _TableSpec('expense_entries', 'expense_entry', [
@@ -136,20 +128,16 @@ const _specs = [
     _Col('paid_on'),
     _Col('category_id'),
     _Col('subcategory_id'),
-    _Col('accounting_period_id'),
     _Col('recurrence_template_id'),
     _Col('scheduled_for_date'),
-    _Col('scheduled_period_id'),
     ..._common,
   ]),
   _TableSpec('investment_allocations', 'investment_allocation', [
     _Col('amount_centavos', _Kind.amount),
     _Col('allocated_on'),
-    _Col('accounting_period_id'),
     _Col('cancelled_at'),
     _Col('recurrence_template_id'),
     _Col('scheduled_for_date'),
-    _Col('scheduled_period_id'),
     ..._common,
   ]),
 ];
@@ -310,17 +298,9 @@ class DownloadService {
     String fromId,
     String toId,
   ) async {
-    const references = {
-      'accounting_periods': [
-        ('income_entries', 'accounting_period_id'),
-        ('income_entries', 'scheduled_period_id'),
-        ('expense_entries', 'accounting_period_id'),
-        ('expense_entries', 'scheduled_period_id'),
-        ('investment_allocations', 'accounting_period_id'),
-        ('investment_allocations', 'scheduled_period_id'),
-      ],
-      'period_configurations': [('accounting_periods', 'configuration_id')],
-    };
+    // Nenhuma tabela baixada é referenciada por id gerado em outro aparelho
+    // desde que os períodos deixaram de ser gravados (P6).
+    const references = <String, List<(String, String)>>{};
     for (final (refTable, column) in references[table] ?? const []) {
       await _db.customStatement(
         'UPDATE $refTable SET $column = ? WHERE owner_id = ? AND $column = ?',

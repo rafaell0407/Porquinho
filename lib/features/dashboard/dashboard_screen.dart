@@ -45,11 +45,7 @@ class DashboardScreen extends ConsumerWidget {
           return Column(
             children: [
               PeriodHeader(view: v),
-              Expanded(
-                child: v.exists
-                    ? const _DashboardBody()
-                    : MissingPeriodCard(view: v),
-              ),
+              const Expanded(child: _DashboardBody()),
             ],
           );
         },
@@ -136,7 +132,9 @@ class PeriodHeader extends ConsumerWidget {
                     key: const Key('periodo-anterior'),
                     tooltip: 'Período anterior',
                     icon: const Icon(Icons.chevron_left),
-                    onPressed: () => anchor.set(view.range.start.addDays(-1)),
+                    onPressed: view.hasPrevious
+                        ? () => anchor.set(view.range.start.addDays(-1))
+                        : null,
                   ),
                   Expanded(
                     child: FittedBox(
@@ -156,7 +154,9 @@ class PeriodHeader extends ConsumerWidget {
                     key: const Key('periodo-proximo'),
                     tooltip: 'Próximo período',
                     icon: const Icon(Icons.chevron_right),
-                    onPressed: () => anchor.set(view.range.end),
+                    onPressed: view.hasNext
+                        ? () => anchor.set(view.range.end)
+                        : null,
                   ),
                 ],
               ),
@@ -168,19 +168,18 @@ class PeriodHeader extends ConsumerWidget {
               onPressed: () => anchor.set(null),
               child: const Text('Atual'),
             ),
-          if (view.exists) const SizedBox(width: 12),
-          if (view.exists)
-            IconButton.filled(
-              key: newButtonKey,
-              tooltip: 'Novo lançamento',
-              style: IconButton.styleFrom(
-                backgroundColor: scheme.primary,
-                foregroundColor: scheme.onPrimary,
-                fixedSize: const Size(44, 44),
-              ),
-              icon: const Icon(Icons.add),
-              onPressed: () => showNewEntryChooser(context, ref),
+          const SizedBox(width: 12),
+          IconButton.filled(
+            key: newButtonKey,
+            tooltip: 'Novo lançamento',
+            style: IconButton.styleFrom(
+              backgroundColor: scheme.primary,
+              foregroundColor: scheme.onPrimary,
+              fixedSize: const Size(44, 44),
             ),
+            icon: const Icon(Icons.add),
+            onPressed: () => showNewEntryChooser(context, ref),
+          ),
         ],
       ),
     );

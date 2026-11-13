@@ -8,7 +8,6 @@ class InvestmentRecord {
     required this.amount,
     required this.date,
     required this.version,
-    this.periodId,
     this.cancelled = false,
     this.templateId,
     this.scheduledFor,
@@ -18,7 +17,6 @@ class InvestmentRecord {
   final BigInt amount;
   final CalendarDate date;
   final int version;
-  final String? periodId;
   final bool cancelled;
 
   /// Modelo recorrente de que esta ocorrência vem (`null` = avulso).
@@ -32,7 +30,6 @@ class InvestmentRecord {
     amount: amount,
     date: date,
     version: version ?? this.version,
-    periodId: periodId,
     cancelled: cancelled,
     templateId: templateId,
     scheduledFor: scheduledFor,
@@ -42,7 +39,6 @@ class InvestmentRecord {
     'id': id,
     'amount_centavos': amount.toString(),
     'allocated_on': date.toIso(),
-    'accounting_period_id': periodId,
     'cancelled': cancelled,
     'recurrence_template_id': templateId,
     'scheduled_for_date': scheduledFor?.toIso(),
@@ -144,8 +140,6 @@ class CreateInvestmentRecurrence extends InvestmentChange {
     required this.draft,
     required this.frequency,
     required this.scheduledFor,
-    required this.periodId,
-    this.scheduledPeriodId,
     this.existing,
   });
 
@@ -154,15 +148,8 @@ class CreateInvestmentRecurrence extends InvestmentChange {
   final InvestmentDraft draft;
   final RecurrenceFrequency frequency;
 
-  /// Data programada da primeira ocorrência (mensal: a data do investimento;
-  /// por período: início do período).
+  /// Data programada da primeira ocorrência: a data do investimento (D8).
   final CalendarDate scheduledFor;
-
-  /// Período que contém a data programada.
-  final String periodId;
-
-  /// Período programado (só "todo período").
-  final String? scheduledPeriodId;
   final InvestmentRecord? existing;
 
   bool get isMonthly => frequency == RecurrenceFrequency.monthly;

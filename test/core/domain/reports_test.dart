@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:porquinho/core/domain/calendar_date.dart';
+import 'package:porquinho/core/domain/period_calendar.dart';
 import 'package:porquinho/core/domain/reports.dart';
 import 'package:porquinho/core/domain/surplus.dart';
 
@@ -128,22 +130,32 @@ void main() {
   });
 
   group('vários períodos (relatórios 3, 4 e 5)', () {
+    final p1 = PeriodRange(CalendarDate(2026, 9, 1), CalendarDate(2026, 10, 1));
+    final p2 = PeriodRange(
+      CalendarDate(2026, 10, 1),
+      CalendarDate(2026, 11, 1),
+    );
+    final p3 = PeriodRange(
+      CalendarDate(2026, 11, 1),
+      CalendarDate(2026, 12, 1),
+    );
+
     test('totais por período na ordem recebida; período vazio = zero', () {
       final s = summarizePeriods([
         PeriodLines(
-          periodId: 'p1',
+          range: p1,
           incomes: [inc('received', 100000)],
           expenses: [exp('paid', 30000)],
           investments: [InvestmentLine(amount: c(20000))],
         ),
-        const PeriodLines(periodId: 'p2'),
+        PeriodLines(range: p2),
         PeriodLines(
-          periodId: 'p3',
+          range: p3,
           expenses: [exp('pending', 50000)],
           investments: [InvestmentLine(amount: c(1), cancelled: true)],
         ),
       ]);
-      expect(s.map((e) => e.periodId), ['p1', 'p2', 'p3']);
+      expect(s.map((e) => e.range), [p1, p2, p3]);
       expect(s[0].totals.surplus, c(50000));
       expect(s[1].totals, PeriodTotals.zero);
       expect(s[1].totals.surplus, BigInt.zero);
@@ -156,7 +168,7 @@ void main() {
       final big = BigInt.parse('9007199254740993'); // 2^53 + 1
       final s = summarizePeriods([
         PeriodLines(
-          periodId: 'p',
+          range: p1,
           incomes: [IncomeLine(status: 'received', amount: big)],
           expenses: [ExpenseLine(status: 'paid', amount: BigInt.one)],
         ),

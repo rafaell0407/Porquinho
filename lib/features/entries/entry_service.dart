@@ -1,9 +1,8 @@
 import '../../core/domain/calendar_date.dart';
+import '../../core/domain/period_calendar.dart';
 import '../../core/domain/recurrence_schedule.dart';
 import '../categories/category_models.dart';
 import '../categories/category_repository.dart';
-import '../periods/period_models.dart';
-import '../periods/period_service.dart';
 import '../recurrence/recurrence_repository.dart';
 import '../sync/sync_models.dart';
 import 'entry_models.dart';
@@ -15,8 +14,7 @@ import 'entry_repository.dart';
 class EntryService {
   EntryService(
     this._entries,
-    this._categories,
-    this._periods, {
+    this._categories, {
     RecurrenceRepository? recurrences,
     String Function()? newId,
   }) : _recurrences = recurrences,
@@ -24,14 +22,13 @@ class EntryService {
 
   final EntryRepository _entries;
   final CategoryRepository _categories;
-  final PeriodService _periods;
   final RecurrenceRepository? _recurrences;
   final String Function() _newId;
 
   static const maxDescriptionLength = 120;
 
-  Future<List<EntryRecord>> entriesInPeriod(String periodId) =>
-      _entries.entriesInPeriod(periodId);
+  Future<List<EntryRecord>> entriesInPeriod(PeriodRange range) =>
+      _entries.entriesInPeriod(range);
 
   /// Cadastra uma receita ou despesa.
   ///
@@ -53,7 +50,6 @@ class EntryService {
       draft,
       amountOptional: repeat?.variableValue ?? false,
     );
-    final period = await _requirePeriod(clean.date);
     if (alreadyPaid && clean.kind != EntryKind.expense) {
       throw const ChangeRejectedException(
         'Só despesas podem ser cadastradas como pagas.',
@@ -70,7 +66,7 @@ class EntryService {
       id = _newId();
       changes.add(CreateEntry(id, clean));
     } else {
-      final recurrence = _recurrenceFor(clean, repeat, period, null);
+      final recurrence = _recurrenceFor(clean, repeat, null);
       id = recurrence.entryId;
       changes.add(recurrence);
     }
@@ -102,7 +98,6 @@ class EntryService {
           'Informe o valor da receita antes de confirmar o recebimento.',
         );
       }
-      await _requirePeriod(when);
       changes.add(
         ReceiveIncome(
           _firstOccurrence(changes.first as CreateRecurrence),
@@ -148,16 +143,14 @@ class EntryService {
   CreateRecurrence _recurrenceFor(
     EntryDraft clean,
     RepeatChoice repeat,
-    PeriodRecord period,
     EntryRecord? existing,
   ) {
+    if (repeat.frequency != RecurrenceFrequency.monthly) {
+      throw const ChangeRejectedException('A repetição é só "Todo mês".');
+    }
     final templateId = _newId();
-    final byPeriod = repeat.frequency == RecurrenceFrequency.byPeriod;
-    final scheduled = RecurrenceCalendar.firstOccurrenceDate(
-      repeat.frequency,
-      clean.date,
-      period.range,
-    );
+    // O próprio lançamento é a primeira ocorrência (D8).
+    final scheduled = clean.date;
     return CreateRecurrence(
       templateId: templateId,
       entryId:
@@ -166,8 +159,6 @@ class EntryService {
       draft: clean,
       choice: repeat,
       scheduledFor: scheduled,
-      periodId: period.id,
-      scheduledPeriodId: byPeriod ? period.id : null,
       existing: existing,
     );
   }
@@ -211,10 +202,6 @@ class EntryService {
       ]);
       return;
     }
-    PeriodRecord? period;
-    if (repeat != null || clean.date != current.date) {
-      period = await _requirePeriod(clean.date);
-    }
     if (current.isRecurring &&
         current.status != 'pending' &&
         clean.amount == null) {
@@ -226,7 +213,6 @@ class EntryService {
         _recurrenceFor(
           clean,
           repeat,
-          period!,
           current.copyWith(version: current.version + 1),
         ),
       );
@@ -285,7 +271,6 @@ class EntryService {
     if (value.isNegative) {
       throw const ChangeRejectedException('O valor não pode ser negativo.');
     }
-    await _requirePeriod(receivedOn);
     await _entries.apply([ReceiveIncome(current, receivedOn, amount: value)]);
   }
 
@@ -302,22 +287,6 @@ class EntryService {
       );
     }
   }
-
-  /// Pergunta ao usuário (via exceção) quando o período da data não existe.
-  /// Devolve o período que contém [date].
-  Future<PeriodRecord> _requirePeriod(CalendarDate date) async {
-    final plan = await _periods.planFor(date);
-    if (plan != null) throw PeriodMissingException(date, plan);
-    final period = await _periods.periodFor(date);
-    if (period == null) {
-      throw const ChangeRejectedException('Nenhum período cobre esta data.');
-    }
-    return period;
-  }
-
-  /// Cria os períodos faltantes depois da confirmação do usuário.
-  Future<void> createMissingPeriods(CalendarDate date) =>
-      _periods.createCovering(date);
 
   Future<EntryDraft> _validated(
     EntryDraft d, {

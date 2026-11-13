@@ -1,20 +1,45 @@
+@TestOn('vm')
+library;
+
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:porquinho/core/domain/calendar_date.dart';
-import 'package:porquinho/core/domain/period_calendar.dart';
 import 'package:porquinho/core/domain/recurrence_schedule.dart';
 
 CalendarDate d(String iso) => CalendarDate.parse(iso);
 
 void main() {
   group('mensal', () {
-    test('dia 31: jan 31, fev 28, mar 31, abr 30', () {
+    test('dia 31 (RN038): jan 31, fev 26 (28 é domingo), mar 31, abr 30', () {
       final s = RecurrenceSchedule.monthly(startsOn: d('2027-01-01'), day: 31);
       final dates = RecurrenceCalendar.monthlyUntil(s, d('2027-04-30'));
       expect(dates.map((e) => e.toIso()), [
-        '2027-01-31',
-        '2027-02-28',
+        '2027-01-31', // domingo, mas o dia existe: mantém
+        '2027-02-26', // 28/02 é domingo: sexta anterior
         '2027-03-31',
-        '2027-04-30',
+        '2027-04-30', // sexta
+      ]);
+    });
+
+    test('dia que existe fica mesmo em sábado ou domingo', () {
+      // 31/05/2026 é domingo; 31/01/2026 é sábado.
+      expect(RecurrenceCalendar.monthlyDate(2026, 5, 31), d('2026-05-31'));
+      expect(RecurrenceCalendar.monthlyDate(2026, 1, 31), d('2026-01-31'));
+      expect(RecurrenceCalendar.monthlyDate(2026, 11, 15), d('2026-11-15'));
+    });
+
+    test('dia inexistente: último dia útil; meses seguintes voltam ao dia', () {
+      // 28/02/2026 é sábado → 27/02; 30/04/2026 é quinta → 30/04.
+      final s = RecurrenceSchedule.monthly(startsOn: d('2026-01-31'), day: 31);
+      final dates = RecurrenceCalendar.monthlyUntil(s, d('2026-05-31'));
+      expect(dates.map((e) => e.toIso()), [
+        '2026-01-31',
+        '2026-02-27',
+        '2026-03-31',
+        '2026-04-30',
+        '2026-05-31',
       ]);
     });
 
@@ -29,9 +54,10 @@ void main() {
         startsOn: d('2027-02-01'),
         day: 29,
       );
+      // 28/02/2027 é domingo: sexta 26/02.
       expect(
         RecurrenceCalendar.monthlyUntil(s29, d('2027-02-28')).single,
-        d('2027-02-28'),
+        d('2027-02-26'),
       );
       final s30 = RecurrenceSchedule.monthly(
         startsOn: d('2028-02-01'),
@@ -43,21 +69,28 @@ void main() {
       );
     });
 
-    test(
-      'dia 31 por 48 meses: uma por mês, sempre o último dia quando curto',
-      () {
-        final s = RecurrenceSchedule.monthly(
-          startsOn: d('2026-01-31'),
-          day: 31,
-        );
-        final dates = RecurrenceCalendar.monthlyUntil(s, d('2029-12-31'));
-        expect(dates, hasLength(48));
-        for (final date in dates) {
-          expect(date.day, CalendarDate.daysInMonth(date.year, date.month));
+    test('dia 31 por 48 meses: uma por mês; mês curto = último dia útil', () {
+      final s = RecurrenceSchedule.monthly(startsOn: d('2026-01-31'), day: 31);
+      final dates = RecurrenceCalendar.monthlyUntil(s, d('2029-12-31'));
+      expect(dates, hasLength(48));
+      for (final date in dates) {
+        final last = CalendarDate.daysInMonth(date.year, date.month);
+        if (last == 31) {
+          expect(date.day, 31, reason: '$date');
+        } else {
+          // Último dia útil do mês: nenhum dia útil depois dele no mês.
+          expect(date.isBusinessDay, isTrue, reason: '$date');
+          for (var day = date.day + 1; day <= last; day++) {
+            expect(
+              CalendarDate(date.year, date.month, day).isBusinessDay,
+              isFalse,
+              reason: '$date',
+            );
+          }
         }
-        expect(dates.map((e) => e.monthIndex).toSet(), hasLength(48));
-      },
-    );
+      }
+      expect(dates.map((e) => e.monthIndex).toSet(), hasLength(48));
+    });
 
     test('criada em 10/05 com dia 31 → primeira em 31/05', () {
       expect(
@@ -93,58 +126,55 @@ void main() {
     });
   });
 
-  group('por período', () {
-    final config = PeriodConfig.customCycle(20);
-    final p1 = PeriodCalendar.containing(config, d('2026-09-25'));
-    final p2 = PeriodCalendar.next(config, p1);
-    final p3 = PeriodCalendar.next(config, p2);
+  group(
+    'tabela única de casos (test/fixtures/monthly_recurrence_cases.json)',
+    () {
+      final json =
+          jsonDecode(
+                File(
+                  'test/fixtures/monthly_recurrence_cases.json',
+                ).readAsStringSync(),
+              )
+              as Map<String, dynamic>;
+      final cases = (json['cases'] as List).cast<Map<String, dynamic>>();
 
-    test('uma ocorrência por período, incluindo o atual', () {
-      final due = RecurrenceCalendar.periodsUntil(d('2026-09-01'), [
-        p1,
-        p2,
-        p3,
-      ], d('2026-11-25'));
-      expect(due, [p1, p2, p3]);
-    });
+      test('mesma tabela do teste SQL do servidor', () {
+        expect(cases, hasLength(360));
+        final sql = File(
+          'supabase/tests/recurrence_monthly_date_cases_test.sql',
+        ).readAsStringSync();
+        for (final c in cases) {
+          expect(
+            sql,
+            contains(
+              "(${c['year']}, ${c['month']}, ${c['day']}, DATE '${c['date']}')",
+            ),
+          );
+        }
+      });
 
-    test('criada no meio do período gera a do período atual', () {
-      final due = RecurrenceCalendar.periodsUntil(d('2026-10-25'), [
-        p1,
-        p2,
-        p3,
-      ], d('2026-10-26'));
-      expect(due, [p2]);
-      expect(due.single.start.isBefore(d('2026-10-25')), isTrue);
-    });
+      for (final c in cases) {
+        test('${c['year']}-${c['month']} dia ${c['day']}', () {
+          expect(
+            RecurrenceCalendar.monthlyDate(
+              c['year'] as int,
+              c['month'] as int,
+              c['day'] as int,
+            ).toIso(),
+            c['date'],
+          );
+        });
+      }
+    },
+  );
 
-    test('período futuro não gera', () {
+  group('só "Todo mês"', () {
+    test('única frequência que pode ser escolhida', () {
+      expect(RecurrenceFrequency.selectable, [RecurrenceFrequency.monthly]);
+      // Modelos antigos "por período" ainda são lidos do banco.
       expect(
-        RecurrenceCalendar.periodsUntil(d('2026-09-01'), [
-          p1,
-          p2,
-          p3,
-        ], d('2026-10-01')),
-        [p1],
-      );
-    });
-
-    test('data da primeira ocorrência é o início do período', () {
-      expect(
-        RecurrenceCalendar.firstOccurrenceDate(
-          RecurrenceFrequency.byPeriod,
-          d('2026-10-10'),
-          p2,
-        ),
-        p2.start,
-      );
-      expect(
-        RecurrenceCalendar.firstOccurrenceDate(
-          RecurrenceFrequency.monthly,
-          d('2026-10-10'),
-          p2,
-        ),
-        d('2026-10-10'),
+        RecurrenceFrequency.fromDb('by_period'),
+        RecurrenceFrequency.byPeriod,
       );
     });
   });
@@ -182,14 +212,6 @@ void main() {
       );
       final s = RecurrenceSchedule.monthly(startsOn: start, day: 20);
       expect(RecurrenceCalendar.monthlyUntil(s, d('2026-11-30')), isEmpty);
-    });
-
-    test('piso respeita o fim do período da última ocorrência', () {
-      final floor = RecurrenceCalendar.scheduleChangeFloor(
-        d('2026-10-20'),
-        lastPeriodEnd: d('2026-11-20'),
-      );
-      expect(floor, d('2026-11-20'));
     });
   });
 

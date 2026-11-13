@@ -16,26 +16,12 @@ void runDatabaseContract({
 
   Future<void> seed(PorquinhoDatabase db) async {
     await db
-        .into(db.periodConfigurations)
+        .into(db.periodSettings)
         .insert(
-          PeriodConfigurationsCompanion.insert(
-            id: 'config-1',
+          PeriodSettingsCompanion.insert(
+            id: owner,
             ownerId: owner,
             mode: 'calendar_month',
-            effectiveFrom: '2026-11-01',
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-    await db
-        .into(db.accountingPeriods)
-        .insert(
-          AccountingPeriodsCompanion.insert(
-            id: 'period-1',
-            ownerId: owner,
-            configurationId: 'config-1',
-            startDate: '2026-11-01',
-            endDate: '2026-12-01',
             createdAt: now,
             updatedAt: now,
           ),
@@ -57,7 +43,6 @@ void runDatabaseContract({
             ownerId: owner,
             amountCentavos: amount,
             allocatedOn: allocatedOn,
-            accountingPeriodId: 'period-1',
             createdAt: createdAt,
             updatedAt: createdAt,
           ),
@@ -202,6 +187,6 @@ void runDatabaseContract({
     final fk = await db.customSelect('PRAGMA foreign_keys').getSingle();
     expect(fk.read<int>('foreign_keys'), 1);
     final version = await db.customSelect('PRAGMA user_version').getSingle();
-    expect(version.read<int>('user_version'), 6);
+    expect(version.read<int>('user_version'), 8);
   });
 }

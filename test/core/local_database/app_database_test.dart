@@ -30,8 +30,7 @@ void main() {
       tables,
       containsAll([
         'user_preferences',
-        'period_configurations',
-        'accounting_periods',
+        'period_settings',
         'categories',
         'subcategories',
         'income_recurrence_templates',
@@ -54,7 +53,7 @@ void main() {
     final schemaVersion = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(schemaVersion.read<int>('user_version'), 6);
+    expect(schemaVersion.read<int>('user_version'), 8);
   });
 
   test('grava e lê centavos exatos no SQLite', () async {
@@ -63,26 +62,12 @@ void main() {
     const now = '2026-11-09T12:00:00Z';
 
     await database
-        .into(database.periodConfigurations)
+        .into(database.periodSettings)
         .insert(
-          PeriodConfigurationsCompanion.insert(
-            id: 'config-1',
+          PeriodSettingsCompanion.insert(
+            id: ownerId,
             ownerId: ownerId,
             mode: 'calendar_month',
-            effectiveFrom: '2026-11-01',
-            createdAt: now,
-            updatedAt: now,
-          ),
-        );
-    await database
-        .into(database.accountingPeriods)
-        .insert(
-          AccountingPeriodsCompanion.insert(
-            id: 'period-1',
-            ownerId: ownerId,
-            configurationId: 'config-1',
-            startDate: '2026-11-01',
-            endDate: '2026-12-01',
             createdAt: now,
             updatedAt: now,
           ),
@@ -95,7 +80,6 @@ void main() {
             ownerId: ownerId,
             amountCentavos: amount,
             allocatedOn: '2026-11-09',
-            accountingPeriodId: 'period-1',
             createdAt: now,
             updatedAt: now,
           ),

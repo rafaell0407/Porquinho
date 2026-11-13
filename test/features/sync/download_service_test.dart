@@ -97,22 +97,10 @@ void main() {
       'version': 3,
       'updated_at': _t(5),
     };
-    reader.tables['period_configurations'] = [
-      {
-        ..._base('cfg1', _t(1)),
-        'mode': 'calendar_month',
-        'custom_start_day': null,
-        'effective_from': '2026-01-01',
-      },
-    ];
-    reader.tables['accounting_periods'] = [
-      for (var i = 0; i < 3; i++)
-        {
-          ..._base('per$i', _t(2, i)),
-          'configuration_id': 'cfg1',
-          'start_date': '2026-0${i + 1}-01',
-          'end_date': '2026-0${i + 2}-01',
-        },
+    // Configuração única (P6). Lançamentos antigos ainda trazem o vínculo
+    // com o período gravado; o aparelho não guarda mais esse vínculo.
+    reader.tables['period_settings'] = [
+      {..._base('u1', _t(1)), 'mode': 'custom_cycle', 'custom_start_day': 20},
     ];
     reader.tables['categories'] = [
       {
@@ -225,8 +213,7 @@ void main() {
     final result = await service.downloadAll('u1');
 
     expect(result.completed, isTrue);
-    expect(await count('period_configurations'), 1);
-    expect(await count('accounting_periods'), 3);
+    expect(await count('period_settings'), 1);
     expect(await count('categories'), 2);
     expect(await count('subcategories'), 1);
     expect(await count('expense_recurrence_templates'), 1);
@@ -271,7 +258,7 @@ void main() {
     final second = await service.downloadAll('u1');
 
     expect(second.applied, 0);
-    expect(await count('accounting_periods'), 3);
+    expect(await count('period_settings'), 1);
     expect(await count('categories'), 2);
     expect(await count('audit_events'), 1);
   });
@@ -357,7 +344,7 @@ void main() {
     reader.failAfterPages = -1;
     final second = await service.downloadAll('u1');
     expect(second.completed, isTrue);
-    expect(await count('accounting_periods'), 3);
+    expect(await count('period_settings'), 1);
     expect(await count('categories'), 2);
     expect(await count('income_entries'), 1);
     expect(await count('audit_events'), 1);

@@ -27,14 +27,13 @@ import '../support/supabase_local_support.dart';
 
 /// Entrega 73: exclusão definitiva da conta no Supabase LOCAL.
 const _tables = [
-  'accounting_periods',
   'applied_sync_operations',
   'audit_events',
   'categories',
   'expense_entries',
   'income_entries',
   'investment_allocations',
-  'period_configurations',
+  'period_settings',
   'user_preferences',
 ];
 
@@ -56,14 +55,12 @@ void main() {
     final entries = EntryService(
       LocalEntryRepository(db, account.id, recorder),
       catRepo,
-      periods,
     );
     final investments = InvestmentService(
       LocalInvestmentRepository(db, account.id, recorder),
-      periods,
     );
     final day = CalendarDate(2026, 11, 5);
-    await periods.setup(PeriodConfig.calendarMonth(), day);
+    await periods.setup(PeriodConfig.calendarMonth());
     await categories.addSuggestions(income: ['Salário'], expense: ['Mercado']);
     final cats = (await categories.load()).categories;
     await entries.create(

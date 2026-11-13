@@ -406,7 +406,7 @@ class SyncService {
     } else {
       await _db.customStatement(
         'UPDATE $entryTable SET recurrence_template_id = NULL, '
-        'scheduled_for_date = NULL, scheduled_period_id = NULL, version = 0 '
+        'scheduled_for_date = NULL, version = 0 '
         'WHERE owner_id = ? AND id = ?',
         [ownerId, op.entityId],
       );
@@ -442,8 +442,7 @@ enum _Outcome { applied, blocked, offline }
 const _tableByEntity = {
   'category': 'categories',
   'subcategory': 'subcategories',
-  'accounting_period': 'accounting_periods',
-  'period_configuration': 'period_configurations',
+  'period_settings': 'period_settings',
   'income_entry': 'income_entries',
   'expense_entry': 'expense_entries',
   'investment_allocation': 'investment_allocations',

@@ -26,7 +26,7 @@ class _InvestmentRecurrenceEditScreenState
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _amount;
   late final TextEditingController _day;
-  late RecurrenceFrequency _frequency;
+  late final RecurrenceFrequency _frequency;
   bool _saving = false;
   String? _error;
 
@@ -37,8 +37,12 @@ class _InvestmentRecurrenceEditScreenState
     _amount = TextEditingController(
       text: formatBrl(t.defaultAmount).replaceFirst('R\$ ', ''),
     );
-    _day = TextEditingController(text: '${t.monthlyReferenceDay ?? 1}');
-    _frequency = t.frequency;
+    _day = TextEditingController(
+      text: '${t.monthlyReferenceDay ?? t.startsOn.day}',
+    );
+    // Só "Todo mês" (13/11/2026): salvar um modelo antigo "por período"
+    // o converte para mensal.
+    _frequency = RecurrenceFrequency.monthly;
   }
 
   @override
@@ -103,31 +107,23 @@ class _InvestmentRecurrenceEditScreenState
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 12),
-            SegmentedButton<RecurrenceFrequency>(
-              key: const Key('frequencia'),
-              segments: [
-                for (final f in RecurrenceFrequency.values)
-                  ButtonSegment(value: f, label: Text(f.label)),
-              ],
-              selected: {_frequency},
-              onSelectionChanged: (s) => setState(() => _frequency = s.first),
-            ),
-            if (_frequency == RecurrenceFrequency.monthly)
-              TextFormField(
-                key: const Key('campo-dia'),
-                controller: _day,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Dia do mês (1 a 31)',
-                  helperText: 'Em mês curto, usa o último dia do mês.',
-                ),
-                validator: (v) {
-                  final n = int.tryParse((v ?? '').trim());
-                  return (n == null || n < 1 || n > 31)
-                      ? 'Informe um dia entre 1 e 31.'
-                      : null;
-                },
+            TextFormField(
+              key: const Key('campo-dia'),
+              controller: _day,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Dia do mês (1 a 31)',
+                helperText:
+                    'Dia que não existe no mês (29 a 31): último dia útil '
+                    'até o fim do mês.',
               ),
+              validator: (v) {
+                final n = int.tryParse((v ?? '').trim());
+                return (n == null || n < 1 || n > 31)
+                    ? 'Informe um dia entre 1 e 31.'
+                    : null;
+              },
+            ),
             TextFormField(
               key: const Key('campo-valor'),
               controller: _amount,

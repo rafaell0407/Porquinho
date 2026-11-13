@@ -84,8 +84,7 @@ class OutboxOperation {
   /// Operação que cria o registro (as demais apenas o alteram).
   bool get isCreate =>
       (isRecurrenceCreation && params['p_expected_entry_version'] == 0) ||
-      rpc == 'create_accounting_period' ||
-      rpc == 'create_earlier_accounting_period' ||
+      (rpc == 'set_period_settings' && params['p_expected_version'] == 0) ||
       params['p_action'] == 'create';
 
   static OutboxOperation fromRow(Map<String, Object?> row) {

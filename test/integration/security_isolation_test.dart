@@ -12,7 +12,6 @@ import '../support/supabase_local_support.dart';
 /// Entrega 72: isolamento A×B e acesso anônimo pela API (PostgREST) do
 /// Supabase LOCAL, em todas as tabelas e RPCs de `public`.
 const _tables = [
-  'accounting_periods',
   'applied_sync_operations',
   'audit_events',
   'categories',
@@ -22,7 +21,7 @@ const _tables = [
   'income_recurrence_templates',
   'investment_allocations',
   'investment_recurrence_templates',
-  'period_configurations',
+  'period_settings',
   'subcategories',
   'sync_conflicts',
   'user_preferences',
@@ -39,15 +38,14 @@ const _rpcs = [
   'apply_investment_allocation_change',
   'apply_investment_recurrence_template_change',
   'apply_subcategory_change',
-  'create_accounting_period',
-  'create_earlier_accounting_period',
   'create_investment_recurrence_from_entry',
   'create_recurrence_from_entry',
   'generate_due_recurrence_occurrences',
-  'get_period_report',
+  'get_entry_date_span',
+  'get_range_report',
   'resolve_sync_conflict',
-  'schedule_period_configuration',
   'set_onboarding_step',
+  'set_period_settings',
   'set_user_theme',
 ];
 
@@ -209,15 +207,22 @@ void main() {
       expect((await read(a, 'sync_conflicts')).single['status'], 'open');
     }, skip: skip);
 
-    test('relatório de período inexistente ou alheio devolve vazio', () async {
-      final fake = testUuid(r);
+    test('relatório por datas de outra conta devolve zeros', () async {
       final report = await b.rpc(
-        'get_period_report',
+        'get_range_report',
         params: {
-          'p_period_ids': [fake],
+          'p_starts': ['2000-01-01'],
+          'p_ends': ['2100-01-01'],
         },
       );
-      expect(report, isA<Map>());
+      final ranges = (report as Map)['ranges'] as List;
+      expect(ranges.single['income'], '0');
+      expect(ranges.single['expense'], '0');
+      expect(ranges.single['investment'], '0');
+      expect(await b.rpc('get_entry_date_span'), {
+        'oldest': null,
+        'newest': null,
+      });
     }, skip: skip);
   });
 }

@@ -93,6 +93,12 @@ class SyncStatusNotifier extends Notifier<SyncStatus> {
   @override
   SyncStatus build() => const SyncStatus();
 
+  /// Alinha o aviso do topo com a lista real de itens de atenção.
+  void setAttentionCount(int count) {
+    if (state.attentionCount == count) return;
+    state = state.copyWith(attentionCount: count);
+  }
+
   /// Uma rodada: confere a conexão, envia a fila e atualiza as contagens.
   Future<void> run(String ownerId) async {
     final syncNow = ref.read(fullSyncProvider);

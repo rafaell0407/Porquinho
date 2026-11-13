@@ -29,9 +29,9 @@ Nova dependência: avaliar manutenção, licença, segurança e custo antes.
 
 ## 4. Sincronização e conflitos
 - Toda gravação remota passa por RPC autenticada, transacional, idempotente (chave por operação), versionada e auditada. DML direto bloqueado; RLS só de leitura própria.
-- Fila local `sync_outbox`: `pending` → `sending` (volta a `pending` se o app fechar) → removida ao aplicar; `failed` (reenvio com espera crescente); `conflict` (para só a entidade; o resto segue); `rejected` (erro permanente; usuário decide). Operações declaram dependências (`depends_on`): lançamento espera categoria/período.
-- Rodada: envia períodos/modelos → `generate_due_recurrence_occurrences` no servidor → baixa (incremental, sem sobrescrever pendência) → gera localmente o que faltar. "Sincronizado" só se o download terminou. Offline: nova tentativa a cada 15 s.
-- Conflito: versão esperada divergente → servidor guarda as duas versões em `sync_conflicts`. Usuário escolhe (a) aparelho, (b) servidor, (c) editar; (a)/(c) geram nova versão consolidada; sempre auditado (`conflict_resolved`). Criação duplicada e período só aceitam (b). Cancelamento × edição = conflito. Web resolve conflitos no servidor na mesma tela "Itens que precisam de atenção". Conflito antigo após reinstalar aparece só na Web (D7). Tema: última gravação vence (exceção aprovada).
+- Fila local `sync_outbox`: `pending` → `sending` (volta a `pending` se o app fechar) → removida ao aplicar; `failed` (reenvio com espera crescente); `conflict` (para só a entidade; o resto segue); `rejected` (erro permanente; usuário decide). Operações declaram dependências (`depends_on`): lançamento espera a categoria.
+- Rodada: envia configuração/modelos → `generate_due_recurrence_occurrences` no servidor → baixa (incremental, sem sobrescrever pendência) → gera localmente o que faltar. "Sincronizado" só se o download terminou. Offline: nova tentativa a cada 15 s.
+- Conflito: versão esperada divergente → servidor guarda as duas versões em `sync_conflicts`. Usuário escolhe (a) aparelho, (b) servidor, (c) editar; (a)/(c) geram nova versão consolidada; sempre auditado (`conflict_resolved`). Criação duplicada só aceita (b); a configuração de período aceita (a) e (b). Cancelamento × edição = conflito. Web resolve conflitos no servidor na mesma tela "Itens que precisam de atenção". Conflito antigo após reinstalar aparece só na Web (D7). Tema: última gravação vence (exceção aprovada).
 - Ocorrência recorrente tem ID determinístico (modelo + data programada), igual no app e no servidor → gerar em dois lugares não duplica.
 
 ## 5. Segurança
@@ -53,4 +53,4 @@ Nova dependência: avaliar manutenção, licença, segurança e custo antes.
 - Monitoramento sem nova dependência: Android Vitals, painel Supabase, verificação de disponibilidade, `FlutterError.onError` sem valores.
 
 ## 8. Testes
-Ferramentas: `flutter test`; suíte PostgreSQL (`tooling/test_postgres_schema.ps1`, cluster temporário com Auth simulado); integração com Supabase local (`tooling/test_integration_local.ps1`) e homologação (`tooling/test_integration_homolog.ps1`). Paridade app × servidor: totais Drift = `get_period_report`.
+Ferramentas: `flutter test`; suíte PostgreSQL (`tooling/test_postgres_schema.ps1`, cluster temporário com Auth simulado); integração com Supabase local (`tooling/test_integration_local.ps1`) e homologação (`tooling/test_integration_homolog.ps1`). Paridade app × servidor: totais Drift = `get_range_report` (somas por intervalo de datas). Períodos calculados: tabela única de casos `test/fixtures/period_cases.json`; data mensal de recorrência: `test/fixtures/monthly_recurrence_cases.json` = `supabase/tests/recurrence_monthly_date_cases_test.sql`.

@@ -1,12 +1,15 @@
 import 'package:drift/drift.dart';
 
+import '../../core/domain/period_calendar.dart';
 import '../../core/domain/surplus.dart';
 import '../../core/local_database/app_database.dart';
 import '../reports/reports_repository.dart';
 
-/// Totais de um período (sobra) lidos de onde os dados estão.
+/// Totais de um período (sobra) lidos de onde os dados estão. O período é um
+/// intervalo de datas `[início, fim)`: soma os lançamentos cuja data de
+/// competência está dentro dele (RN004, RN036; reestruturação P3).
 abstract interface class TotalsRepository {
-  Future<PeriodTotals> totalsFor(String periodId);
+  Future<PeriodTotals> totalsFor(PeriodRange range);
 }
 
 BigInt? _big(Object? v) {
@@ -24,19 +27,24 @@ class LocalTotalsRepository implements TotalsRepository {
   final String _ownerId;
 
   @override
-  Future<PeriodTotals> totalsFor(String periodId) async {
-    final vars = [Variable.withString(_ownerId), Variable.withString(periodId)];
+  Future<PeriodTotals> totalsFor(PeriodRange range) async {
+    final vars = [
+      Variable.withString(_ownerId),
+      Variable.withString(range.start.toIso()),
+      Variable.withString(range.end.toIso()),
+    ];
     final incomes = await _db
         .customSelect(
           'SELECT status, amount_centavos FROM income_entries '
-          "WHERE owner_id = ? AND accounting_period_id = ? AND status = 'received'",
+          'WHERE owner_id = ? AND received_on >= ? AND received_on < ? '
+          "AND status = 'received'",
           variables: vars,
         )
         .get();
     final expenses = await _db
         .customSelect(
           'SELECT status, amount_centavos FROM expense_entries '
-          'WHERE owner_id = ? AND accounting_period_id = ? '
+          'WHERE owner_id = ? AND competence_on >= ? AND competence_on < ? '
           "AND status IN ('pending', 'paid')",
           variables: vars,
         )
@@ -44,7 +52,7 @@ class LocalTotalsRepository implements TotalsRepository {
     final investments = await _db
         .customSelect(
           'SELECT amount_centavos, cancelled_at FROM investment_allocations '
-          'WHERE owner_id = ? AND accounting_period_id = ? '
+          'WHERE owner_id = ? AND allocated_on >= ? AND allocated_on < ? '
           'AND cancelled_at IS NULL',
           variables: vars,
         )
@@ -77,6 +85,6 @@ class RemoteTotalsRepository implements TotalsRepository {
   final ReportsRepository _reports;
 
   @override
-  Future<PeriodTotals> totalsFor(String periodId) async =>
-      (await _reports.report([periodId])).totalsOf(periodId);
+  Future<PeriodTotals> totalsFor(PeriodRange range) async =>
+      (await _reports.report([range])).totalsOf(range);
 }

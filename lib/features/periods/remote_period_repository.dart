@@ -18,75 +18,31 @@ class RemotePeriodRepository implements PeriodRepository {
   final String Function() _newId;
 
   @override
-  Future<List<PeriodConfigRecord>> configurations() async {
-    final rows = await _reader.select(
-      'period_configurations',
-      orderBy: 'effective_from',
+  Future<PeriodSettingsRecord?> settings() async {
+    final rows = await _reader.select('period_settings');
+    if (rows.isEmpty) return null;
+    return PeriodSettingsRecord(
+      config: configFromRow(rows.single),
+      version: (rows.single['version'] as num).toInt(),
     );
-    return rows
-        .map(
-          (r) => PeriodConfigRecord(
-            id: r['id'] as String,
-            config: configFromRow(r),
-            effectiveFrom: CalendarDate.parse(r['effective_from'] as String),
-            version: (r['version'] as num).toInt(),
-          ),
-        )
-        .toList();
   }
 
   @override
-  Future<List<PeriodRecord>> periods() async {
-    final rows = await _reader.select(
-      'accounting_periods',
-      orderBy: 'start_date',
-    );
-    return rows
-        .map(
-          (r) => PeriodRecord(
-            id: r['id'] as String,
-            configurationId: r['configuration_id'] as String,
-            range: PeriodRange(
-              CalendarDate.parse(r['start_date'] as String),
-              CalendarDate.parse(r['end_date'] as String),
-            ),
-            version: (r['version'] as num).toInt(),
-          ),
-        )
-        .toList();
-  }
-
-  @override
-  Future<void> createPeriod(PeriodDraft draft) async {
+  Future<void> saveSettings(
+    PeriodConfig config, {
+    required int expectedVersion,
+  }) async {
     final Map<String, dynamic> response;
     try {
-      response = await _gateway.call(periodRpc(draft), {
+      response = await _gateway.call(periodSettingsRpc, {
         'p_operation_id': _newId(),
-        ...periodParams(draft),
+        ...periodSettingsParams(config, expectedVersion),
       });
     } on SyncRejectedError catch (e) {
-      throw PeriodCreationException(e.message);
+      throw PeriodSettingsException(e.message);
     }
     if (response['status'] != 'applied') {
-      throw const PeriodCreationException(
-        'Já existe um período nesta data. Atualize a tela e tente de novo.',
-      );
-    }
-  }
-
-  @override
-  Future<void> scheduleConfiguration(ScheduleDraft draft) async {
-    final Map<String, dynamic> response;
-    try {
-      response = await _gateway.call(scheduleRpc, {
-        'p_operation_id': _newId(),
-        ...scheduleParams(draft),
-      });
-    } on SyncRejectedError catch (e) {
-      throw PeriodCreationException(e.message);
-    }
-    if (response['status'] != 'applied') {
-      throw const PeriodCreationException(
+      throw const PeriodSettingsException(
         'A configuração já foi alterada em outro lugar. Atualize a tela e '
         'tente de novo.',
       );
@@ -94,36 +50,17 @@ class RemotePeriodRepository implements PeriodRepository {
   }
 
   @override
+  Future<EntryDateSpan> entryDateSpan() async {
+    // Leitura agregada (RPC somente leitura): devolve {oldest, newest}.
+    final json = await _gateway.call('get_entry_date_span', const {});
+    CalendarDate? parse(Object? v) =>
+        v == null ? null : CalendarDate.parse(v as String);
+    return EntryDateSpan(
+      oldest: parse(json['oldest']),
+      newest: parse(json['newest']),
+    );
+  }
+
+  @override
   Future<void> refreshFromServer() async {}
 }
-
-const scheduleRpc = 'schedule_period_configuration';
-
-/// Parâmetros da RPC `schedule_period_configuration` (sem `p_operation_id`).
-Map<String, dynamic> scheduleParams(ScheduleDraft d) => {
-  'p_action': d.isCreate ? 'create' : 'update',
-  'p_configuration_id': d.configurationId,
-  'p_expected_version': d.expectedVersion,
-  'p_effective_from': d.effectiveFrom.toIso(),
-  'p_mode': d.config.mode.dbValue,
-  'p_custom_start_day': d.config.customStartDay,
-};
-
-PeriodConfig configFromRow(Map<String, dynamic> r) =>
-    PeriodMode.fromDb(r['mode'] as String) == PeriodMode.calendarMonth
-    ? PeriodConfig.calendarMonth()
-    : PeriodConfig.customCycle((r['custom_start_day'] as num).toInt());
-
-/// Parâmetros da RPC `create_accounting_period` (sem `p_operation_id`).
-Map<String, dynamic> periodParams(PeriodDraft d) => d.earlier
-    ? {'p_period_id': d.id, 'p_start_date': d.range.start.toIso()}
-    : {
-        'p_period_id': d.id,
-        'p_configuration_id': d.configurationId,
-        'p_start_date': d.range.start.toIso(),
-        'p_mode': d.config.mode.dbValue,
-        'p_custom_start_day': d.config.customStartDay,
-      };
-
-String periodRpc(PeriodDraft d) =>
-    d.earlier ? 'create_earlier_accounting_period' : 'create_accounting_period';

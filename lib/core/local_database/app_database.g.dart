@@ -420,12 +420,12 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
   }
 }
 
-class $PeriodConfigurationsTable extends PeriodConfigurations
-    with TableInfo<$PeriodConfigurationsTable, PeriodConfiguration> {
+class $PeriodSettingsTable extends PeriodSettings
+    with TableInfo<$PeriodSettingsTable, PeriodSetting> {
   @override
   final GeneratedDatabase attachedDatabase;
   final String? _alias;
-  $PeriodConfigurationsTable(this.attachedDatabase, [this._alias]);
+  $PeriodSettingsTable(this.attachedDatabase, [this._alias]);
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -500,17 +500,6 @@ class $PeriodConfigurationsTable extends PeriodConfigurations
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _effectiveFromMeta = const VerificationMeta(
-    'effectiveFrom',
-  );
-  @override
-  late final GeneratedColumn<String> effectiveFrom = GeneratedColumn<String>(
-    'effective_from',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -520,16 +509,15 @@ class $PeriodConfigurationsTable extends PeriodConfigurations
     updatedAt,
     mode,
     customStartDay,
-    effectiveFrom,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
   String get actualTableName => $name;
-  static const String $name = 'period_configurations';
+  static const String $name = 'period_settings';
   @override
   VerificationContext validateIntegrity(
-    Insertable<PeriodConfiguration> instance, {
+    Insertable<PeriodSetting> instance, {
     bool isInserting = false,
   }) {
     final context = VerificationContext();
@@ -586,26 +574,15 @@ class $PeriodConfigurationsTable extends PeriodConfigurations
         ),
       );
     }
-    if (data.containsKey('effective_from')) {
-      context.handle(
-        _effectiveFromMeta,
-        effectiveFrom.isAcceptableOrUnknown(
-          data['effective_from']!,
-          _effectiveFromMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_effectiveFromMeta);
-    }
     return context;
   }
 
   @override
   Set<GeneratedColumn> get $primaryKey => {ownerId, id};
   @override
-  PeriodConfiguration map(Map<String, dynamic> data, {String? tablePrefix}) {
+  PeriodSetting map(Map<String, dynamic> data, {String? tablePrefix}) {
     final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return PeriodConfiguration(
+    return PeriodSetting(
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -634,21 +611,16 @@ class $PeriodConfigurationsTable extends PeriodConfigurations
         DriftSqlType.int,
         data['${effectivePrefix}custom_start_day'],
       ),
-      effectiveFrom: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}effective_from'],
-      )!,
     );
   }
 
   @override
-  $PeriodConfigurationsTable createAlias(String alias) {
-    return $PeriodConfigurationsTable(attachedDatabase, alias);
+  $PeriodSettingsTable createAlias(String alias) {
+    return $PeriodSettingsTable(attachedDatabase, alias);
   }
 }
 
-class PeriodConfiguration extends DataClass
-    implements Insertable<PeriodConfiguration> {
+class PeriodSetting extends DataClass implements Insertable<PeriodSetting> {
   final String id;
   final String ownerId;
   final int version;
@@ -656,8 +628,7 @@ class PeriodConfiguration extends DataClass
   final String updatedAt;
   final String mode;
   final int? customStartDay;
-  final String effectiveFrom;
-  const PeriodConfiguration({
+  const PeriodSetting({
     required this.id,
     required this.ownerId,
     required this.version,
@@ -665,7 +636,6 @@ class PeriodConfiguration extends DataClass
     required this.updatedAt,
     required this.mode,
     this.customStartDay,
-    required this.effectiveFrom,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -679,12 +649,11 @@ class PeriodConfiguration extends DataClass
     if (!nullToAbsent || customStartDay != null) {
       map['custom_start_day'] = Variable<int>(customStartDay);
     }
-    map['effective_from'] = Variable<String>(effectiveFrom);
     return map;
   }
 
-  PeriodConfigurationsCompanion toCompanion(bool nullToAbsent) {
-    return PeriodConfigurationsCompanion(
+  PeriodSettingsCompanion toCompanion(bool nullToAbsent) {
+    return PeriodSettingsCompanion(
       id: Value(id),
       ownerId: Value(ownerId),
       version: Value(version),
@@ -694,16 +663,15 @@ class PeriodConfiguration extends DataClass
       customStartDay: customStartDay == null && nullToAbsent
           ? const Value.absent()
           : Value(customStartDay),
-      effectiveFrom: Value(effectiveFrom),
     );
   }
 
-  factory PeriodConfiguration.fromJson(
+  factory PeriodSetting.fromJson(
     Map<String, dynamic> json, {
     ValueSerializer? serializer,
   }) {
     serializer ??= driftRuntimeOptions.defaultSerializer;
-    return PeriodConfiguration(
+    return PeriodSetting(
       id: serializer.fromJson<String>(json['id']),
       ownerId: serializer.fromJson<String>(json['ownerId']),
       version: serializer.fromJson<int>(json['version']),
@@ -711,7 +679,6 @@ class PeriodConfiguration extends DataClass
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
       mode: serializer.fromJson<String>(json['mode']),
       customStartDay: serializer.fromJson<int?>(json['customStartDay']),
-      effectiveFrom: serializer.fromJson<String>(json['effectiveFrom']),
     );
   }
   @override
@@ -725,11 +692,10 @@ class PeriodConfiguration extends DataClass
       'updatedAt': serializer.toJson<String>(updatedAt),
       'mode': serializer.toJson<String>(mode),
       'customStartDay': serializer.toJson<int?>(customStartDay),
-      'effectiveFrom': serializer.toJson<String>(effectiveFrom),
     };
   }
 
-  PeriodConfiguration copyWith({
+  PeriodSetting copyWith({
     String? id,
     String? ownerId,
     int? version,
@@ -737,8 +703,7 @@ class PeriodConfiguration extends DataClass
     String? updatedAt,
     String? mode,
     Value<int?> customStartDay = const Value.absent(),
-    String? effectiveFrom,
-  }) => PeriodConfiguration(
+  }) => PeriodSetting(
     id: id ?? this.id,
     ownerId: ownerId ?? this.ownerId,
     version: version ?? this.version,
@@ -748,10 +713,9 @@ class PeriodConfiguration extends DataClass
     customStartDay: customStartDay.present
         ? customStartDay.value
         : this.customStartDay,
-    effectiveFrom: effectiveFrom ?? this.effectiveFrom,
   );
-  PeriodConfiguration copyWithCompanion(PeriodConfigurationsCompanion data) {
-    return PeriodConfiguration(
+  PeriodSetting copyWithCompanion(PeriodSettingsCompanion data) {
+    return PeriodSetting(
       id: data.id.present ? data.id.value : this.id,
       ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
       version: data.version.present ? data.version.value : this.version,
@@ -761,23 +725,19 @@ class PeriodConfiguration extends DataClass
       customStartDay: data.customStartDay.present
           ? data.customStartDay.value
           : this.customStartDay,
-      effectiveFrom: data.effectiveFrom.present
-          ? data.effectiveFrom.value
-          : this.effectiveFrom,
     );
   }
 
   @override
   String toString() {
-    return (StringBuffer('PeriodConfiguration(')
+    return (StringBuffer('PeriodSetting(')
           ..write('id: $id, ')
           ..write('ownerId: $ownerId, ')
           ..write('version: $version, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('mode: $mode, ')
-          ..write('customStartDay: $customStartDay, ')
-          ..write('effectiveFrom: $effectiveFrom')
+          ..write('customStartDay: $customStartDay')
           ..write(')'))
         .toString();
   }
@@ -791,24 +751,21 @@ class PeriodConfiguration extends DataClass
     updatedAt,
     mode,
     customStartDay,
-    effectiveFrom,
   );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is PeriodConfiguration &&
+      (other is PeriodSetting &&
           other.id == this.id &&
           other.ownerId == this.ownerId &&
           other.version == this.version &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
           other.mode == this.mode &&
-          other.customStartDay == this.customStartDay &&
-          other.effectiveFrom == this.effectiveFrom);
+          other.customStartDay == this.customStartDay);
 }
 
-class PeriodConfigurationsCompanion
-    extends UpdateCompanion<PeriodConfiguration> {
+class PeriodSettingsCompanion extends UpdateCompanion<PeriodSetting> {
   final Value<String> id;
   final Value<String> ownerId;
   final Value<int> version;
@@ -816,9 +773,8 @@ class PeriodConfigurationsCompanion
   final Value<String> updatedAt;
   final Value<String> mode;
   final Value<int?> customStartDay;
-  final Value<String> effectiveFrom;
   final Value<int> rowid;
-  const PeriodConfigurationsCompanion({
+  const PeriodSettingsCompanion({
     this.id = const Value.absent(),
     this.ownerId = const Value.absent(),
     this.version = const Value.absent(),
@@ -826,10 +782,9 @@ class PeriodConfigurationsCompanion
     this.updatedAt = const Value.absent(),
     this.mode = const Value.absent(),
     this.customStartDay = const Value.absent(),
-    this.effectiveFrom = const Value.absent(),
     this.rowid = const Value.absent(),
   });
-  PeriodConfigurationsCompanion.insert({
+  PeriodSettingsCompanion.insert({
     required String id,
     required String ownerId,
     this.version = const Value.absent(),
@@ -837,15 +792,13 @@ class PeriodConfigurationsCompanion
     required String updatedAt,
     required String mode,
     this.customStartDay = const Value.absent(),
-    required String effectiveFrom,
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        ownerId = Value(ownerId),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt),
-       mode = Value(mode),
-       effectiveFrom = Value(effectiveFrom);
-  static Insertable<PeriodConfiguration> custom({
+       mode = Value(mode);
+  static Insertable<PeriodSetting> custom({
     Expression<String>? id,
     Expression<String>? ownerId,
     Expression<int>? version,
@@ -853,7 +806,6 @@ class PeriodConfigurationsCompanion
     Expression<String>? updatedAt,
     Expression<String>? mode,
     Expression<int>? customStartDay,
-    Expression<String>? effectiveFrom,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -864,12 +816,11 @@ class PeriodConfigurationsCompanion
       if (updatedAt != null) 'updated_at': updatedAt,
       if (mode != null) 'mode': mode,
       if (customStartDay != null) 'custom_start_day': customStartDay,
-      if (effectiveFrom != null) 'effective_from': effectiveFrom,
       if (rowid != null) 'rowid': rowid,
     });
   }
 
-  PeriodConfigurationsCompanion copyWith({
+  PeriodSettingsCompanion copyWith({
     Value<String>? id,
     Value<String>? ownerId,
     Value<int>? version,
@@ -877,10 +828,9 @@ class PeriodConfigurationsCompanion
     Value<String>? updatedAt,
     Value<String>? mode,
     Value<int?>? customStartDay,
-    Value<String>? effectiveFrom,
     Value<int>? rowid,
   }) {
-    return PeriodConfigurationsCompanion(
+    return PeriodSettingsCompanion(
       id: id ?? this.id,
       ownerId: ownerId ?? this.ownerId,
       version: version ?? this.version,
@@ -888,7 +838,6 @@ class PeriodConfigurationsCompanion
       updatedAt: updatedAt ?? this.updatedAt,
       mode: mode ?? this.mode,
       customStartDay: customStartDay ?? this.customStartDay,
-      effectiveFrom: effectiveFrom ?? this.effectiveFrom,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -917,9 +866,6 @@ class PeriodConfigurationsCompanion
     if (customStartDay.present) {
       map['custom_start_day'] = Variable<int>(customStartDay.value);
     }
-    if (effectiveFrom.present) {
-      map['effective_from'] = Variable<String>(effectiveFrom.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -928,7 +874,7 @@ class PeriodConfigurationsCompanion
 
   @override
   String toString() {
-    return (StringBuffer('PeriodConfigurationsCompanion(')
+    return (StringBuffer('PeriodSettingsCompanion(')
           ..write('id: $id, ')
           ..write('ownerId: $ownerId, ')
           ..write('version: $version, ')
@@ -936,523 +882,6 @@ class PeriodConfigurationsCompanion
           ..write('updatedAt: $updatedAt, ')
           ..write('mode: $mode, ')
           ..write('customStartDay: $customStartDay, ')
-          ..write('effectiveFrom: $effectiveFrom, ')
-          ..write('rowid: $rowid')
-          ..write(')'))
-        .toString();
-  }
-}
-
-class $AccountingPeriodsTable extends AccountingPeriods
-    with TableInfo<$AccountingPeriodsTable, AccountingPeriod> {
-  @override
-  final GeneratedDatabase attachedDatabase;
-  final String? _alias;
-  $AccountingPeriodsTable(this.attachedDatabase, [this._alias]);
-  static const VerificationMeta _idMeta = const VerificationMeta('id');
-  @override
-  late final GeneratedColumn<String> id = GeneratedColumn<String>(
-    'id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
-    'ownerId',
-  );
-  @override
-  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
-    'owner_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _versionMeta = const VerificationMeta(
-    'version',
-  );
-  @override
-  late final GeneratedColumn<int> version = GeneratedColumn<int>(
-    'version',
-    aliasedName,
-    false,
-    type: DriftSqlType.int,
-    requiredDuringInsert: false,
-    defaultValue: const Constant(1),
-  );
-  static const VerificationMeta _createdAtMeta = const VerificationMeta(
-    'createdAt',
-  );
-  @override
-  late final GeneratedColumn<String> createdAt = GeneratedColumn<String>(
-    'created_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _updatedAtMeta = const VerificationMeta(
-    'updatedAt',
-  );
-  @override
-  late final GeneratedColumn<String> updatedAt = GeneratedColumn<String>(
-    'updated_at',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _configurationIdMeta = const VerificationMeta(
-    'configurationId',
-  );
-  @override
-  late final GeneratedColumn<String> configurationId = GeneratedColumn<String>(
-    'configuration_id',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _startDateMeta = const VerificationMeta(
-    'startDate',
-  );
-  @override
-  late final GeneratedColumn<String> startDate = GeneratedColumn<String>(
-    'start_date',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  static const VerificationMeta _endDateMeta = const VerificationMeta(
-    'endDate',
-  );
-  @override
-  late final GeneratedColumn<String> endDate = GeneratedColumn<String>(
-    'end_date',
-    aliasedName,
-    false,
-    type: DriftSqlType.string,
-    requiredDuringInsert: true,
-  );
-  @override
-  List<GeneratedColumn> get $columns => [
-    id,
-    ownerId,
-    version,
-    createdAt,
-    updatedAt,
-    configurationId,
-    startDate,
-    endDate,
-  ];
-  @override
-  String get aliasedName => _alias ?? actualTableName;
-  @override
-  String get actualTableName => $name;
-  static const String $name = 'accounting_periods';
-  @override
-  VerificationContext validateIntegrity(
-    Insertable<AccountingPeriod> instance, {
-    bool isInserting = false,
-  }) {
-    final context = VerificationContext();
-    final data = instance.toColumns(true);
-    if (data.containsKey('id')) {
-      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
-    } else if (isInserting) {
-      context.missing(_idMeta);
-    }
-    if (data.containsKey('owner_id')) {
-      context.handle(
-        _ownerIdMeta,
-        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_ownerIdMeta);
-    }
-    if (data.containsKey('version')) {
-      context.handle(
-        _versionMeta,
-        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
-      );
-    }
-    if (data.containsKey('created_at')) {
-      context.handle(
-        _createdAtMeta,
-        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_createdAtMeta);
-    }
-    if (data.containsKey('updated_at')) {
-      context.handle(
-        _updatedAtMeta,
-        updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_updatedAtMeta);
-    }
-    if (data.containsKey('configuration_id')) {
-      context.handle(
-        _configurationIdMeta,
-        configurationId.isAcceptableOrUnknown(
-          data['configuration_id']!,
-          _configurationIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_configurationIdMeta);
-    }
-    if (data.containsKey('start_date')) {
-      context.handle(
-        _startDateMeta,
-        startDate.isAcceptableOrUnknown(data['start_date']!, _startDateMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_startDateMeta);
-    }
-    if (data.containsKey('end_date')) {
-      context.handle(
-        _endDateMeta,
-        endDate.isAcceptableOrUnknown(data['end_date']!, _endDateMeta),
-      );
-    } else if (isInserting) {
-      context.missing(_endDateMeta);
-    }
-    return context;
-  }
-
-  @override
-  Set<GeneratedColumn> get $primaryKey => {ownerId, id};
-  @override
-  AccountingPeriod map(Map<String, dynamic> data, {String? tablePrefix}) {
-    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
-    return AccountingPeriod(
-      id: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}id'],
-      )!,
-      ownerId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}owner_id'],
-      )!,
-      version: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
-        data['${effectivePrefix}version'],
-      )!,
-      createdAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}created_at'],
-      )!,
-      updatedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}updated_at'],
-      )!,
-      configurationId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}configuration_id'],
-      )!,
-      startDate: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}start_date'],
-      )!,
-      endDate: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}end_date'],
-      )!,
-    );
-  }
-
-  @override
-  $AccountingPeriodsTable createAlias(String alias) {
-    return $AccountingPeriodsTable(attachedDatabase, alias);
-  }
-}
-
-class AccountingPeriod extends DataClass
-    implements Insertable<AccountingPeriod> {
-  final String id;
-  final String ownerId;
-  final int version;
-  final String createdAt;
-  final String updatedAt;
-  final String configurationId;
-  final String startDate;
-  final String endDate;
-  const AccountingPeriod({
-    required this.id,
-    required this.ownerId,
-    required this.version,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.configurationId,
-    required this.startDate,
-    required this.endDate,
-  });
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    map['id'] = Variable<String>(id);
-    map['owner_id'] = Variable<String>(ownerId);
-    map['version'] = Variable<int>(version);
-    map['created_at'] = Variable<String>(createdAt);
-    map['updated_at'] = Variable<String>(updatedAt);
-    map['configuration_id'] = Variable<String>(configurationId);
-    map['start_date'] = Variable<String>(startDate);
-    map['end_date'] = Variable<String>(endDate);
-    return map;
-  }
-
-  AccountingPeriodsCompanion toCompanion(bool nullToAbsent) {
-    return AccountingPeriodsCompanion(
-      id: Value(id),
-      ownerId: Value(ownerId),
-      version: Value(version),
-      createdAt: Value(createdAt),
-      updatedAt: Value(updatedAt),
-      configurationId: Value(configurationId),
-      startDate: Value(startDate),
-      endDate: Value(endDate),
-    );
-  }
-
-  factory AccountingPeriod.fromJson(
-    Map<String, dynamic> json, {
-    ValueSerializer? serializer,
-  }) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return AccountingPeriod(
-      id: serializer.fromJson<String>(json['id']),
-      ownerId: serializer.fromJson<String>(json['ownerId']),
-      version: serializer.fromJson<int>(json['version']),
-      createdAt: serializer.fromJson<String>(json['createdAt']),
-      updatedAt: serializer.fromJson<String>(json['updatedAt']),
-      configurationId: serializer.fromJson<String>(json['configurationId']),
-      startDate: serializer.fromJson<String>(json['startDate']),
-      endDate: serializer.fromJson<String>(json['endDate']),
-    );
-  }
-  @override
-  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
-    serializer ??= driftRuntimeOptions.defaultSerializer;
-    return <String, dynamic>{
-      'id': serializer.toJson<String>(id),
-      'ownerId': serializer.toJson<String>(ownerId),
-      'version': serializer.toJson<int>(version),
-      'createdAt': serializer.toJson<String>(createdAt),
-      'updatedAt': serializer.toJson<String>(updatedAt),
-      'configurationId': serializer.toJson<String>(configurationId),
-      'startDate': serializer.toJson<String>(startDate),
-      'endDate': serializer.toJson<String>(endDate),
-    };
-  }
-
-  AccountingPeriod copyWith({
-    String? id,
-    String? ownerId,
-    int? version,
-    String? createdAt,
-    String? updatedAt,
-    String? configurationId,
-    String? startDate,
-    String? endDate,
-  }) => AccountingPeriod(
-    id: id ?? this.id,
-    ownerId: ownerId ?? this.ownerId,
-    version: version ?? this.version,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-    configurationId: configurationId ?? this.configurationId,
-    startDate: startDate ?? this.startDate,
-    endDate: endDate ?? this.endDate,
-  );
-  AccountingPeriod copyWithCompanion(AccountingPeriodsCompanion data) {
-    return AccountingPeriod(
-      id: data.id.present ? data.id.value : this.id,
-      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
-      version: data.version.present ? data.version.value : this.version,
-      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
-      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      configurationId: data.configurationId.present
-          ? data.configurationId.value
-          : this.configurationId,
-      startDate: data.startDate.present ? data.startDate.value : this.startDate,
-      endDate: data.endDate.present ? data.endDate.value : this.endDate,
-    );
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('AccountingPeriod(')
-          ..write('id: $id, ')
-          ..write('ownerId: $ownerId, ')
-          ..write('version: $version, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('configurationId: $configurationId, ')
-          ..write('startDate: $startDate, ')
-          ..write('endDate: $endDate')
-          ..write(')'))
-        .toString();
-  }
-
-  @override
-  int get hashCode => Object.hash(
-    id,
-    ownerId,
-    version,
-    createdAt,
-    updatedAt,
-    configurationId,
-    startDate,
-    endDate,
-  );
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is AccountingPeriod &&
-          other.id == this.id &&
-          other.ownerId == this.ownerId &&
-          other.version == this.version &&
-          other.createdAt == this.createdAt &&
-          other.updatedAt == this.updatedAt &&
-          other.configurationId == this.configurationId &&
-          other.startDate == this.startDate &&
-          other.endDate == this.endDate);
-}
-
-class AccountingPeriodsCompanion extends UpdateCompanion<AccountingPeriod> {
-  final Value<String> id;
-  final Value<String> ownerId;
-  final Value<int> version;
-  final Value<String> createdAt;
-  final Value<String> updatedAt;
-  final Value<String> configurationId;
-  final Value<String> startDate;
-  final Value<String> endDate;
-  final Value<int> rowid;
-  const AccountingPeriodsCompanion({
-    this.id = const Value.absent(),
-    this.ownerId = const Value.absent(),
-    this.version = const Value.absent(),
-    this.createdAt = const Value.absent(),
-    this.updatedAt = const Value.absent(),
-    this.configurationId = const Value.absent(),
-    this.startDate = const Value.absent(),
-    this.endDate = const Value.absent(),
-    this.rowid = const Value.absent(),
-  });
-  AccountingPeriodsCompanion.insert({
-    required String id,
-    required String ownerId,
-    this.version = const Value.absent(),
-    required String createdAt,
-    required String updatedAt,
-    required String configurationId,
-    required String startDate,
-    required String endDate,
-    this.rowid = const Value.absent(),
-  }) : id = Value(id),
-       ownerId = Value(ownerId),
-       createdAt = Value(createdAt),
-       updatedAt = Value(updatedAt),
-       configurationId = Value(configurationId),
-       startDate = Value(startDate),
-       endDate = Value(endDate);
-  static Insertable<AccountingPeriod> custom({
-    Expression<String>? id,
-    Expression<String>? ownerId,
-    Expression<int>? version,
-    Expression<String>? createdAt,
-    Expression<String>? updatedAt,
-    Expression<String>? configurationId,
-    Expression<String>? startDate,
-    Expression<String>? endDate,
-    Expression<int>? rowid,
-  }) {
-    return RawValuesInsertable({
-      if (id != null) 'id': id,
-      if (ownerId != null) 'owner_id': ownerId,
-      if (version != null) 'version': version,
-      if (createdAt != null) 'created_at': createdAt,
-      if (updatedAt != null) 'updated_at': updatedAt,
-      if (configurationId != null) 'configuration_id': configurationId,
-      if (startDate != null) 'start_date': startDate,
-      if (endDate != null) 'end_date': endDate,
-      if (rowid != null) 'rowid': rowid,
-    });
-  }
-
-  AccountingPeriodsCompanion copyWith({
-    Value<String>? id,
-    Value<String>? ownerId,
-    Value<int>? version,
-    Value<String>? createdAt,
-    Value<String>? updatedAt,
-    Value<String>? configurationId,
-    Value<String>? startDate,
-    Value<String>? endDate,
-    Value<int>? rowid,
-  }) {
-    return AccountingPeriodsCompanion(
-      id: id ?? this.id,
-      ownerId: ownerId ?? this.ownerId,
-      version: version ?? this.version,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      configurationId: configurationId ?? this.configurationId,
-      startDate: startDate ?? this.startDate,
-      endDate: endDate ?? this.endDate,
-      rowid: rowid ?? this.rowid,
-    );
-  }
-
-  @override
-  Map<String, Expression> toColumns(bool nullToAbsent) {
-    final map = <String, Expression>{};
-    if (id.present) {
-      map['id'] = Variable<String>(id.value);
-    }
-    if (ownerId.present) {
-      map['owner_id'] = Variable<String>(ownerId.value);
-    }
-    if (version.present) {
-      map['version'] = Variable<int>(version.value);
-    }
-    if (createdAt.present) {
-      map['created_at'] = Variable<String>(createdAt.value);
-    }
-    if (updatedAt.present) {
-      map['updated_at'] = Variable<String>(updatedAt.value);
-    }
-    if (configurationId.present) {
-      map['configuration_id'] = Variable<String>(configurationId.value);
-    }
-    if (startDate.present) {
-      map['start_date'] = Variable<String>(startDate.value);
-    }
-    if (endDate.present) {
-      map['end_date'] = Variable<String>(endDate.value);
-    }
-    if (rowid.present) {
-      map['rowid'] = Variable<int>(rowid.value);
-    }
-    return map;
-  }
-
-  @override
-  String toString() {
-    return (StringBuffer('AccountingPeriodsCompanion(')
-          ..write('id: $id, ')
-          ..write('ownerId: $ownerId, ')
-          ..write('version: $version, ')
-          ..write('createdAt: $createdAt, ')
-          ..write('updatedAt: $updatedAt, ')
-          ..write('configurationId: $configurationId, ')
-          ..write('startDate: $startDate, ')
-          ..write('endDate: $endDate, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5006,18 +4435,6 @@ class $IncomeEntriesTable extends IncomeEntries
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _scheduledPeriodIdMeta = const VerificationMeta(
-    'scheduledPeriodId',
-  );
-  @override
-  late final GeneratedColumn<String> scheduledPeriodId =
-      GeneratedColumn<String>(
-        'scheduled_period_id',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -5083,17 +4500,6 @@ class $IncomeEntriesTable extends IncomeEntries
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _accountingPeriodIdMeta =
-      const VerificationMeta('accountingPeriodId');
-  @override
-  late final GeneratedColumn<String> accountingPeriodId =
-      GeneratedColumn<String>(
-        'accounting_period_id',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
   @override
   List<GeneratedColumn> get $columns => [
     description,
@@ -5103,14 +4509,12 @@ class $IncomeEntriesTable extends IncomeEntries
     subcategoryId,
     recurrenceTemplateId,
     scheduledForDate,
-    scheduledPeriodId,
     id,
     ownerId,
     version,
     createdAt,
     updatedAt,
     receivedOn,
-    accountingPeriodId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -5174,15 +4578,6 @@ class $IncomeEntriesTable extends IncomeEntries
         ),
       );
     }
-    if (data.containsKey('scheduled_period_id')) {
-      context.handle(
-        _scheduledPeriodIdMeta,
-        scheduledPeriodId.isAcceptableOrUnknown(
-          data['scheduled_period_id']!,
-          _scheduledPeriodIdMeta,
-        ),
-      );
-    }
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
@@ -5224,15 +4619,6 @@ class $IncomeEntriesTable extends IncomeEntries
         receivedOn.isAcceptableOrUnknown(data['received_on']!, _receivedOnMeta),
       );
     }
-    if (data.containsKey('accounting_period_id')) {
-      context.handle(
-        _accountingPeriodIdMeta,
-        accountingPeriodId.isAcceptableOrUnknown(
-          data['accounting_period_id']!,
-          _accountingPeriodIdMeta,
-        ),
-      );
-    }
     return context;
   }
 
@@ -5272,10 +4658,6 @@ class $IncomeEntriesTable extends IncomeEntries
         DriftSqlType.string,
         data['${effectivePrefix}scheduled_for_date'],
       ),
-      scheduledPeriodId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}scheduled_period_id'],
-      ),
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -5300,10 +4682,6 @@ class $IncomeEntriesTable extends IncomeEntries
         DriftSqlType.string,
         data['${effectivePrefix}received_on'],
       ),
-      accountingPeriodId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}accounting_period_id'],
-      ),
     );
   }
 
@@ -5326,14 +4704,12 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
   final String? subcategoryId;
   final String? recurrenceTemplateId;
   final String? scheduledForDate;
-  final String? scheduledPeriodId;
   final String id;
   final String ownerId;
   final int version;
   final String createdAt;
   final String updatedAt;
   final String? receivedOn;
-  final String? accountingPeriodId;
   const IncomeEntry({
     this.description,
     this.amountCentavos,
@@ -5342,14 +4718,12 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
     this.subcategoryId,
     this.recurrenceTemplateId,
     this.scheduledForDate,
-    this.scheduledPeriodId,
     required this.id,
     required this.ownerId,
     required this.version,
     required this.createdAt,
     required this.updatedAt,
     this.receivedOn,
-    this.accountingPeriodId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -5375,9 +4749,6 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
     if (!nullToAbsent || scheduledForDate != null) {
       map['scheduled_for_date'] = Variable<String>(scheduledForDate);
     }
-    if (!nullToAbsent || scheduledPeriodId != null) {
-      map['scheduled_period_id'] = Variable<String>(scheduledPeriodId);
-    }
     map['id'] = Variable<String>(id);
     map['owner_id'] = Variable<String>(ownerId);
     map['version'] = Variable<int>(version);
@@ -5385,9 +4756,6 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
     map['updated_at'] = Variable<String>(updatedAt);
     if (!nullToAbsent || receivedOn != null) {
       map['received_on'] = Variable<String>(receivedOn);
-    }
-    if (!nullToAbsent || accountingPeriodId != null) {
-      map['accounting_period_id'] = Variable<String>(accountingPeriodId);
     }
     return map;
   }
@@ -5413,9 +4781,6 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
       scheduledForDate: scheduledForDate == null && nullToAbsent
           ? const Value.absent()
           : Value(scheduledForDate),
-      scheduledPeriodId: scheduledPeriodId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(scheduledPeriodId),
       id: Value(id),
       ownerId: Value(ownerId),
       version: Value(version),
@@ -5424,9 +4789,6 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
       receivedOn: receivedOn == null && nullToAbsent
           ? const Value.absent()
           : Value(receivedOn),
-      accountingPeriodId: accountingPeriodId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(accountingPeriodId),
     );
   }
 
@@ -5445,18 +4807,12 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
         json['recurrenceTemplateId'],
       ),
       scheduledForDate: serializer.fromJson<String?>(json['scheduledForDate']),
-      scheduledPeriodId: serializer.fromJson<String?>(
-        json['scheduledPeriodId'],
-      ),
       id: serializer.fromJson<String>(json['id']),
       ownerId: serializer.fromJson<String>(json['ownerId']),
       version: serializer.fromJson<int>(json['version']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
       receivedOn: serializer.fromJson<String?>(json['receivedOn']),
-      accountingPeriodId: serializer.fromJson<String?>(
-        json['accountingPeriodId'],
-      ),
     );
   }
   @override
@@ -5470,14 +4826,12 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
       'subcategoryId': serializer.toJson<String?>(subcategoryId),
       'recurrenceTemplateId': serializer.toJson<String?>(recurrenceTemplateId),
       'scheduledForDate': serializer.toJson<String?>(scheduledForDate),
-      'scheduledPeriodId': serializer.toJson<String?>(scheduledPeriodId),
       'id': serializer.toJson<String>(id),
       'ownerId': serializer.toJson<String>(ownerId),
       'version': serializer.toJson<int>(version),
       'createdAt': serializer.toJson<String>(createdAt),
       'updatedAt': serializer.toJson<String>(updatedAt),
       'receivedOn': serializer.toJson<String?>(receivedOn),
-      'accountingPeriodId': serializer.toJson<String?>(accountingPeriodId),
     };
   }
 
@@ -5489,14 +4843,12 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
     Value<String?> subcategoryId = const Value.absent(),
     Value<String?> recurrenceTemplateId = const Value.absent(),
     Value<String?> scheduledForDate = const Value.absent(),
-    Value<String?> scheduledPeriodId = const Value.absent(),
     String? id,
     String? ownerId,
     int? version,
     String? createdAt,
     String? updatedAt,
     Value<String?> receivedOn = const Value.absent(),
-    Value<String?> accountingPeriodId = const Value.absent(),
   }) => IncomeEntry(
     description: description.present ? description.value : this.description,
     amountCentavos: amountCentavos.present
@@ -5513,18 +4865,12 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
     scheduledForDate: scheduledForDate.present
         ? scheduledForDate.value
         : this.scheduledForDate,
-    scheduledPeriodId: scheduledPeriodId.present
-        ? scheduledPeriodId.value
-        : this.scheduledPeriodId,
     id: id ?? this.id,
     ownerId: ownerId ?? this.ownerId,
     version: version ?? this.version,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
     receivedOn: receivedOn.present ? receivedOn.value : this.receivedOn,
-    accountingPeriodId: accountingPeriodId.present
-        ? accountingPeriodId.value
-        : this.accountingPeriodId,
   );
   IncomeEntry copyWithCompanion(IncomeEntriesCompanion data) {
     return IncomeEntry(
@@ -5547,9 +4893,6 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
       scheduledForDate: data.scheduledForDate.present
           ? data.scheduledForDate.value
           : this.scheduledForDate,
-      scheduledPeriodId: data.scheduledPeriodId.present
-          ? data.scheduledPeriodId.value
-          : this.scheduledPeriodId,
       id: data.id.present ? data.id.value : this.id,
       ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
       version: data.version.present ? data.version.value : this.version,
@@ -5558,9 +4901,6 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
       receivedOn: data.receivedOn.present
           ? data.receivedOn.value
           : this.receivedOn,
-      accountingPeriodId: data.accountingPeriodId.present
-          ? data.accountingPeriodId.value
-          : this.accountingPeriodId,
     );
   }
 
@@ -5574,14 +4914,12 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
           ..write('subcategoryId: $subcategoryId, ')
           ..write('recurrenceTemplateId: $recurrenceTemplateId, ')
           ..write('scheduledForDate: $scheduledForDate, ')
-          ..write('scheduledPeriodId: $scheduledPeriodId, ')
           ..write('id: $id, ')
           ..write('ownerId: $ownerId, ')
           ..write('version: $version, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('receivedOn: $receivedOn, ')
-          ..write('accountingPeriodId: $accountingPeriodId')
+          ..write('receivedOn: $receivedOn')
           ..write(')'))
         .toString();
   }
@@ -5595,14 +4933,12 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
     subcategoryId,
     recurrenceTemplateId,
     scheduledForDate,
-    scheduledPeriodId,
     id,
     ownerId,
     version,
     createdAt,
     updatedAt,
     receivedOn,
-    accountingPeriodId,
   );
   @override
   bool operator ==(Object other) =>
@@ -5615,14 +4951,12 @@ class IncomeEntry extends DataClass implements Insertable<IncomeEntry> {
           other.subcategoryId == this.subcategoryId &&
           other.recurrenceTemplateId == this.recurrenceTemplateId &&
           other.scheduledForDate == this.scheduledForDate &&
-          other.scheduledPeriodId == this.scheduledPeriodId &&
           other.id == this.id &&
           other.ownerId == this.ownerId &&
           other.version == this.version &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.receivedOn == this.receivedOn &&
-          other.accountingPeriodId == this.accountingPeriodId);
+          other.receivedOn == this.receivedOn);
 }
 
 class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
@@ -5633,14 +4967,12 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
   final Value<String?> subcategoryId;
   final Value<String?> recurrenceTemplateId;
   final Value<String?> scheduledForDate;
-  final Value<String?> scheduledPeriodId;
   final Value<String> id;
   final Value<String> ownerId;
   final Value<int> version;
   final Value<String> createdAt;
   final Value<String> updatedAt;
   final Value<String?> receivedOn;
-  final Value<String?> accountingPeriodId;
   final Value<int> rowid;
   const IncomeEntriesCompanion({
     this.description = const Value.absent(),
@@ -5650,14 +4982,12 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
     this.subcategoryId = const Value.absent(),
     this.recurrenceTemplateId = const Value.absent(),
     this.scheduledForDate = const Value.absent(),
-    this.scheduledPeriodId = const Value.absent(),
     this.id = const Value.absent(),
     this.ownerId = const Value.absent(),
     this.version = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.receivedOn = const Value.absent(),
-    this.accountingPeriodId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   IncomeEntriesCompanion.insert({
@@ -5668,14 +4998,12 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
     this.subcategoryId = const Value.absent(),
     this.recurrenceTemplateId = const Value.absent(),
     this.scheduledForDate = const Value.absent(),
-    this.scheduledPeriodId = const Value.absent(),
     required String id,
     required String ownerId,
     this.version = const Value.absent(),
     required String createdAt,
     required String updatedAt,
     this.receivedOn = const Value.absent(),
-    this.accountingPeriodId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : status = Value(status),
        id = Value(id),
@@ -5690,14 +5018,12 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
     Expression<String>? subcategoryId,
     Expression<String>? recurrenceTemplateId,
     Expression<String>? scheduledForDate,
-    Expression<String>? scheduledPeriodId,
     Expression<String>? id,
     Expression<String>? ownerId,
     Expression<int>? version,
     Expression<String>? createdAt,
     Expression<String>? updatedAt,
     Expression<String>? receivedOn,
-    Expression<String>? accountingPeriodId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -5709,15 +5035,12 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
       if (recurrenceTemplateId != null)
         'recurrence_template_id': recurrenceTemplateId,
       if (scheduledForDate != null) 'scheduled_for_date': scheduledForDate,
-      if (scheduledPeriodId != null) 'scheduled_period_id': scheduledPeriodId,
       if (id != null) 'id': id,
       if (ownerId != null) 'owner_id': ownerId,
       if (version != null) 'version': version,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (receivedOn != null) 'received_on': receivedOn,
-      if (accountingPeriodId != null)
-        'accounting_period_id': accountingPeriodId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -5730,14 +5053,12 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
     Value<String?>? subcategoryId,
     Value<String?>? recurrenceTemplateId,
     Value<String?>? scheduledForDate,
-    Value<String?>? scheduledPeriodId,
     Value<String>? id,
     Value<String>? ownerId,
     Value<int>? version,
     Value<String>? createdAt,
     Value<String>? updatedAt,
     Value<String?>? receivedOn,
-    Value<String?>? accountingPeriodId,
     Value<int>? rowid,
   }) {
     return IncomeEntriesCompanion(
@@ -5748,14 +5069,12 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
       subcategoryId: subcategoryId ?? this.subcategoryId,
       recurrenceTemplateId: recurrenceTemplateId ?? this.recurrenceTemplateId,
       scheduledForDate: scheduledForDate ?? this.scheduledForDate,
-      scheduledPeriodId: scheduledPeriodId ?? this.scheduledPeriodId,
       id: id ?? this.id,
       ownerId: ownerId ?? this.ownerId,
       version: version ?? this.version,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       receivedOn: receivedOn ?? this.receivedOn,
-      accountingPeriodId: accountingPeriodId ?? this.accountingPeriodId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -5790,9 +5109,6 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
     if (scheduledForDate.present) {
       map['scheduled_for_date'] = Variable<String>(scheduledForDate.value);
     }
-    if (scheduledPeriodId.present) {
-      map['scheduled_period_id'] = Variable<String>(scheduledPeriodId.value);
-    }
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
@@ -5811,9 +5127,6 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
     if (receivedOn.present) {
       map['received_on'] = Variable<String>(receivedOn.value);
     }
-    if (accountingPeriodId.present) {
-      map['accounting_period_id'] = Variable<String>(accountingPeriodId.value);
-    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -5830,14 +5143,12 @@ class IncomeEntriesCompanion extends UpdateCompanion<IncomeEntry> {
           ..write('subcategoryId: $subcategoryId, ')
           ..write('recurrenceTemplateId: $recurrenceTemplateId, ')
           ..write('scheduledForDate: $scheduledForDate, ')
-          ..write('scheduledPeriodId: $scheduledPeriodId, ')
           ..write('id: $id, ')
           ..write('ownerId: $ownerId, ')
           ..write('version: $version, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('receivedOn: $receivedOn, ')
-          ..write('accountingPeriodId: $accountingPeriodId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -5923,18 +5234,6 @@ class $ExpenseEntriesTable extends ExpenseEntries
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _scheduledPeriodIdMeta = const VerificationMeta(
-    'scheduledPeriodId',
-  );
-  @override
-  late final GeneratedColumn<String> scheduledPeriodId =
-      GeneratedColumn<String>(
-        'scheduled_period_id',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
   static const VerificationMeta _idMeta = const VerificationMeta('id');
   @override
   late final GeneratedColumn<String> id = GeneratedColumn<String>(
@@ -5989,17 +5288,6 @@ class $ExpenseEntriesTable extends ExpenseEntries
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _accountingPeriodIdMeta =
-      const VerificationMeta('accountingPeriodId');
-  @override
-  late final GeneratedColumn<String> accountingPeriodId =
-      GeneratedColumn<String>(
-        'accounting_period_id',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-      );
   static const VerificationMeta _competenceOnMeta = const VerificationMeta(
     'competenceOn',
   );
@@ -6038,13 +5326,11 @@ class $ExpenseEntriesTable extends ExpenseEntries
     subcategoryId,
     recurrenceTemplateId,
     scheduledForDate,
-    scheduledPeriodId,
     id,
     ownerId,
     version,
     createdAt,
     updatedAt,
-    accountingPeriodId,
     competenceOn,
     dueOn,
     paidOn,
@@ -6111,15 +5397,6 @@ class $ExpenseEntriesTable extends ExpenseEntries
         ),
       );
     }
-    if (data.containsKey('scheduled_period_id')) {
-      context.handle(
-        _scheduledPeriodIdMeta,
-        scheduledPeriodId.isAcceptableOrUnknown(
-          data['scheduled_period_id']!,
-          _scheduledPeriodIdMeta,
-        ),
-      );
-    }
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     } else if (isInserting) {
@@ -6154,17 +5431,6 @@ class $ExpenseEntriesTable extends ExpenseEntries
       );
     } else if (isInserting) {
       context.missing(_updatedAtMeta);
-    }
-    if (data.containsKey('accounting_period_id')) {
-      context.handle(
-        _accountingPeriodIdMeta,
-        accountingPeriodId.isAcceptableOrUnknown(
-          data['accounting_period_id']!,
-          _accountingPeriodIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_accountingPeriodIdMeta);
     }
     if (data.containsKey('competence_on')) {
       context.handle(
@@ -6228,10 +5494,6 @@ class $ExpenseEntriesTable extends ExpenseEntries
         DriftSqlType.string,
         data['${effectivePrefix}scheduled_for_date'],
       ),
-      scheduledPeriodId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}scheduled_period_id'],
-      ),
       id: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}id'],
@@ -6251,10 +5513,6 @@ class $ExpenseEntriesTable extends ExpenseEntries
       updatedAt: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}updated_at'],
-      )!,
-      accountingPeriodId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}accounting_period_id'],
       )!,
       competenceOn: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
@@ -6290,13 +5548,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
   final String? subcategoryId;
   final String? recurrenceTemplateId;
   final String? scheduledForDate;
-  final String? scheduledPeriodId;
   final String id;
   final String ownerId;
   final int version;
   final String createdAt;
   final String updatedAt;
-  final String accountingPeriodId;
   final String competenceOn;
   final String? dueOn;
   final String? paidOn;
@@ -6308,13 +5564,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
     this.subcategoryId,
     this.recurrenceTemplateId,
     this.scheduledForDate,
-    this.scheduledPeriodId,
     required this.id,
     required this.ownerId,
     required this.version,
     required this.createdAt,
     required this.updatedAt,
-    required this.accountingPeriodId,
     required this.competenceOn,
     this.dueOn,
     this.paidOn,
@@ -6343,15 +5597,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
     if (!nullToAbsent || scheduledForDate != null) {
       map['scheduled_for_date'] = Variable<String>(scheduledForDate);
     }
-    if (!nullToAbsent || scheduledPeriodId != null) {
-      map['scheduled_period_id'] = Variable<String>(scheduledPeriodId);
-    }
     map['id'] = Variable<String>(id);
     map['owner_id'] = Variable<String>(ownerId);
     map['version'] = Variable<int>(version);
     map['created_at'] = Variable<String>(createdAt);
     map['updated_at'] = Variable<String>(updatedAt);
-    map['accounting_period_id'] = Variable<String>(accountingPeriodId);
     map['competence_on'] = Variable<String>(competenceOn);
     if (!nullToAbsent || dueOn != null) {
       map['due_on'] = Variable<String>(dueOn);
@@ -6383,15 +5633,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
       scheduledForDate: scheduledForDate == null && nullToAbsent
           ? const Value.absent()
           : Value(scheduledForDate),
-      scheduledPeriodId: scheduledPeriodId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(scheduledPeriodId),
       id: Value(id),
       ownerId: Value(ownerId),
       version: Value(version),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
-      accountingPeriodId: Value(accountingPeriodId),
       competenceOn: Value(competenceOn),
       dueOn: dueOn == null && nullToAbsent
           ? const Value.absent()
@@ -6417,17 +5663,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
         json['recurrenceTemplateId'],
       ),
       scheduledForDate: serializer.fromJson<String?>(json['scheduledForDate']),
-      scheduledPeriodId: serializer.fromJson<String?>(
-        json['scheduledPeriodId'],
-      ),
       id: serializer.fromJson<String>(json['id']),
       ownerId: serializer.fromJson<String>(json['ownerId']),
       version: serializer.fromJson<int>(json['version']),
       createdAt: serializer.fromJson<String>(json['createdAt']),
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
-      accountingPeriodId: serializer.fromJson<String>(
-        json['accountingPeriodId'],
-      ),
       competenceOn: serializer.fromJson<String>(json['competenceOn']),
       dueOn: serializer.fromJson<String?>(json['dueOn']),
       paidOn: serializer.fromJson<String?>(json['paidOn']),
@@ -6444,13 +5684,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
       'subcategoryId': serializer.toJson<String?>(subcategoryId),
       'recurrenceTemplateId': serializer.toJson<String?>(recurrenceTemplateId),
       'scheduledForDate': serializer.toJson<String?>(scheduledForDate),
-      'scheduledPeriodId': serializer.toJson<String?>(scheduledPeriodId),
       'id': serializer.toJson<String>(id),
       'ownerId': serializer.toJson<String>(ownerId),
       'version': serializer.toJson<int>(version),
       'createdAt': serializer.toJson<String>(createdAt),
       'updatedAt': serializer.toJson<String>(updatedAt),
-      'accountingPeriodId': serializer.toJson<String>(accountingPeriodId),
       'competenceOn': serializer.toJson<String>(competenceOn),
       'dueOn': serializer.toJson<String?>(dueOn),
       'paidOn': serializer.toJson<String?>(paidOn),
@@ -6465,13 +5703,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
     Value<String?> subcategoryId = const Value.absent(),
     Value<String?> recurrenceTemplateId = const Value.absent(),
     Value<String?> scheduledForDate = const Value.absent(),
-    Value<String?> scheduledPeriodId = const Value.absent(),
     String? id,
     String? ownerId,
     int? version,
     String? createdAt,
     String? updatedAt,
-    String? accountingPeriodId,
     String? competenceOn,
     Value<String?> dueOn = const Value.absent(),
     Value<String?> paidOn = const Value.absent(),
@@ -6491,15 +5727,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
     scheduledForDate: scheduledForDate.present
         ? scheduledForDate.value
         : this.scheduledForDate,
-    scheduledPeriodId: scheduledPeriodId.present
-        ? scheduledPeriodId.value
-        : this.scheduledPeriodId,
     id: id ?? this.id,
     ownerId: ownerId ?? this.ownerId,
     version: version ?? this.version,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
-    accountingPeriodId: accountingPeriodId ?? this.accountingPeriodId,
     competenceOn: competenceOn ?? this.competenceOn,
     dueOn: dueOn.present ? dueOn.value : this.dueOn,
     paidOn: paidOn.present ? paidOn.value : this.paidOn,
@@ -6525,17 +5757,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
       scheduledForDate: data.scheduledForDate.present
           ? data.scheduledForDate.value
           : this.scheduledForDate,
-      scheduledPeriodId: data.scheduledPeriodId.present
-          ? data.scheduledPeriodId.value
-          : this.scheduledPeriodId,
       id: data.id.present ? data.id.value : this.id,
       ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
       version: data.version.present ? data.version.value : this.version,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
-      accountingPeriodId: data.accountingPeriodId.present
-          ? data.accountingPeriodId.value
-          : this.accountingPeriodId,
       competenceOn: data.competenceOn.present
           ? data.competenceOn.value
           : this.competenceOn,
@@ -6554,13 +5780,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
           ..write('subcategoryId: $subcategoryId, ')
           ..write('recurrenceTemplateId: $recurrenceTemplateId, ')
           ..write('scheduledForDate: $scheduledForDate, ')
-          ..write('scheduledPeriodId: $scheduledPeriodId, ')
           ..write('id: $id, ')
           ..write('ownerId: $ownerId, ')
           ..write('version: $version, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('accountingPeriodId: $accountingPeriodId, ')
           ..write('competenceOn: $competenceOn, ')
           ..write('dueOn: $dueOn, ')
           ..write('paidOn: $paidOn')
@@ -6577,13 +5801,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
     subcategoryId,
     recurrenceTemplateId,
     scheduledForDate,
-    scheduledPeriodId,
     id,
     ownerId,
     version,
     createdAt,
     updatedAt,
-    accountingPeriodId,
     competenceOn,
     dueOn,
     paidOn,
@@ -6599,13 +5821,11 @@ class ExpenseEntry extends DataClass implements Insertable<ExpenseEntry> {
           other.subcategoryId == this.subcategoryId &&
           other.recurrenceTemplateId == this.recurrenceTemplateId &&
           other.scheduledForDate == this.scheduledForDate &&
-          other.scheduledPeriodId == this.scheduledPeriodId &&
           other.id == this.id &&
           other.ownerId == this.ownerId &&
           other.version == this.version &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt &&
-          other.accountingPeriodId == this.accountingPeriodId &&
           other.competenceOn == this.competenceOn &&
           other.dueOn == this.dueOn &&
           other.paidOn == this.paidOn);
@@ -6619,13 +5839,11 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
   final Value<String?> subcategoryId;
   final Value<String?> recurrenceTemplateId;
   final Value<String?> scheduledForDate;
-  final Value<String?> scheduledPeriodId;
   final Value<String> id;
   final Value<String> ownerId;
   final Value<int> version;
   final Value<String> createdAt;
   final Value<String> updatedAt;
-  final Value<String> accountingPeriodId;
   final Value<String> competenceOn;
   final Value<String?> dueOn;
   final Value<String?> paidOn;
@@ -6638,13 +5856,11 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
     this.subcategoryId = const Value.absent(),
     this.recurrenceTemplateId = const Value.absent(),
     this.scheduledForDate = const Value.absent(),
-    this.scheduledPeriodId = const Value.absent(),
     this.id = const Value.absent(),
     this.ownerId = const Value.absent(),
     this.version = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
-    this.accountingPeriodId = const Value.absent(),
     this.competenceOn = const Value.absent(),
     this.dueOn = const Value.absent(),
     this.paidOn = const Value.absent(),
@@ -6658,13 +5874,11 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
     this.subcategoryId = const Value.absent(),
     this.recurrenceTemplateId = const Value.absent(),
     this.scheduledForDate = const Value.absent(),
-    this.scheduledPeriodId = const Value.absent(),
     required String id,
     required String ownerId,
     this.version = const Value.absent(),
     required String createdAt,
     required String updatedAt,
-    required String accountingPeriodId,
     required String competenceOn,
     this.dueOn = const Value.absent(),
     this.paidOn = const Value.absent(),
@@ -6674,7 +5888,6 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
        ownerId = Value(ownerId),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt),
-       accountingPeriodId = Value(accountingPeriodId),
        competenceOn = Value(competenceOn);
   static Insertable<ExpenseEntry> custom({
     Expression<String>? description,
@@ -6684,13 +5897,11 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
     Expression<String>? subcategoryId,
     Expression<String>? recurrenceTemplateId,
     Expression<String>? scheduledForDate,
-    Expression<String>? scheduledPeriodId,
     Expression<String>? id,
     Expression<String>? ownerId,
     Expression<int>? version,
     Expression<String>? createdAt,
     Expression<String>? updatedAt,
-    Expression<String>? accountingPeriodId,
     Expression<String>? competenceOn,
     Expression<String>? dueOn,
     Expression<String>? paidOn,
@@ -6705,14 +5916,11 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
       if (recurrenceTemplateId != null)
         'recurrence_template_id': recurrenceTemplateId,
       if (scheduledForDate != null) 'scheduled_for_date': scheduledForDate,
-      if (scheduledPeriodId != null) 'scheduled_period_id': scheduledPeriodId,
       if (id != null) 'id': id,
       if (ownerId != null) 'owner_id': ownerId,
       if (version != null) 'version': version,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
-      if (accountingPeriodId != null)
-        'accounting_period_id': accountingPeriodId,
       if (competenceOn != null) 'competence_on': competenceOn,
       if (dueOn != null) 'due_on': dueOn,
       if (paidOn != null) 'paid_on': paidOn,
@@ -6728,13 +5936,11 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
     Value<String?>? subcategoryId,
     Value<String?>? recurrenceTemplateId,
     Value<String?>? scheduledForDate,
-    Value<String?>? scheduledPeriodId,
     Value<String>? id,
     Value<String>? ownerId,
     Value<int>? version,
     Value<String>? createdAt,
     Value<String>? updatedAt,
-    Value<String>? accountingPeriodId,
     Value<String>? competenceOn,
     Value<String?>? dueOn,
     Value<String?>? paidOn,
@@ -6748,13 +5954,11 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
       subcategoryId: subcategoryId ?? this.subcategoryId,
       recurrenceTemplateId: recurrenceTemplateId ?? this.recurrenceTemplateId,
       scheduledForDate: scheduledForDate ?? this.scheduledForDate,
-      scheduledPeriodId: scheduledPeriodId ?? this.scheduledPeriodId,
       id: id ?? this.id,
       ownerId: ownerId ?? this.ownerId,
       version: version ?? this.version,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      accountingPeriodId: accountingPeriodId ?? this.accountingPeriodId,
       competenceOn: competenceOn ?? this.competenceOn,
       dueOn: dueOn ?? this.dueOn,
       paidOn: paidOn ?? this.paidOn,
@@ -6792,9 +5996,6 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
     if (scheduledForDate.present) {
       map['scheduled_for_date'] = Variable<String>(scheduledForDate.value);
     }
-    if (scheduledPeriodId.present) {
-      map['scheduled_period_id'] = Variable<String>(scheduledPeriodId.value);
-    }
     if (id.present) {
       map['id'] = Variable<String>(id.value);
     }
@@ -6809,9 +6010,6 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
     }
     if (updatedAt.present) {
       map['updated_at'] = Variable<String>(updatedAt.value);
-    }
-    if (accountingPeriodId.present) {
-      map['accounting_period_id'] = Variable<String>(accountingPeriodId.value);
     }
     if (competenceOn.present) {
       map['competence_on'] = Variable<String>(competenceOn.value);
@@ -6838,13 +6036,11 @@ class ExpenseEntriesCompanion extends UpdateCompanion<ExpenseEntry> {
           ..write('subcategoryId: $subcategoryId, ')
           ..write('recurrenceTemplateId: $recurrenceTemplateId, ')
           ..write('scheduledForDate: $scheduledForDate, ')
-          ..write('scheduledPeriodId: $scheduledPeriodId, ')
           ..write('id: $id, ')
           ..write('ownerId: $ownerId, ')
           ..write('version: $version, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
-          ..write('accountingPeriodId: $accountingPeriodId, ')
           ..write('competenceOn: $competenceOn, ')
           ..write('dueOn: $dueOn, ')
           ..write('paidOn: $paidOn, ')
@@ -6936,17 +6132,6 @@ class $InvestmentAllocationsTable extends InvestmentAllocations
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
-  static const VerificationMeta _accountingPeriodIdMeta =
-      const VerificationMeta('accountingPeriodId');
-  @override
-  late final GeneratedColumn<String> accountingPeriodId =
-      GeneratedColumn<String>(
-        'accounting_period_id',
-        aliasedName,
-        false,
-        type: DriftSqlType.string,
-        requiredDuringInsert: true,
-      );
   static const VerificationMeta _cancelledAtMeta = const VerificationMeta(
     'cancelledAt',
   );
@@ -6980,18 +6165,6 @@ class $InvestmentAllocationsTable extends InvestmentAllocations
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
-  static const VerificationMeta _scheduledPeriodIdMeta = const VerificationMeta(
-    'scheduledPeriodId',
-  );
-  @override
-  late final GeneratedColumn<String> scheduledPeriodId =
-      GeneratedColumn<String>(
-        'scheduled_period_id',
-        aliasedName,
-        true,
-        type: DriftSqlType.string,
-        requiredDuringInsert: false,
-      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -7001,11 +6174,9 @@ class $InvestmentAllocationsTable extends InvestmentAllocations
     updatedAt,
     amountCentavos,
     allocatedOn,
-    accountingPeriodId,
     cancelledAt,
     recurrenceTemplateId,
     scheduledForDate,
-    scheduledPeriodId,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -7065,17 +6236,6 @@ class $InvestmentAllocationsTable extends InvestmentAllocations
     } else if (isInserting) {
       context.missing(_allocatedOnMeta);
     }
-    if (data.containsKey('accounting_period_id')) {
-      context.handle(
-        _accountingPeriodIdMeta,
-        accountingPeriodId.isAcceptableOrUnknown(
-          data['accounting_period_id']!,
-          _accountingPeriodIdMeta,
-        ),
-      );
-    } else if (isInserting) {
-      context.missing(_accountingPeriodIdMeta);
-    }
     if (data.containsKey('cancelled_at')) {
       context.handle(
         _cancelledAtMeta,
@@ -7100,15 +6260,6 @@ class $InvestmentAllocationsTable extends InvestmentAllocations
         scheduledForDate.isAcceptableOrUnknown(
           data['scheduled_for_date']!,
           _scheduledForDateMeta,
-        ),
-      );
-    }
-    if (data.containsKey('scheduled_period_id')) {
-      context.handle(
-        _scheduledPeriodIdMeta,
-        scheduledPeriodId.isAcceptableOrUnknown(
-          data['scheduled_period_id']!,
-          _scheduledPeriodIdMeta,
         ),
       );
     }
@@ -7152,10 +6303,6 @@ class $InvestmentAllocationsTable extends InvestmentAllocations
         DriftSqlType.string,
         data['${effectivePrefix}allocated_on'],
       )!,
-      accountingPeriodId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}accounting_period_id'],
-      )!,
       cancelledAt: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}cancelled_at'],
@@ -7167,10 +6314,6 @@ class $InvestmentAllocationsTable extends InvestmentAllocations
       scheduledForDate: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}scheduled_for_date'],
-      ),
-      scheduledPeriodId: attachedDatabase.typeMapping.read(
-        DriftSqlType.string,
-        data['${effectivePrefix}scheduled_period_id'],
       ),
     );
   }
@@ -7193,11 +6336,9 @@ class InvestmentAllocation extends DataClass
   final String updatedAt;
   final BigInt amountCentavos;
   final String allocatedOn;
-  final String accountingPeriodId;
   final String? cancelledAt;
   final String? recurrenceTemplateId;
   final String? scheduledForDate;
-  final String? scheduledPeriodId;
   const InvestmentAllocation({
     required this.id,
     required this.ownerId,
@@ -7206,11 +6347,9 @@ class InvestmentAllocation extends DataClass
     required this.updatedAt,
     required this.amountCentavos,
     required this.allocatedOn,
-    required this.accountingPeriodId,
     this.cancelledAt,
     this.recurrenceTemplateId,
     this.scheduledForDate,
-    this.scheduledPeriodId,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -7228,7 +6367,6 @@ class InvestmentAllocation extends DataClass
       );
     }
     map['allocated_on'] = Variable<String>(allocatedOn);
-    map['accounting_period_id'] = Variable<String>(accountingPeriodId);
     if (!nullToAbsent || cancelledAt != null) {
       map['cancelled_at'] = Variable<String>(cancelledAt);
     }
@@ -7237,9 +6375,6 @@ class InvestmentAllocation extends DataClass
     }
     if (!nullToAbsent || scheduledForDate != null) {
       map['scheduled_for_date'] = Variable<String>(scheduledForDate);
-    }
-    if (!nullToAbsent || scheduledPeriodId != null) {
-      map['scheduled_period_id'] = Variable<String>(scheduledPeriodId);
     }
     return map;
   }
@@ -7253,7 +6388,6 @@ class InvestmentAllocation extends DataClass
       updatedAt: Value(updatedAt),
       amountCentavos: Value(amountCentavos),
       allocatedOn: Value(allocatedOn),
-      accountingPeriodId: Value(accountingPeriodId),
       cancelledAt: cancelledAt == null && nullToAbsent
           ? const Value.absent()
           : Value(cancelledAt),
@@ -7263,9 +6397,6 @@ class InvestmentAllocation extends DataClass
       scheduledForDate: scheduledForDate == null && nullToAbsent
           ? const Value.absent()
           : Value(scheduledForDate),
-      scheduledPeriodId: scheduledPeriodId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(scheduledPeriodId),
     );
   }
 
@@ -7282,17 +6413,11 @@ class InvestmentAllocation extends DataClass
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
       amountCentavos: serializer.fromJson<BigInt>(json['amountCentavos']),
       allocatedOn: serializer.fromJson<String>(json['allocatedOn']),
-      accountingPeriodId: serializer.fromJson<String>(
-        json['accountingPeriodId'],
-      ),
       cancelledAt: serializer.fromJson<String?>(json['cancelledAt']),
       recurrenceTemplateId: serializer.fromJson<String?>(
         json['recurrenceTemplateId'],
       ),
       scheduledForDate: serializer.fromJson<String?>(json['scheduledForDate']),
-      scheduledPeriodId: serializer.fromJson<String?>(
-        json['scheduledPeriodId'],
-      ),
     );
   }
   @override
@@ -7306,11 +6431,9 @@ class InvestmentAllocation extends DataClass
       'updatedAt': serializer.toJson<String>(updatedAt),
       'amountCentavos': serializer.toJson<BigInt>(amountCentavos),
       'allocatedOn': serializer.toJson<String>(allocatedOn),
-      'accountingPeriodId': serializer.toJson<String>(accountingPeriodId),
       'cancelledAt': serializer.toJson<String?>(cancelledAt),
       'recurrenceTemplateId': serializer.toJson<String?>(recurrenceTemplateId),
       'scheduledForDate': serializer.toJson<String?>(scheduledForDate),
-      'scheduledPeriodId': serializer.toJson<String?>(scheduledPeriodId),
     };
   }
 
@@ -7322,11 +6445,9 @@ class InvestmentAllocation extends DataClass
     String? updatedAt,
     BigInt? amountCentavos,
     String? allocatedOn,
-    String? accountingPeriodId,
     Value<String?> cancelledAt = const Value.absent(),
     Value<String?> recurrenceTemplateId = const Value.absent(),
     Value<String?> scheduledForDate = const Value.absent(),
-    Value<String?> scheduledPeriodId = const Value.absent(),
   }) => InvestmentAllocation(
     id: id ?? this.id,
     ownerId: ownerId ?? this.ownerId,
@@ -7335,7 +6456,6 @@ class InvestmentAllocation extends DataClass
     updatedAt: updatedAt ?? this.updatedAt,
     amountCentavos: amountCentavos ?? this.amountCentavos,
     allocatedOn: allocatedOn ?? this.allocatedOn,
-    accountingPeriodId: accountingPeriodId ?? this.accountingPeriodId,
     cancelledAt: cancelledAt.present ? cancelledAt.value : this.cancelledAt,
     recurrenceTemplateId: recurrenceTemplateId.present
         ? recurrenceTemplateId.value
@@ -7343,9 +6463,6 @@ class InvestmentAllocation extends DataClass
     scheduledForDate: scheduledForDate.present
         ? scheduledForDate.value
         : this.scheduledForDate,
-    scheduledPeriodId: scheduledPeriodId.present
-        ? scheduledPeriodId.value
-        : this.scheduledPeriodId,
   );
   InvestmentAllocation copyWithCompanion(InvestmentAllocationsCompanion data) {
     return InvestmentAllocation(
@@ -7360,9 +6477,6 @@ class InvestmentAllocation extends DataClass
       allocatedOn: data.allocatedOn.present
           ? data.allocatedOn.value
           : this.allocatedOn,
-      accountingPeriodId: data.accountingPeriodId.present
-          ? data.accountingPeriodId.value
-          : this.accountingPeriodId,
       cancelledAt: data.cancelledAt.present
           ? data.cancelledAt.value
           : this.cancelledAt,
@@ -7372,9 +6486,6 @@ class InvestmentAllocation extends DataClass
       scheduledForDate: data.scheduledForDate.present
           ? data.scheduledForDate.value
           : this.scheduledForDate,
-      scheduledPeriodId: data.scheduledPeriodId.present
-          ? data.scheduledPeriodId.value
-          : this.scheduledPeriodId,
     );
   }
 
@@ -7388,11 +6499,9 @@ class InvestmentAllocation extends DataClass
           ..write('updatedAt: $updatedAt, ')
           ..write('amountCentavos: $amountCentavos, ')
           ..write('allocatedOn: $allocatedOn, ')
-          ..write('accountingPeriodId: $accountingPeriodId, ')
           ..write('cancelledAt: $cancelledAt, ')
           ..write('recurrenceTemplateId: $recurrenceTemplateId, ')
-          ..write('scheduledForDate: $scheduledForDate, ')
-          ..write('scheduledPeriodId: $scheduledPeriodId')
+          ..write('scheduledForDate: $scheduledForDate')
           ..write(')'))
         .toString();
   }
@@ -7406,11 +6515,9 @@ class InvestmentAllocation extends DataClass
     updatedAt,
     amountCentavos,
     allocatedOn,
-    accountingPeriodId,
     cancelledAt,
     recurrenceTemplateId,
     scheduledForDate,
-    scheduledPeriodId,
   );
   @override
   bool operator ==(Object other) =>
@@ -7423,11 +6530,9 @@ class InvestmentAllocation extends DataClass
           other.updatedAt == this.updatedAt &&
           other.amountCentavos == this.amountCentavos &&
           other.allocatedOn == this.allocatedOn &&
-          other.accountingPeriodId == this.accountingPeriodId &&
           other.cancelledAt == this.cancelledAt &&
           other.recurrenceTemplateId == this.recurrenceTemplateId &&
-          other.scheduledForDate == this.scheduledForDate &&
-          other.scheduledPeriodId == this.scheduledPeriodId);
+          other.scheduledForDate == this.scheduledForDate);
 }
 
 class InvestmentAllocationsCompanion
@@ -7439,11 +6544,9 @@ class InvestmentAllocationsCompanion
   final Value<String> updatedAt;
   final Value<BigInt> amountCentavos;
   final Value<String> allocatedOn;
-  final Value<String> accountingPeriodId;
   final Value<String?> cancelledAt;
   final Value<String?> recurrenceTemplateId;
   final Value<String?> scheduledForDate;
-  final Value<String?> scheduledPeriodId;
   final Value<int> rowid;
   const InvestmentAllocationsCompanion({
     this.id = const Value.absent(),
@@ -7453,11 +6556,9 @@ class InvestmentAllocationsCompanion
     this.updatedAt = const Value.absent(),
     this.amountCentavos = const Value.absent(),
     this.allocatedOn = const Value.absent(),
-    this.accountingPeriodId = const Value.absent(),
     this.cancelledAt = const Value.absent(),
     this.recurrenceTemplateId = const Value.absent(),
     this.scheduledForDate = const Value.absent(),
-    this.scheduledPeriodId = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   InvestmentAllocationsCompanion.insert({
@@ -7468,19 +6569,16 @@ class InvestmentAllocationsCompanion
     required String updatedAt,
     required BigInt amountCentavos,
     required String allocatedOn,
-    required String accountingPeriodId,
     this.cancelledAt = const Value.absent(),
     this.recurrenceTemplateId = const Value.absent(),
     this.scheduledForDate = const Value.absent(),
-    this.scheduledPeriodId = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        ownerId = Value(ownerId),
        createdAt = Value(createdAt),
        updatedAt = Value(updatedAt),
        amountCentavos = Value(amountCentavos),
-       allocatedOn = Value(allocatedOn),
-       accountingPeriodId = Value(accountingPeriodId);
+       allocatedOn = Value(allocatedOn);
   static Insertable<InvestmentAllocation> custom({
     Expression<String>? id,
     Expression<String>? ownerId,
@@ -7489,11 +6587,9 @@ class InvestmentAllocationsCompanion
     Expression<String>? updatedAt,
     Expression<String>? amountCentavos,
     Expression<String>? allocatedOn,
-    Expression<String>? accountingPeriodId,
     Expression<String>? cancelledAt,
     Expression<String>? recurrenceTemplateId,
     Expression<String>? scheduledForDate,
-    Expression<String>? scheduledPeriodId,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -7504,13 +6600,10 @@ class InvestmentAllocationsCompanion
       if (updatedAt != null) 'updated_at': updatedAt,
       if (amountCentavos != null) 'amount_centavos': amountCentavos,
       if (allocatedOn != null) 'allocated_on': allocatedOn,
-      if (accountingPeriodId != null)
-        'accounting_period_id': accountingPeriodId,
       if (cancelledAt != null) 'cancelled_at': cancelledAt,
       if (recurrenceTemplateId != null)
         'recurrence_template_id': recurrenceTemplateId,
       if (scheduledForDate != null) 'scheduled_for_date': scheduledForDate,
-      if (scheduledPeriodId != null) 'scheduled_period_id': scheduledPeriodId,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -7523,11 +6616,9 @@ class InvestmentAllocationsCompanion
     Value<String>? updatedAt,
     Value<BigInt>? amountCentavos,
     Value<String>? allocatedOn,
-    Value<String>? accountingPeriodId,
     Value<String?>? cancelledAt,
     Value<String?>? recurrenceTemplateId,
     Value<String?>? scheduledForDate,
-    Value<String?>? scheduledPeriodId,
     Value<int>? rowid,
   }) {
     return InvestmentAllocationsCompanion(
@@ -7538,11 +6629,9 @@ class InvestmentAllocationsCompanion
       updatedAt: updatedAt ?? this.updatedAt,
       amountCentavos: amountCentavos ?? this.amountCentavos,
       allocatedOn: allocatedOn ?? this.allocatedOn,
-      accountingPeriodId: accountingPeriodId ?? this.accountingPeriodId,
       cancelledAt: cancelledAt ?? this.cancelledAt,
       recurrenceTemplateId: recurrenceTemplateId ?? this.recurrenceTemplateId,
       scheduledForDate: scheduledForDate ?? this.scheduledForDate,
-      scheduledPeriodId: scheduledPeriodId ?? this.scheduledPeriodId,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -7575,9 +6664,6 @@ class InvestmentAllocationsCompanion
     if (allocatedOn.present) {
       map['allocated_on'] = Variable<String>(allocatedOn.value);
     }
-    if (accountingPeriodId.present) {
-      map['accounting_period_id'] = Variable<String>(accountingPeriodId.value);
-    }
     if (cancelledAt.present) {
       map['cancelled_at'] = Variable<String>(cancelledAt.value);
     }
@@ -7588,9 +6674,6 @@ class InvestmentAllocationsCompanion
     }
     if (scheduledForDate.present) {
       map['scheduled_for_date'] = Variable<String>(scheduledForDate.value);
-    }
-    if (scheduledPeriodId.present) {
-      map['scheduled_period_id'] = Variable<String>(scheduledPeriodId.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -7608,11 +6691,9 @@ class InvestmentAllocationsCompanion
           ..write('updatedAt: $updatedAt, ')
           ..write('amountCentavos: $amountCentavos, ')
           ..write('allocatedOn: $allocatedOn, ')
-          ..write('accountingPeriodId: $accountingPeriodId, ')
           ..write('cancelledAt: $cancelledAt, ')
           ..write('recurrenceTemplateId: $recurrenceTemplateId, ')
           ..write('scheduledForDate: $scheduledForDate, ')
-          ..write('scheduledPeriodId: $scheduledPeriodId, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -10527,10 +9608,7 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
   late final $UserPreferencesTable userPreferences = $UserPreferencesTable(
     this,
   );
-  late final $PeriodConfigurationsTable periodConfigurations =
-      $PeriodConfigurationsTable(this);
-  late final $AccountingPeriodsTable accountingPeriods =
-      $AccountingPeriodsTable(this);
+  late final $PeriodSettingsTable periodSettings = $PeriodSettingsTable(this);
   late final $CategoriesTable categories = $CategoriesTable(this);
   late final $SubcategoriesTable subcategories = $SubcategoriesTable(this);
   late final $IncomeRecurrenceTemplatesTable incomeRecurrenceTemplates =
@@ -10553,25 +9631,13 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
     'unique_income_occurrence_schedule',
     'CREATE UNIQUE INDEX unique_income_occurrence_schedule ON income_entries (owner_id, recurrence_template_id, scheduled_for_date) WHERE recurrence_template_id IS NOT NULL',
   );
-  late final Index incomeEntriesPeriodIdx = Index(
-    'income_entries_period_idx',
-    'CREATE INDEX income_entries_period_idx ON income_entries (owner_id, accounting_period_id)',
-  );
   late final Index uniqueExpenseOccurrenceSchedule = Index(
     'unique_expense_occurrence_schedule',
     'CREATE UNIQUE INDEX unique_expense_occurrence_schedule ON expense_entries (owner_id, recurrence_template_id, scheduled_for_date) WHERE recurrence_template_id IS NOT NULL',
   );
-  late final Index expenseEntriesPeriodIdx = Index(
-    'expense_entries_period_idx',
-    'CREATE INDEX expense_entries_period_idx ON expense_entries (owner_id, accounting_period_id)',
-  );
   late final Index uniqueInvestmentOccurrenceSchedule = Index(
     'unique_investment_occurrence_schedule',
     'CREATE UNIQUE INDEX unique_investment_occurrence_schedule ON investment_allocations (owner_id, recurrence_template_id, scheduled_for_date) WHERE recurrence_template_id IS NOT NULL',
-  );
-  late final Index investmentAllocationsPeriodIdx = Index(
-    'investment_allocations_period_idx',
-    'CREATE INDEX investment_allocations_period_idx ON investment_allocations (owner_id, accounting_period_id)',
   );
   late final Index syncOutboxStateIdx = Index(
     'sync_outbox_state_idx',
@@ -10583,8 +9649,7 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
   @override
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     userPreferences,
-    periodConfigurations,
-    accountingPeriods,
+    periodSettings,
     categories,
     subcategories,
     incomeRecurrenceTemplates,
@@ -10599,11 +9664,8 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
     syncOutbox,
     syncCursors,
     uniqueIncomeOccurrenceSchedule,
-    incomeEntriesPeriodIdx,
     uniqueExpenseOccurrenceSchedule,
-    expenseEntriesPeriodIdx,
     uniqueInvestmentOccurrenceSchedule,
-    investmentAllocationsPeriodIdx,
     syncOutboxStateIdx,
   ];
 }
@@ -10850,8 +9912,8 @@ typedef $$UserPreferencesTableProcessedTableManager =
       UserPreference,
       PrefetchHooks Function()
     >;
-typedef $$PeriodConfigurationsTableCreateCompanionBuilder =
-    PeriodConfigurationsCompanion Function({
+typedef $$PeriodSettingsTableCreateCompanionBuilder =
+    PeriodSettingsCompanion Function({
       required String id,
       required String ownerId,
       Value<int> version,
@@ -10859,11 +9921,10 @@ typedef $$PeriodConfigurationsTableCreateCompanionBuilder =
       required String updatedAt,
       required String mode,
       Value<int?> customStartDay,
-      required String effectiveFrom,
       Value<int> rowid,
     });
-typedef $$PeriodConfigurationsTableUpdateCompanionBuilder =
-    PeriodConfigurationsCompanion Function({
+typedef $$PeriodSettingsTableUpdateCompanionBuilder =
+    PeriodSettingsCompanion Function({
       Value<String> id,
       Value<String> ownerId,
       Value<int> version,
@@ -10871,13 +9932,12 @@ typedef $$PeriodConfigurationsTableUpdateCompanionBuilder =
       Value<String> updatedAt,
       Value<String> mode,
       Value<int?> customStartDay,
-      Value<String> effectiveFrom,
       Value<int> rowid,
     });
 
-class $$PeriodConfigurationsTableFilterComposer
-    extends Composer<_$PorquinhoDatabase, $PeriodConfigurationsTable> {
-  $$PeriodConfigurationsTableFilterComposer({
+class $$PeriodSettingsTableFilterComposer
+    extends Composer<_$PorquinhoDatabase, $PeriodSettingsTable> {
+  $$PeriodSettingsTableFilterComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -10918,16 +9978,11 @@ class $$PeriodConfigurationsTableFilterComposer
     column: $table.customStartDay,
     builder: (column) => ColumnFilters(column),
   );
-
-  ColumnFilters<String> get effectiveFrom => $composableBuilder(
-    column: $table.effectiveFrom,
-    builder: (column) => ColumnFilters(column),
-  );
 }
 
-class $$PeriodConfigurationsTableOrderingComposer
-    extends Composer<_$PorquinhoDatabase, $PeriodConfigurationsTable> {
-  $$PeriodConfigurationsTableOrderingComposer({
+class $$PeriodSettingsTableOrderingComposer
+    extends Composer<_$PorquinhoDatabase, $PeriodSettingsTable> {
+  $$PeriodSettingsTableOrderingComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -10968,16 +10023,11 @@ class $$PeriodConfigurationsTableOrderingComposer
     column: $table.customStartDay,
     builder: (column) => ColumnOrderings(column),
   );
-
-  ColumnOrderings<String> get effectiveFrom => $composableBuilder(
-    column: $table.effectiveFrom,
-    builder: (column) => ColumnOrderings(column),
-  );
 }
 
-class $$PeriodConfigurationsTableAnnotationComposer
-    extends Composer<_$PorquinhoDatabase, $PeriodConfigurationsTable> {
-  $$PeriodConfigurationsTableAnnotationComposer({
+class $$PeriodSettingsTableAnnotationComposer
+    extends Composer<_$PorquinhoDatabase, $PeriodSettingsTable> {
+  $$PeriodSettingsTableAnnotationComposer({
     required super.$db,
     required super.$table,
     super.joinBuilder,
@@ -11006,54 +10056,43 @@ class $$PeriodConfigurationsTableAnnotationComposer
     column: $table.customStartDay,
     builder: (column) => column,
   );
-
-  GeneratedColumn<String> get effectiveFrom => $composableBuilder(
-    column: $table.effectiveFrom,
-    builder: (column) => column,
-  );
 }
 
-class $$PeriodConfigurationsTableTableManager
+class $$PeriodSettingsTableTableManager
     extends
         RootTableManager<
           _$PorquinhoDatabase,
-          $PeriodConfigurationsTable,
-          PeriodConfiguration,
-          $$PeriodConfigurationsTableFilterComposer,
-          $$PeriodConfigurationsTableOrderingComposer,
-          $$PeriodConfigurationsTableAnnotationComposer,
-          $$PeriodConfigurationsTableCreateCompanionBuilder,
-          $$PeriodConfigurationsTableUpdateCompanionBuilder,
+          $PeriodSettingsTable,
+          PeriodSetting,
+          $$PeriodSettingsTableFilterComposer,
+          $$PeriodSettingsTableOrderingComposer,
+          $$PeriodSettingsTableAnnotationComposer,
+          $$PeriodSettingsTableCreateCompanionBuilder,
+          $$PeriodSettingsTableUpdateCompanionBuilder,
           (
-            PeriodConfiguration,
+            PeriodSetting,
             BaseReferences<
               _$PorquinhoDatabase,
-              $PeriodConfigurationsTable,
-              PeriodConfiguration
+              $PeriodSettingsTable,
+              PeriodSetting
             >,
           ),
-          PeriodConfiguration,
+          PeriodSetting,
           PrefetchHooks Function()
         > {
-  $$PeriodConfigurationsTableTableManager(
+  $$PeriodSettingsTableTableManager(
     _$PorquinhoDatabase db,
-    $PeriodConfigurationsTable table,
+    $PeriodSettingsTable table,
   ) : super(
         TableManagerState(
           db: db,
           table: table,
           createFilteringComposer: () =>
-              $$PeriodConfigurationsTableFilterComposer($db: db, $table: table),
+              $$PeriodSettingsTableFilterComposer($db: db, $table: table),
           createOrderingComposer: () =>
-              $$PeriodConfigurationsTableOrderingComposer(
-                $db: db,
-                $table: table,
-              ),
+              $$PeriodSettingsTableOrderingComposer($db: db, $table: table),
           createComputedFieldComposer: () =>
-              $$PeriodConfigurationsTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
+              $$PeriodSettingsTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback:
               ({
                 Value<String> id = const Value.absent(),
@@ -11063,9 +10102,8 @@ class $$PeriodConfigurationsTableTableManager
                 Value<String> updatedAt = const Value.absent(),
                 Value<String> mode = const Value.absent(),
                 Value<int?> customStartDay = const Value.absent(),
-                Value<String> effectiveFrom = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
-              }) => PeriodConfigurationsCompanion(
+              }) => PeriodSettingsCompanion(
                 id: id,
                 ownerId: ownerId,
                 version: version,
@@ -11073,7 +10111,6 @@ class $$PeriodConfigurationsTableTableManager
                 updatedAt: updatedAt,
                 mode: mode,
                 customStartDay: customStartDay,
-                effectiveFrom: effectiveFrom,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -11085,9 +10122,8 @@ class $$PeriodConfigurationsTableTableManager
                 required String updatedAt,
                 required String mode,
                 Value<int?> customStartDay = const Value.absent(),
-                required String effectiveFrom,
                 Value<int> rowid = const Value.absent(),
-              }) => PeriodConfigurationsCompanion.insert(
+              }) => PeriodSettingsCompanion.insert(
                 id: id,
                 ownerId: ownerId,
                 version: version,
@@ -11095,19 +10131,16 @@ class $$PeriodConfigurationsTableTableManager
                 updatedAt: updatedAt,
                 mode: mode,
                 customStartDay: customStartDay,
-                effectiveFrom: effectiveFrom,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
-                  e.readTable<$PeriodConfigurationsTable, PeriodConfiguration>(
-                    table,
-                  ),
+                  e.readTable<$PeriodSettingsTable, PeriodSetting>(table),
                   BaseReferences<
                     _$PorquinhoDatabase,
-                    $PeriodConfigurationsTable,
-                    PeriodConfiguration
+                    $PeriodSettingsTable,
+                    PeriodSetting
                   >(db, table, e),
                 ),
               )
@@ -11117,306 +10150,25 @@ class $$PeriodConfigurationsTableTableManager
       );
 }
 
-typedef $$PeriodConfigurationsTableProcessedTableManager =
+typedef $$PeriodSettingsTableProcessedTableManager =
     ProcessedTableManager<
       _$PorquinhoDatabase,
-      $PeriodConfigurationsTable,
-      PeriodConfiguration,
-      $$PeriodConfigurationsTableFilterComposer,
-      $$PeriodConfigurationsTableOrderingComposer,
-      $$PeriodConfigurationsTableAnnotationComposer,
-      $$PeriodConfigurationsTableCreateCompanionBuilder,
-      $$PeriodConfigurationsTableUpdateCompanionBuilder,
+      $PeriodSettingsTable,
+      PeriodSetting,
+      $$PeriodSettingsTableFilterComposer,
+      $$PeriodSettingsTableOrderingComposer,
+      $$PeriodSettingsTableAnnotationComposer,
+      $$PeriodSettingsTableCreateCompanionBuilder,
+      $$PeriodSettingsTableUpdateCompanionBuilder,
       (
-        PeriodConfiguration,
+        PeriodSetting,
         BaseReferences<
           _$PorquinhoDatabase,
-          $PeriodConfigurationsTable,
-          PeriodConfiguration
+          $PeriodSettingsTable,
+          PeriodSetting
         >,
       ),
-      PeriodConfiguration,
-      PrefetchHooks Function()
-    >;
-typedef $$AccountingPeriodsTableCreateCompanionBuilder =
-    AccountingPeriodsCompanion Function({
-      required String id,
-      required String ownerId,
-      Value<int> version,
-      required String createdAt,
-      required String updatedAt,
-      required String configurationId,
-      required String startDate,
-      required String endDate,
-      Value<int> rowid,
-    });
-typedef $$AccountingPeriodsTableUpdateCompanionBuilder =
-    AccountingPeriodsCompanion Function({
-      Value<String> id,
-      Value<String> ownerId,
-      Value<int> version,
-      Value<String> createdAt,
-      Value<String> updatedAt,
-      Value<String> configurationId,
-      Value<String> startDate,
-      Value<String> endDate,
-      Value<int> rowid,
-    });
-
-class $$AccountingPeriodsTableFilterComposer
-    extends Composer<_$PorquinhoDatabase, $AccountingPeriodsTable> {
-  $$AccountingPeriodsTableFilterComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnFilters<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get ownerId => $composableBuilder(
-    column: $table.ownerId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<int> get version => $composableBuilder(
-    column: $table.version,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get configurationId => $composableBuilder(
-    column: $table.configurationId,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get startDate => $composableBuilder(
-    column: $table.startDate,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get endDate => $composableBuilder(
-    column: $table.endDate,
-    builder: (column) => ColumnFilters(column),
-  );
-}
-
-class $$AccountingPeriodsTableOrderingComposer
-    extends Composer<_$PorquinhoDatabase, $AccountingPeriodsTable> {
-  $$AccountingPeriodsTableOrderingComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  ColumnOrderings<String> get id => $composableBuilder(
-    column: $table.id,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get ownerId => $composableBuilder(
-    column: $table.ownerId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<int> get version => $composableBuilder(
-    column: $table.version,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get createdAt => $composableBuilder(
-    column: $table.createdAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get updatedAt => $composableBuilder(
-    column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get configurationId => $composableBuilder(
-    column: $table.configurationId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get startDate => $composableBuilder(
-    column: $table.startDate,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get endDate => $composableBuilder(
-    column: $table.endDate,
-    builder: (column) => ColumnOrderings(column),
-  );
-}
-
-class $$AccountingPeriodsTableAnnotationComposer
-    extends Composer<_$PorquinhoDatabase, $AccountingPeriodsTable> {
-  $$AccountingPeriodsTableAnnotationComposer({
-    required super.$db,
-    required super.$table,
-    super.joinBuilder,
-    super.$addJoinBuilderToRootComposer,
-    super.$removeJoinBuilderFromRootComposer,
-  });
-  GeneratedColumn<String> get id =>
-      $composableBuilder(column: $table.id, builder: (column) => column);
-
-  GeneratedColumn<String> get ownerId =>
-      $composableBuilder(column: $table.ownerId, builder: (column) => column);
-
-  GeneratedColumn<int> get version =>
-      $composableBuilder(column: $table.version, builder: (column) => column);
-
-  GeneratedColumn<String> get createdAt =>
-      $composableBuilder(column: $table.createdAt, builder: (column) => column);
-
-  GeneratedColumn<String> get updatedAt =>
-      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<String> get configurationId => $composableBuilder(
-    column: $table.configurationId,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get startDate =>
-      $composableBuilder(column: $table.startDate, builder: (column) => column);
-
-  GeneratedColumn<String> get endDate =>
-      $composableBuilder(column: $table.endDate, builder: (column) => column);
-}
-
-class $$AccountingPeriodsTableTableManager
-    extends
-        RootTableManager<
-          _$PorquinhoDatabase,
-          $AccountingPeriodsTable,
-          AccountingPeriod,
-          $$AccountingPeriodsTableFilterComposer,
-          $$AccountingPeriodsTableOrderingComposer,
-          $$AccountingPeriodsTableAnnotationComposer,
-          $$AccountingPeriodsTableCreateCompanionBuilder,
-          $$AccountingPeriodsTableUpdateCompanionBuilder,
-          (
-            AccountingPeriod,
-            BaseReferences<
-              _$PorquinhoDatabase,
-              $AccountingPeriodsTable,
-              AccountingPeriod
-            >,
-          ),
-          AccountingPeriod,
-          PrefetchHooks Function()
-        > {
-  $$AccountingPeriodsTableTableManager(
-    _$PorquinhoDatabase db,
-    $AccountingPeriodsTable table,
-  ) : super(
-        TableManagerState(
-          db: db,
-          table: table,
-          createFilteringComposer: () =>
-              $$AccountingPeriodsTableFilterComposer($db: db, $table: table),
-          createOrderingComposer: () =>
-              $$AccountingPeriodsTableOrderingComposer($db: db, $table: table),
-          createComputedFieldComposer: () =>
-              $$AccountingPeriodsTableAnnotationComposer(
-                $db: db,
-                $table: table,
-              ),
-          updateCompanionCallback:
-              ({
-                Value<String> id = const Value.absent(),
-                Value<String> ownerId = const Value.absent(),
-                Value<int> version = const Value.absent(),
-                Value<String> createdAt = const Value.absent(),
-                Value<String> updatedAt = const Value.absent(),
-                Value<String> configurationId = const Value.absent(),
-                Value<String> startDate = const Value.absent(),
-                Value<String> endDate = const Value.absent(),
-                Value<int> rowid = const Value.absent(),
-              }) => AccountingPeriodsCompanion(
-                id: id,
-                ownerId: ownerId,
-                version: version,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                configurationId: configurationId,
-                startDate: startDate,
-                endDate: endDate,
-                rowid: rowid,
-              ),
-          createCompanionCallback:
-              ({
-                required String id,
-                required String ownerId,
-                Value<int> version = const Value.absent(),
-                required String createdAt,
-                required String updatedAt,
-                required String configurationId,
-                required String startDate,
-                required String endDate,
-                Value<int> rowid = const Value.absent(),
-              }) => AccountingPeriodsCompanion.insert(
-                id: id,
-                ownerId: ownerId,
-                version: version,
-                createdAt: createdAt,
-                updatedAt: updatedAt,
-                configurationId: configurationId,
-                startDate: startDate,
-                endDate: endDate,
-                rowid: rowid,
-              ),
-          withReferenceMapper: (p0) => p0
-              .map(
-                (e) => (
-                  e.readTable<$AccountingPeriodsTable, AccountingPeriod>(table),
-                  BaseReferences<
-                    _$PorquinhoDatabase,
-                    $AccountingPeriodsTable,
-                    AccountingPeriod
-                  >(db, table, e),
-                ),
-              )
-              .toList(),
-          prefetchHooksCallback: null,
-        ),
-      );
-}
-
-typedef $$AccountingPeriodsTableProcessedTableManager =
-    ProcessedTableManager<
-      _$PorquinhoDatabase,
-      $AccountingPeriodsTable,
-      AccountingPeriod,
-      $$AccountingPeriodsTableFilterComposer,
-      $$AccountingPeriodsTableOrderingComposer,
-      $$AccountingPeriodsTableAnnotationComposer,
-      $$AccountingPeriodsTableCreateCompanionBuilder,
-      $$AccountingPeriodsTableUpdateCompanionBuilder,
-      (
-        AccountingPeriod,
-        BaseReferences<
-          _$PorquinhoDatabase,
-          $AccountingPeriodsTable,
-          AccountingPeriod
-        >,
-      ),
-      AccountingPeriod,
+      PeriodSetting,
       PrefetchHooks Function()
     >;
 typedef $$CategoriesTableCreateCompanionBuilder =
@@ -13166,14 +11918,12 @@ typedef $$IncomeEntriesTableCreateCompanionBuilder =
       Value<String?> subcategoryId,
       Value<String?> recurrenceTemplateId,
       Value<String?> scheduledForDate,
-      Value<String?> scheduledPeriodId,
       required String id,
       required String ownerId,
       Value<int> version,
       required String createdAt,
       required String updatedAt,
       Value<String?> receivedOn,
-      Value<String?> accountingPeriodId,
       Value<int> rowid,
     });
 typedef $$IncomeEntriesTableUpdateCompanionBuilder =
@@ -13185,14 +11935,12 @@ typedef $$IncomeEntriesTableUpdateCompanionBuilder =
       Value<String?> subcategoryId,
       Value<String?> recurrenceTemplateId,
       Value<String?> scheduledForDate,
-      Value<String?> scheduledPeriodId,
       Value<String> id,
       Value<String> ownerId,
       Value<int> version,
       Value<String> createdAt,
       Value<String> updatedAt,
       Value<String?> receivedOn,
-      Value<String?> accountingPeriodId,
       Value<int> rowid,
     });
 
@@ -13241,11 +11989,6 @@ class $$IncomeEntriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get scheduledPeriodId => $composableBuilder(
-    column: $table.scheduledPeriodId,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
@@ -13273,11 +12016,6 @@ class $$IncomeEntriesTableFilterComposer
 
   ColumnFilters<String> get receivedOn => $composableBuilder(
     column: $table.receivedOn,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get accountingPeriodId => $composableBuilder(
-    column: $table.accountingPeriodId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -13326,11 +12064,6 @@ class $$IncomeEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get scheduledPeriodId => $composableBuilder(
-    column: $table.scheduledPeriodId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -13358,11 +12091,6 @@ class $$IncomeEntriesTableOrderingComposer
 
   ColumnOrderings<String> get receivedOn => $composableBuilder(
     column: $table.receivedOn,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get accountingPeriodId => $composableBuilder(
-    column: $table.accountingPeriodId,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -13410,11 +12138,6 @@ class $$IncomeEntriesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get scheduledPeriodId => $composableBuilder(
-    column: $table.scheduledPeriodId,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
@@ -13432,11 +12155,6 @@ class $$IncomeEntriesTableAnnotationComposer
 
   GeneratedColumn<String> get receivedOn => $composableBuilder(
     column: $table.receivedOn,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get accountingPeriodId => $composableBuilder(
-    column: $table.accountingPeriodId,
     builder: (column) => column,
   );
 }
@@ -13485,14 +12203,12 @@ class $$IncomeEntriesTableTableManager
                 Value<String?> subcategoryId = const Value.absent(),
                 Value<String?> recurrenceTemplateId = const Value.absent(),
                 Value<String?> scheduledForDate = const Value.absent(),
-                Value<String?> scheduledPeriodId = const Value.absent(),
                 Value<String> id = const Value.absent(),
                 Value<String> ownerId = const Value.absent(),
                 Value<int> version = const Value.absent(),
                 Value<String> createdAt = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
                 Value<String?> receivedOn = const Value.absent(),
-                Value<String?> accountingPeriodId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IncomeEntriesCompanion(
                 description: description,
@@ -13502,14 +12218,12 @@ class $$IncomeEntriesTableTableManager
                 subcategoryId: subcategoryId,
                 recurrenceTemplateId: recurrenceTemplateId,
                 scheduledForDate: scheduledForDate,
-                scheduledPeriodId: scheduledPeriodId,
                 id: id,
                 ownerId: ownerId,
                 version: version,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 receivedOn: receivedOn,
-                accountingPeriodId: accountingPeriodId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -13521,14 +12235,12 @@ class $$IncomeEntriesTableTableManager
                 Value<String?> subcategoryId = const Value.absent(),
                 Value<String?> recurrenceTemplateId = const Value.absent(),
                 Value<String?> scheduledForDate = const Value.absent(),
-                Value<String?> scheduledPeriodId = const Value.absent(),
                 required String id,
                 required String ownerId,
                 Value<int> version = const Value.absent(),
                 required String createdAt,
                 required String updatedAt,
                 Value<String?> receivedOn = const Value.absent(),
-                Value<String?> accountingPeriodId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => IncomeEntriesCompanion.insert(
                 description: description,
@@ -13538,14 +12250,12 @@ class $$IncomeEntriesTableTableManager
                 subcategoryId: subcategoryId,
                 recurrenceTemplateId: recurrenceTemplateId,
                 scheduledForDate: scheduledForDate,
-                scheduledPeriodId: scheduledPeriodId,
                 id: id,
                 ownerId: ownerId,
                 version: version,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 receivedOn: receivedOn,
-                accountingPeriodId: accountingPeriodId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -13591,13 +12301,11 @@ typedef $$ExpenseEntriesTableCreateCompanionBuilder =
       Value<String?> subcategoryId,
       Value<String?> recurrenceTemplateId,
       Value<String?> scheduledForDate,
-      Value<String?> scheduledPeriodId,
       required String id,
       required String ownerId,
       Value<int> version,
       required String createdAt,
       required String updatedAt,
-      required String accountingPeriodId,
       required String competenceOn,
       Value<String?> dueOn,
       Value<String?> paidOn,
@@ -13612,13 +12320,11 @@ typedef $$ExpenseEntriesTableUpdateCompanionBuilder =
       Value<String?> subcategoryId,
       Value<String?> recurrenceTemplateId,
       Value<String?> scheduledForDate,
-      Value<String?> scheduledPeriodId,
       Value<String> id,
       Value<String> ownerId,
       Value<int> version,
       Value<String> createdAt,
       Value<String> updatedAt,
-      Value<String> accountingPeriodId,
       Value<String> competenceOn,
       Value<String?> dueOn,
       Value<String?> paidOn,
@@ -13670,11 +12376,6 @@ class $$ExpenseEntriesTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get scheduledPeriodId => $composableBuilder(
-    column: $table.scheduledPeriodId,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnFilters(column),
@@ -13697,11 +12398,6 @@ class $$ExpenseEntriesTableFilterComposer
 
   ColumnFilters<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get accountingPeriodId => $composableBuilder(
-    column: $table.accountingPeriodId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -13765,11 +12461,6 @@ class $$ExpenseEntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get scheduledPeriodId => $composableBuilder(
-    column: $table.scheduledPeriodId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get id => $composableBuilder(
     column: $table.id,
     builder: (column) => ColumnOrderings(column),
@@ -13792,11 +12483,6 @@ class $$ExpenseEntriesTableOrderingComposer
 
   ColumnOrderings<String> get updatedAt => $composableBuilder(
     column: $table.updatedAt,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get accountingPeriodId => $composableBuilder(
-    column: $table.accountingPeriodId,
     builder: (column) => ColumnOrderings(column),
   );
 
@@ -13859,11 +12545,6 @@ class $$ExpenseEntriesTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get scheduledPeriodId => $composableBuilder(
-    column: $table.scheduledPeriodId,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<String> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
@@ -13878,11 +12559,6 @@ class $$ExpenseEntriesTableAnnotationComposer
 
   GeneratedColumn<String> get updatedAt =>
       $composableBuilder(column: $table.updatedAt, builder: (column) => column);
-
-  GeneratedColumn<String> get accountingPeriodId => $composableBuilder(
-    column: $table.accountingPeriodId,
-    builder: (column) => column,
-  );
 
   GeneratedColumn<String> get competenceOn => $composableBuilder(
     column: $table.competenceOn,
@@ -13940,13 +12616,11 @@ class $$ExpenseEntriesTableTableManager
                 Value<String?> subcategoryId = const Value.absent(),
                 Value<String?> recurrenceTemplateId = const Value.absent(),
                 Value<String?> scheduledForDate = const Value.absent(),
-                Value<String?> scheduledPeriodId = const Value.absent(),
                 Value<String> id = const Value.absent(),
                 Value<String> ownerId = const Value.absent(),
                 Value<int> version = const Value.absent(),
                 Value<String> createdAt = const Value.absent(),
                 Value<String> updatedAt = const Value.absent(),
-                Value<String> accountingPeriodId = const Value.absent(),
                 Value<String> competenceOn = const Value.absent(),
                 Value<String?> dueOn = const Value.absent(),
                 Value<String?> paidOn = const Value.absent(),
@@ -13959,13 +12633,11 @@ class $$ExpenseEntriesTableTableManager
                 subcategoryId: subcategoryId,
                 recurrenceTemplateId: recurrenceTemplateId,
                 scheduledForDate: scheduledForDate,
-                scheduledPeriodId: scheduledPeriodId,
                 id: id,
                 ownerId: ownerId,
                 version: version,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                accountingPeriodId: accountingPeriodId,
                 competenceOn: competenceOn,
                 dueOn: dueOn,
                 paidOn: paidOn,
@@ -13980,13 +12652,11 @@ class $$ExpenseEntriesTableTableManager
                 Value<String?> subcategoryId = const Value.absent(),
                 Value<String?> recurrenceTemplateId = const Value.absent(),
                 Value<String?> scheduledForDate = const Value.absent(),
-                Value<String?> scheduledPeriodId = const Value.absent(),
                 required String id,
                 required String ownerId,
                 Value<int> version = const Value.absent(),
                 required String createdAt,
                 required String updatedAt,
-                required String accountingPeriodId,
                 required String competenceOn,
                 Value<String?> dueOn = const Value.absent(),
                 Value<String?> paidOn = const Value.absent(),
@@ -13999,13 +12669,11 @@ class $$ExpenseEntriesTableTableManager
                 subcategoryId: subcategoryId,
                 recurrenceTemplateId: recurrenceTemplateId,
                 scheduledForDate: scheduledForDate,
-                scheduledPeriodId: scheduledPeriodId,
                 id: id,
                 ownerId: ownerId,
                 version: version,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
-                accountingPeriodId: accountingPeriodId,
                 competenceOn: competenceOn,
                 dueOn: dueOn,
                 paidOn: paidOn,
@@ -14054,11 +12722,9 @@ typedef $$InvestmentAllocationsTableCreateCompanionBuilder =
       required String updatedAt,
       required BigInt amountCentavos,
       required String allocatedOn,
-      required String accountingPeriodId,
       Value<String?> cancelledAt,
       Value<String?> recurrenceTemplateId,
       Value<String?> scheduledForDate,
-      Value<String?> scheduledPeriodId,
       Value<int> rowid,
     });
 typedef $$InvestmentAllocationsTableUpdateCompanionBuilder =
@@ -14070,11 +12736,9 @@ typedef $$InvestmentAllocationsTableUpdateCompanionBuilder =
       Value<String> updatedAt,
       Value<BigInt> amountCentavos,
       Value<String> allocatedOn,
-      Value<String> accountingPeriodId,
       Value<String?> cancelledAt,
       Value<String?> recurrenceTemplateId,
       Value<String?> scheduledForDate,
-      Value<String?> scheduledPeriodId,
       Value<int> rowid,
     });
 
@@ -14123,11 +12787,6 @@ class $$InvestmentAllocationsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
-  ColumnFilters<String> get accountingPeriodId => $composableBuilder(
-    column: $table.accountingPeriodId,
-    builder: (column) => ColumnFilters(column),
-  );
-
   ColumnFilters<String> get cancelledAt => $composableBuilder(
     column: $table.cancelledAt,
     builder: (column) => ColumnFilters(column),
@@ -14140,11 +12799,6 @@ class $$InvestmentAllocationsTableFilterComposer
 
   ColumnFilters<String> get scheduledForDate => $composableBuilder(
     column: $table.scheduledForDate,
-    builder: (column) => ColumnFilters(column),
-  );
-
-  ColumnFilters<String> get scheduledPeriodId => $composableBuilder(
-    column: $table.scheduledPeriodId,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -14193,11 +12847,6 @@ class $$InvestmentAllocationsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
-  ColumnOrderings<String> get accountingPeriodId => $composableBuilder(
-    column: $table.accountingPeriodId,
-    builder: (column) => ColumnOrderings(column),
-  );
-
   ColumnOrderings<String> get cancelledAt => $composableBuilder(
     column: $table.cancelledAt,
     builder: (column) => ColumnOrderings(column),
@@ -14210,11 +12859,6 @@ class $$InvestmentAllocationsTableOrderingComposer
 
   ColumnOrderings<String> get scheduledForDate => $composableBuilder(
     column: $table.scheduledForDate,
-    builder: (column) => ColumnOrderings(column),
-  );
-
-  ColumnOrderings<String> get scheduledPeriodId => $composableBuilder(
-    column: $table.scheduledPeriodId,
     builder: (column) => ColumnOrderings(column),
   );
 }
@@ -14254,11 +12898,6 @@ class $$InvestmentAllocationsTableAnnotationComposer
     builder: (column) => column,
   );
 
-  GeneratedColumn<String> get accountingPeriodId => $composableBuilder(
-    column: $table.accountingPeriodId,
-    builder: (column) => column,
-  );
-
   GeneratedColumn<String> get cancelledAt => $composableBuilder(
     column: $table.cancelledAt,
     builder: (column) => column,
@@ -14271,11 +12910,6 @@ class $$InvestmentAllocationsTableAnnotationComposer
 
   GeneratedColumn<String> get scheduledForDate => $composableBuilder(
     column: $table.scheduledForDate,
-    builder: (column) => column,
-  );
-
-  GeneratedColumn<String> get scheduledPeriodId => $composableBuilder(
-    column: $table.scheduledPeriodId,
     builder: (column) => column,
   );
 }
@@ -14333,11 +12967,9 @@ class $$InvestmentAllocationsTableTableManager
                 Value<String> updatedAt = const Value.absent(),
                 Value<BigInt> amountCentavos = const Value.absent(),
                 Value<String> allocatedOn = const Value.absent(),
-                Value<String> accountingPeriodId = const Value.absent(),
                 Value<String?> cancelledAt = const Value.absent(),
                 Value<String?> recurrenceTemplateId = const Value.absent(),
                 Value<String?> scheduledForDate = const Value.absent(),
-                Value<String?> scheduledPeriodId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvestmentAllocationsCompanion(
                 id: id,
@@ -14347,11 +12979,9 @@ class $$InvestmentAllocationsTableTableManager
                 updatedAt: updatedAt,
                 amountCentavos: amountCentavos,
                 allocatedOn: allocatedOn,
-                accountingPeriodId: accountingPeriodId,
                 cancelledAt: cancelledAt,
                 recurrenceTemplateId: recurrenceTemplateId,
                 scheduledForDate: scheduledForDate,
-                scheduledPeriodId: scheduledPeriodId,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14363,11 +12993,9 @@ class $$InvestmentAllocationsTableTableManager
                 required String updatedAt,
                 required BigInt amountCentavos,
                 required String allocatedOn,
-                required String accountingPeriodId,
                 Value<String?> cancelledAt = const Value.absent(),
                 Value<String?> recurrenceTemplateId = const Value.absent(),
                 Value<String?> scheduledForDate = const Value.absent(),
-                Value<String?> scheduledPeriodId = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => InvestmentAllocationsCompanion.insert(
                 id: id,
@@ -14377,11 +13005,9 @@ class $$InvestmentAllocationsTableTableManager
                 updatedAt: updatedAt,
                 amountCentavos: amountCentavos,
                 allocatedOn: allocatedOn,
-                accountingPeriodId: accountingPeriodId,
                 cancelledAt: cancelledAt,
                 recurrenceTemplateId: recurrenceTemplateId,
                 scheduledForDate: scheduledForDate,
-                scheduledPeriodId: scheduledPeriodId,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -15934,10 +14560,8 @@ class $PorquinhoDatabaseManager {
   $PorquinhoDatabaseManager(this._db);
   $$UserPreferencesTableTableManager get userPreferences =>
       $$UserPreferencesTableTableManager(_db, _db.userPreferences);
-  $$PeriodConfigurationsTableTableManager get periodConfigurations =>
-      $$PeriodConfigurationsTableTableManager(_db, _db.periodConfigurations);
-  $$AccountingPeriodsTableTableManager get accountingPeriods =>
-      $$AccountingPeriodsTableTableManager(_db, _db.accountingPeriods);
+  $$PeriodSettingsTableTableManager get periodSettings =>
+      $$PeriodSettingsTableTableManager(_db, _db.periodSettings);
   $$CategoriesTableTableManager get categories =>
       $$CategoriesTableTableManager(_db, _db.categories);
   $$SubcategoriesTableTableManager get subcategories =>

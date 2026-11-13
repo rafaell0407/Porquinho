@@ -12,19 +12,12 @@ DECLARE
 BEGIN
     INSERT INTO auth.users(id) VALUES(v_owner_id),('92000000-0000-0000-0000-000000000002');
     INSERT INTO public.user_preferences(owner_id,time_zone_id) VALUES(v_owner_id,'America/Sao_Paulo');
-    INSERT INTO public.period_configurations(owner_id,id,mode,custom_start_day,effective_from)
-    VALUES(v_owner_id,config_id,'calendar_month',NULL,period_base);
-    INSERT INTO public.accounting_periods(owner_id,id,configuration_id,start_date,end_date)
-    SELECT v_owner_id,('92000000-0000-0000-0000-'||pg_catalog.lpad((100+n)::TEXT,12,'0'))::UUID,config_id,
-        (period_base+(n||' months')::INTERVAL)::DATE,
-        (period_base+((n+1)||' months')::INTERVAL)::DATE
-    FROM pg_catalog.generate_series(0,3) AS gs(n);
 
     INSERT INTO public.income_recurrence_templates(owner_id,id,description,frequency,starts_on,monthly_reference_day,
         value_mode,default_amount_centavos)
     VALUES
         (v_owner_id,'92000000-0000-0000-0000-000000000101','Monthly fixed','monthly',start_date,31,'fixed',5000),
-        (v_owner_id,'92000000-0000-0000-0000-000000000102','By-period variable','by_period',(period_base+2*INTERVAL '1 month'+INTERVAL '14 days')::DATE,NULL,'variable',NULL),
+        (v_owner_id,'92000000-0000-0000-0000-000000000102','Monthly variable','monthly',(period_base+2*INTERVAL '1 month'+INTERVAL '14 days')::DATE,15,'variable',NULL),
         (v_owner_id,'92000000-0000-0000-0000-000000000103','Month end clamp','monthly',period_base,31,'fixed',2500),
         (v_owner_id,'92000000-0000-0000-0000-000000000104','Inactive','monthly',start_date,31,'fixed',1000);
     UPDATE public.income_recurrence_templates AS t SET is_active=FALSE
@@ -34,7 +27,7 @@ BEGIN
         value_mode,default_amount_centavos)
     VALUES
         (v_owner_id,'92000000-0000-0000-0000-000000000201','Monthly fixed expense','monthly',start_date,31,'fixed',12000),
-        (v_owner_id,'92000000-0000-0000-0000-000000000202','By-period variable expense','by_period',(period_base+2*INTERVAL '1 month'+INTERVAL '14 days')::DATE,NULL,'variable',NULL);
+        (v_owner_id,'92000000-0000-0000-0000-000000000202','Monthly variable expense','monthly',(period_base+2*INTERVAL '1 month'+INTERVAL '14 days')::DATE,15,'variable',NULL);
 END;
 $fixtures$;
 
@@ -75,22 +68,21 @@ BEGIN
         RAISE EXCEPTION 'occurrence RPCs must use reviewed SECURITY DEFINER settings';
     END IF;
 
-    SELECT (month_start+LEAST(31,EXTRACT(day FROM (month_start+INTERVAL '1 month'-INTERVAL '1 day'))::INTEGER)-1)::DATE
-    INTO first_candidate;
+    first_candidate:=public.recurrence_monthly_date(month_start,31::SMALLINT);
     IF first_candidate<start_date THEN
         month_start:=(month_start+INTERVAL '1 month')::DATE;
-        first_candidate:=(month_start+LEAST(31,EXTRACT(day FROM (month_start+INTERVAL '1 month'-INTERVAL '1 day'))::INTEGER)-1)::DATE;
+        first_candidate:=public.recurrence_monthly_date(month_start,31::SMALLINT);
     END IF;
-    next_candidate:=(pg_catalog.date_trunc('month',first_candidate)+INTERVAL '1 month')::DATE;
-    next_candidate:=(next_candidate+LEAST(31,EXTRACT(day FROM (next_candidate+INTERVAL '1 month'-INTERVAL '1 day'))::INTEGER)-1)::DATE;
+    next_candidate:=public.recurrence_monthly_date(
+        (pg_catalog.date_trunc('month',first_candidate)+INTERVAL '1 month')::DATE,31::SMALLINT);
 
     result:=public.generate_due_recurrence_occurrences('93000000-0000-0000-0000-000000000001');
     IF result->>'status'<>'applied' OR (result->>'income_created')::INTEGER<3 OR (result->>'expense_created')::INTEGER<2 THEN
-        RAISE EXCEPTION 'generation did not catch up due monthly and per-period occurrences: %',result;
+        RAISE EXCEPTION 'generation did not catch up due monthly occurrences: %',result;
     END IF;
     IF NOT EXISTS(SELECT 1 FROM public.income_entries e WHERE e.owner_id=v_owner_id
         AND e.recurrence_template_id='92000000-0000-0000-0000-000000000101' AND e.scheduled_for_date=first_candidate
-        AND e.amount_centavos=5000 AND e.status='pending' AND e.accounting_period_id IS NULL) THEN
+        AND e.amount_centavos=5000 AND e.status='pending' AND pg_catalog.to_jsonb(e)->>'accounting_period_id' IS NULL) THEN
         RAISE EXCEPTION 'monthly occurrence did not start on the reference day at or after its start date';
     END IF;
     IF first_candidate<=today AND NOT EXISTS(SELECT 1 FROM public.expense_entries e WHERE e.owner_id=v_owner_id
@@ -100,8 +92,13 @@ BEGIN
     END IF;
     IF EXISTS(SELECT 1 FROM public.income_entries e WHERE e.owner_id=v_owner_id
         AND e.recurrence_template_id='92000000-0000-0000-0000-000000000103'
-        AND e.scheduled_for_date<>(pg_catalog.date_trunc('month',e.scheduled_for_date)+INTERVAL '1 month'-INTERVAL '1 day')::DATE) THEN
-        RAISE EXCEPTION 'day-31 recurrence did not clamp to each month end';
+        AND e.scheduled_for_date<>public.recurrence_monthly_date(e.scheduled_for_date,31::SMALLINT)) THEN
+        RAISE EXCEPTION 'day-31 recurrence did not use the month end or the previous weekday';
+    END IF;
+    IF EXISTS(SELECT 1 FROM public.income_entries e WHERE e.owner_id=v_owner_id
+        AND e.recurrence_template_id='92000000-0000-0000-0000-000000000103'
+        GROUP BY pg_catalog.date_trunc('month',e.scheduled_for_date) HAVING pg_catalog.count(*)>1) THEN
+        RAISE EXCEPTION 'two occurrences of the same template in one month';
     END IF;
     IF (SELECT pg_catalog.count(*) FROM public.income_entries e WHERE e.owner_id=v_owner_id
         AND e.recurrence_template_id='92000000-0000-0000-0000-000000000103')<3 THEN
@@ -114,19 +111,18 @@ BEGIN
 
     SELECT * INTO income_occurrence FROM public.income_entries e WHERE e.owner_id=v_owner_id
         AND e.recurrence_template_id='92000000-0000-0000-0000-000000000102'
-        AND e.scheduled_for_date=(SELECT p.start_date FROM public.accounting_periods p WHERE p.owner_id=v_owner_id
-            AND p.end_date>(period_base+2*INTERVAL '1 month'+INTERVAL '14 days')::DATE ORDER BY p.start_date LIMIT 1)
         ORDER BY e.scheduled_for_date LIMIT 1;
-    IF NOT FOUND OR income_occurrence.scheduled_for_date>=(period_base+2*INTERVAL '1 month'+INTERVAL '14 days')::DATE
-        OR income_occurrence.scheduled_period_id IS NULL OR income_occurrence.amount_centavos IS NOT NULL THEN
-        RAISE EXCEPTION 'by-period occurrence did not start in the period containing its configured start';
+    IF NOT FOUND OR income_occurrence.scheduled_for_date<>(period_base+2*INTERVAL '1 month'+INTERVAL '14 days')::DATE
+        OR pg_catalog.to_jsonb(income_occurrence)->>'scheduled_period_id' IS NOT NULL OR income_occurrence.amount_centavos IS NOT NULL THEN
+        RAISE EXCEPTION 'variable monthly occurrence did not start on its start date: %',income_occurrence;
     END IF;
     SELECT * INTO expense_occurrence FROM public.expense_entries e WHERE e.owner_id=v_owner_id
         AND e.recurrence_template_id='92000000-0000-0000-0000-000000000202'
         ORDER BY e.scheduled_for_date LIMIT 1;
-    IF NOT FOUND OR expense_occurrence.scheduled_for_date>=(period_base+2*INTERVAL '1 month'+INTERVAL '14 days')::DATE
-        OR expense_occurrence.scheduled_period_id IS NULL OR expense_occurrence.amount_centavos IS NOT NULL THEN
-        RAISE EXCEPTION 'variable by-period expense occurrence was not created unpriced at its period start';
+    IF NOT FOUND OR expense_occurrence.scheduled_for_date<>(period_base+2*INTERVAL '1 month'+INTERVAL '14 days')::DATE
+        OR expense_occurrence.due_on<>expense_occurrence.scheduled_for_date
+        OR pg_catalog.to_jsonb(expense_occurrence)->>'scheduled_period_id' IS NOT NULL OR expense_occurrence.amount_centavos IS NOT NULL THEN
+        RAISE EXCEPTION 'variable monthly expense occurrence was not created unpriced on its start date';
     END IF;
 
     replay:=public.generate_due_recurrence_occurrences('93000000-0000-0000-0000-000000000001');
@@ -144,14 +140,11 @@ BEGIN
         OR (SELECT t.default_amount_centavos FROM public.income_recurrence_templates t WHERE t.owner_id=v_owner_id AND t.id=income_occurrence.recurrence_template_id)<>5000 THEN
         RAISE EXCEPTION 'individual income occurrence edit changed its model or failed versioning';
     END IF;
-    current_period:=NULL;
-    SELECT p.id INTO current_period FROM public.accounting_periods p WHERE p.owner_id=v_owner_id
-        AND p.start_date<=today AND today<p.end_date;
     result:=public.apply_income_recurrence_occurrence_change('93000000-0000-0000-0000-000000000004','receive',income_occurrence.id,2,
         pg_catalog.jsonb_build_object('received_on',today,'amount_centavos',6000));
     IF result->>'status'<>'applied' OR result#>>'{entry,status}'<>'received'
-        OR (result#>>'{entry,accounting_period_id}')::UUID IS DISTINCT FROM current_period THEN
-        RAISE EXCEPTION 'income receipt did not assign the period from its effective receipt date';
+        OR (result#>>'{entry,received_on}')::DATE<>today OR result#>>'{entry,accounting_period_id}' IS NOT NULL THEN
+        RAISE EXCEPTION 'income receipt did not keep the receipt date (without a stored period link)';
     END IF;
     replay:=public.apply_income_recurrence_occurrence_change('93000000-0000-0000-0000-000000000004','receive',income_occurrence.id,2,
         pg_catalog.jsonb_build_object('received_on',today,'amount_centavos',6000));
@@ -168,13 +161,13 @@ BEGIN
     result:=public.apply_expense_recurrence_occurrence_change('93000000-0000-0000-0000-000000000007','update',expense_occurrence.id,
         2,'{"amount_centavos":3500}'::JSONB);
     IF result->>'status'<>'applied' OR result#>>'{entry,amount_centavos}'<>'3500'
-        OR (result#>>'{entry,accounting_period_id}')::UUID IS DISTINCT FROM expense_occurrence.accounting_period_id THEN
-        RAISE EXCEPTION 'variable expense value edit did not preserve its accounting period';
+        OR (result#>>'{entry,competence_on}')::DATE<>expense_occurrence.competence_on THEN
+        RAISE EXCEPTION 'variable expense value edit did not preserve its competence date';
     END IF;
     result:=public.apply_expense_recurrence_occurrence_change('93000000-0000-0000-0000-000000000008','pay',expense_occurrence.id,3,
         pg_catalog.jsonb_build_object('paid_on',today));
     IF result->>'status'<>'applied' OR result#>>'{entry,status}'<>'paid'
-        OR (result#>>'{entry,accounting_period_id}')::UUID IS DISTINCT FROM expense_occurrence.accounting_period_id THEN
+        OR (result#>>'{entry,competence_on}')::DATE<>expense_occurrence.competence_on THEN
         RAISE EXCEPTION 'expense payment changed competence or failed';
     END IF;
     result:=public.apply_expense_recurrence_occurrence_change('93000000-0000-0000-0000-00000000000A','cancel',expense_occurrence.id,4,NULL);

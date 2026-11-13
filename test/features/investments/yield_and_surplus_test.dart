@@ -49,30 +49,26 @@ void main() {
     );
     periods = PeriodService(
       LocalPeriodRepository(db, 'u1', recorder, clock: clock),
-      newId: () => 'p${++ids}',
     );
     final catRepo = LocalCategoryRepository(db, 'u1', recorder, clock: clock);
     categories = CategoryService(catRepo, newId: () => 'c${++ids}');
     entries = EntryService(
       LocalEntryRepository(db, 'u1', recorder, clock: clock),
       catRepo,
-      periods,
       newId: () => 'e${++ids}',
     );
     investments = InvestmentService(
       LocalInvestmentRepository(db, 'u1', recorder, clock: clock),
-      periods,
       newId: () => 'i${++ids}',
     );
     generator = LocalRecurrenceRepository(db, 'u1', null, clock: clock);
     totals = LocalTotalsRepository(db, 'u1');
-    await periods.setup(PeriodConfig.calendarMonth(), d(2026, 11, 10));
-    await periods.createCovering(d(2026, 9, 1));
+    await periods.setup(PeriodConfig.calendarMonth());
   });
   tearDown(() => db.close());
 
   Future<PeriodTotals> totalsOf(CalendarDate date) async =>
-      totals.totalsFor((await periods.periodFor(date))!.id);
+      totals.totalsFor((await periods.periodFor(date)));
 
   test('sem lançamento nenhum, não existe rendimento nem sobra', () async {
     final t = await totalsOf(d(2026, 11, 10));
@@ -159,9 +155,7 @@ void main() {
       );
       expect((await totalsOf(d(2026, 9, 12))).surplus, c(-80000));
       final september = await periods.periodFor(d(2026, 9, 12));
-      final record = (await investments.investmentsInPeriod(
-        september!.id,
-      )).single;
+      final record = (await investments.investmentsInPeriod(september)).single;
       await investments.cancel(record);
       expect((await totalsOf(d(2026, 9, 12))).surplus, BigInt.zero);
       expect((await totalsOf(d(2026, 11, 10))).surplus, BigInt.zero);

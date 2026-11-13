@@ -27,7 +27,7 @@ import 'package:porquinho/features/totals/totals_repository.dart';
 import '../support/supabase_local_support.dart';
 
 /// Entrega 71 (RF027): o que o aparelho calcula (Drift) é igual ao que o
-/// servidor calcula (`get_period_report`) para os mesmos dados, incluindo
+/// servidor calcula (`get_range_report`) para os mesmos dados, incluindo
 /// cenários de referência (arquitetura §12), mais de 1.000 linhas e valores
 /// grandes.
 BigInt c(int v) => BigInt.from(v);
@@ -50,16 +50,14 @@ void main() {
       final catRepo = LocalCategoryRepository(db, account.id, recorder);
       final categories = CategoryService(catRepo);
       final entryRepo = LocalEntryRepository(db, account.id, recorder);
-      final entries = EntryService(entryRepo, catRepo, periods);
+      final entries = EntryService(entryRepo, catRepo);
       final investments = InvestmentService(
         LocalInvestmentRepository(db, account.id, recorder),
-        periods,
       );
       final sync = SyncService(db, SupabaseSyncGateway(client));
 
       // Ciclo dia 20: o período de 05/11 vai de 20/10 a 19/11.
-      final today = CalendarDate(2026, 11, 10);
-      await periods.setup(PeriodConfig.customCycle(20), today);
+      await periods.setup(PeriodConfig.customCycle(20));
       await categories.addSuggestions(
         income: ['Salário'],
         expense: ['Mercado', 'Moradia'],
@@ -134,7 +132,14 @@ void main() {
 
       final remote = RemoteReportsRepository(SupabaseReportSource(client));
       final local = LocalReportsRepository(db, account.id);
-      final ids = [for (final p in await periodRepo.periods()) p.id];
+      // Períodos calculados (ciclo dia 20) cobrindo todos os lançamentos.
+      final span = await periodRepo.entryDateSpan();
+      final ids = PeriodCalendar.between(
+        PeriodConfig.customCycle(20),
+        span.oldest!,
+        span.newest!,
+      );
+      expect(ids, isNotEmpty);
       final lr = await local.report(ids);
       final rr = await remote.report(ids);
 
@@ -152,21 +157,20 @@ void main() {
         );
       }
       // O período do cenário tem os valores esperados.
-      final current = (await periodRepo.periods()).firstWhere(
-        (p) => p.range.contains(d1),
-      );
-      final totals = rr.totalsOf(current.id);
+      final current = await periods.periodFor(d1);
+      final totals = rr.totalsOf(current);
       expect(totals.investment, c(70000));
       expect(totals.income > huge, isTrue);
       expect(
-        await RemoteTotalsRepository(remote).totalsFor(current.id),
-        await LocalTotalsRepository(db, account.id).totalsFor(current.id),
+        await RemoteTotalsRepository(remote).totalsFor(current),
+        await LocalTotalsRepository(db, account.id).totalsFor(current),
       );
       // Mais de 1.000 linhas no servidor, sem truncar a soma.
       final count = await client
           .from('income_entries')
           .select('id')
-          .eq('accounting_period_id', current.id)
+          .gte('received_on', current.start.toIso())
+          .lt('received_on', current.end.toIso())
           .count();
       expect(count.count, greaterThan(500));
     },

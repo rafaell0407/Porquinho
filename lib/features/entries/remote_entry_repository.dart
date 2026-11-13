@@ -1,4 +1,5 @@
 import '../../core/domain/calendar_date.dart';
+import '../../core/domain/period_calendar.dart';
 import '../categories/category_models.dart';
 import '../sync/remote_table_reader.dart';
 import '../sync/sync_models.dart';
@@ -15,39 +16,37 @@ class RemoteEntryRepository implements EntryRepository {
   final String Function() _newId;
 
   @override
-  Future<List<EntryRecord>> entriesInPeriod(String periodId) async {
+  Future<List<EntryRecord>> entriesInPeriod(PeriodRange range) async {
     final result = <EntryRecord>[];
     for (final kind in EntryKind.values) {
       final rows = await _reader.select(
         kind.table,
-        filters: [RemoteFilter.eq('accounting_period_id', periodId)],
+        filters: [
+          RemoteFilter.gte(kind.dateColumn, range.start.toIso()),
+          RemoteFilter.lt(kind.dateColumn, range.end.toIso()),
+        ],
         orderBy: kind.dateColumn,
       );
       result.addAll(rows.map((r) => _fromRow(kind, r)));
     }
-    result.addAll(await _pendingIncomeIn(periodId));
+    result.addAll(await _pendingIncomeIn(range));
     result.sort((a, b) => b.date.compareTo(a.date));
     return result;
   }
 
-  /// Receita recorrente ainda sem período (pendente): aparece no período que
-  /// contém a data programada.
-  Future<List<EntryRecord>> _pendingIncomeIn(String periodId) async {
-    final periods = await _reader.select(
-      'accounting_periods',
-      filters: [RemoteFilter.eq('id', periodId)],
-    );
-    if (periods.isEmpty) return const [];
+  /// Receita recorrente ainda sem data de recebimento (pendente): aparece no
+  /// período que contém a data programada.
+  Future<List<EntryRecord>> _pendingIncomeIn(PeriodRange range) async {
     final rows = await _reader.select(
       EntryKind.income.table,
       filters: [
-        RemoteFilter.gte('scheduled_for_date', periods.first['start_date']),
-        RemoteFilter.lt('scheduled_for_date', periods.first['end_date']),
+        RemoteFilter.gte('scheduled_for_date', range.start.toIso()),
+        RemoteFilter.lt('scheduled_for_date', range.end.toIso()),
       ],
       orderBy: 'scheduled_for_date',
     );
     return rows
-        .where((r) => r['accounting_period_id'] == null)
+        .where((r) => r['received_on'] == null)
         .map((r) => _fromRow(EntryKind.income, r))
         .toList();
   }
@@ -82,7 +81,6 @@ class RemoteEntryRepository implements EntryRepository {
       subcategoryId: d['subcategory_id'] as String?,
       dueOn: due == null ? null : CalendarDate.parse(due),
       paidOn: paid == null ? null : CalendarDate.parse(paid),
-      periodId: d['accounting_period_id'] as String?,
       templateId: d['recurrence_template_id'] as String?,
       scheduledFor: scheduled == null ? null : CalendarDate.parse(scheduled),
     );

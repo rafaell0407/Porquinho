@@ -49,23 +49,16 @@ void main() {
     ids = 0;
     db = PorquinhoDatabase(NativeDatabase.memory());
     final recorder = LocalChangeRecorder(db, newId: () => 'a${++ids}');
-    final periods = PeriodService(
-      LocalPeriodRepository(db, 'u1', recorder),
-      newId: () => 'p${++ids}',
-    );
+    final periods = PeriodService(LocalPeriodRepository(db, 'u1', recorder));
     final catRepo = LocalCategoryRepository(db, 'u1', recorder);
     categories = CategoryService(catRepo, newId: () => 'c${++ids}');
     entries = EntryService(
       LocalEntryRepository(db, 'u1', recorder),
       catRepo,
-      periods,
       newId: () => 'e${++ids}',
     );
     periodService = periods;
-    await periods.setup(
-      PeriodConfig.calendarMonth(),
-      CalendarDate(2026, 11, 10),
-    );
+    await periods.setup(PeriodConfig.calendarMonth());
   });
   tearDown(() => db.close());
 
@@ -244,8 +237,8 @@ void main() {
     await tester.enterText(find.byKey(const Key('campo-valor')), '25,50');
     await tester.tap(find.byKey(const Key('salvar-lancamento')));
     await tester.pumpAndSettle();
-    final period = (await periodService.periodFor(CalendarDate(2026, 11, 10)))!;
-    final saved = await entries.entriesInPeriod(period.id);
+    final period = (await periodService.periodFor(CalendarDate(2026, 11, 10)));
+    final saved = await entries.entriesInPeriod(period);
     expect(saved.single.kind, EntryKind.income);
     expect(saved.single.amount, BigInt.from(2550));
   });
@@ -257,10 +250,13 @@ void main() {
     expect(find.text('Não se repete'), findsOneWidget);
     await tester.tap(find.byKey(const Key('repetir')));
     await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const Key('repetir-by_period')));
+    // Só "Todo mês" (13/11/2026): "Todo período" não é oferecido.
+    expect(find.byKey(const Key('repetir-by_period')), findsNothing);
+    expect(find.textContaining('Todo período'), findsNothing);
+    await tester.tap(find.byKey(const Key('repetir-monthly')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('frequencia')), findsOneWidget);
-    expect(find.text('Todo período'), findsOneWidget);
+    expect(find.text('Todo mês'), findsOneWidget);
     await tester.tap(find.byKey(const Key('repetir')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('repetir-nao')));

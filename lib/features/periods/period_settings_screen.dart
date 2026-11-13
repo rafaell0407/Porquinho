@@ -1,47 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/domain/calendar_date.dart';
 import '../../core/domain/period_calendar.dart';
 import '../entries/entry_providers.dart';
 import 'period_config_fields.dart';
-import 'period_models.dart';
 import 'period_providers.dart';
 
-/// Situação da configuração de períodos para a tela Período (Entrega 60).
-class PeriodSettings {
-  const PeriodSettings({
-    required this.current,
-    required this.nextStart,
-    required this.scheduled,
-    required this.history,
-  });
-
-  /// Configuração em vigor hoje.
-  final PeriodConfig current;
-
-  /// Quando começa o próximo período (e, portanto, uma mudança).
-  final CalendarDate nextStart;
-  final ScheduledChange? scheduled;
-  final List<PeriodHistoryItem> history;
-}
-
-final periodSettingsProvider = FutureProvider<PeriodSettings?>((ref) async {
+/// Configuração atual (`null` antes do primeiro acesso).
+final periodSettingsProvider = FutureProvider<PeriodConfig?>((ref) async {
   final service = await ref.watch(periodServiceProvider.future);
-  final today = ref.watch(todayProvider);
-  final current = await service.currentConfig(today);
-  final nextStart = await service.nextPeriodStart();
-  if (current == null || nextStart == null) return null;
-  return PeriodSettings(
-    current: current,
-    nextStart: nextStart,
-    scheduled: await service.scheduledChange(),
-    history: await service.history(),
-  );
+  return service.currentConfig();
 });
 
-/// Mais → Período: ver a configuração, agendar a mudança para o próximo
-/// período (RN002) e consultar o histórico.
+/// Mais → Período (RN002, 13/11/2026): uma configuração única, trocável a
+/// qualquer momento. A troca vale na hora para todos os períodos, passados e
+/// futuros; os totais de períodos antigos podem mudar.
 class PeriodSettingsScreen extends ConsumerStatefulWidget {
   const PeriodSettingsScreen({super.key});
 
@@ -56,25 +29,24 @@ class _PeriodSettingsScreenState extends ConsumerState<PeriodSettingsScreen> {
   bool _saving = false;
   String? _error;
 
-  void _initFrom(PeriodSettings s) {
+  void _initFrom(PeriodConfig current) {
     if (_mode != null) return;
-    final base = s.scheduled?.config ?? s.current;
-    _mode = base.mode;
-    _day = base.customStartDay ?? 1;
+    _mode = current.mode;
+    _day = current.customStartDay ?? 1;
   }
 
   PeriodConfig get _config => _mode == PeriodMode.calendarMonth
       ? PeriodConfig.calendarMonth()
       : PeriodConfig.customCycle(_day);
 
-  Future<void> _apply(PeriodConfig config, PeriodSettings s) async {
+  Future<void> _apply(PeriodConfig config) async {
     setState(() {
       _saving = true;
       _error = null;
     });
     try {
       final service = await ref.read(periodServiceProvider.future);
-      await service.scheduleChange(config, ref.read(todayProvider));
+      await service.change(config);
       ref.invalidate(periodSettingsProvider);
       refreshFinanceData(ref);
       if (mounted) {
@@ -82,6 +54,9 @@ class _PeriodSettingsScreenState extends ConsumerState<PeriodSettingsScreen> {
           _mode = null; // volta a ler o estado salvo
           _saving = false;
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Configuração de período alterada.')),
+        );
       }
     } on Object catch (e) {
       if (mounted) {
@@ -93,14 +68,18 @@ class _PeriodSettingsScreenState extends ConsumerState<PeriodSettingsScreen> {
     }
   }
 
-  Future<void> _confirm(PeriodSettings s) async {
+  Future<void> _confirm() async {
+    final config = _config;
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Mudar a configuração?'),
         content: Text(
-          'A nova configuração começa em ${s.nextStart.toBr()}. '
-          'O período atual não muda.',
+          'A partir de agora, todos os períodos, inclusive os passados, '
+          'passam a ser ${describePeriodConfig(config).toLowerCase()}. '
+          'Os lançamentos não mudam, mas os totais de períodos antigos podem '
+          'mudar, e arquivos CSV já exportados podem não bater com a tela.',
+          key: const Key('aviso-mudanca'),
         ),
         actions: [
           TextButton(
@@ -110,12 +89,12 @@ class _PeriodSettingsScreenState extends ConsumerState<PeriodSettingsScreen> {
           FilledButton(
             key: const Key('confirmar-mudanca'),
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Confirmar'),
+            child: const Text('Mudar'),
           ),
         ],
       ),
     );
-    if (ok == true) await _apply(_config, s);
+    if (ok == true) await _apply(config);
   }
 
   @override
@@ -128,26 +107,23 @@ class _PeriodSettingsScreenState extends ConsumerState<PeriodSettingsScreen> {
         error: (e, _) => const Center(
           child: Text('Não foi possível carregar a configuração.'),
         ),
-        data: (s) {
-          if (s == null) {
+        data: (current) {
+          if (current == null) {
             return const Center(
               child: Text('Escolha primeiro como contar o seu período.'),
             );
           }
-          _initFrom(s);
-          return _body(context, s);
+          _initFrom(current);
+          return _body(context, current);
         },
       ),
     );
   }
 
-  Widget _body(BuildContext context, PeriodSettings s) {
-    final scheduled = s.scheduled;
+  Widget _body(BuildContext context, PeriodConfig current) {
     final selected = _config;
-    final unchanged = scheduled == null
-        ? selected == s.current
-        : selected == scheduled.config;
-    final cancelsChange = scheduled != null && selected == s.current;
+    final today = ref.watch(todayProvider);
+    final preview = PeriodCalendar.containing(selected, today);
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -155,27 +131,9 @@ class _PeriodSettingsScreenState extends ConsumerState<PeriodSettingsScreen> {
           child: ListTile(
             key: const Key('config-atual'),
             title: const Text('Configuração atual'),
-            subtitle: Text(describePeriodConfig(s.current)),
+            subtitle: Text(describePeriodConfig(current)),
           ),
         ),
-        if (scheduled != null)
-          Card(
-            key: const Key('mudanca-agendada'),
-            child: ListTile(
-              title: Text(
-                'Mudança agendada: ${describePeriodConfig(scheduled.config)}',
-              ),
-              subtitle: Text(
-                'Começa em ${scheduled.startsOn.toBr()}. '
-                'O período atual não muda.',
-              ),
-              trailing: TextButton(
-                key: const Key('cancelar-mudanca'),
-                onPressed: _saving ? null : () => _apply(s.current, s),
-                child: const Text('Cancelar'),
-              ),
-            ),
-          ),
         const SizedBox(height: 16),
         Text(
           'Mudar a configuração',
@@ -193,8 +151,10 @@ class _PeriodSettingsScreenState extends ConsumerState<PeriodSettingsScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Text(
-            'A nova configuração começa em ${s.nextStart.toBr()}. '
-            'O período atual não muda.',
+            'Com esta configuração, o período atual vai de '
+            '${preview.start.toBr()} a ${preview.end.addDays(-1).toBr()}. '
+            'A mudança vale na hora para todos os períodos, passados e '
+            'futuros.',
             key: const Key('aviso-inicio'),
           ),
         ),
@@ -206,31 +166,9 @@ class _PeriodSettingsScreenState extends ConsumerState<PeriodSettingsScreen> {
         const SizedBox(height: 8),
         FilledButton(
           key: const Key('salvar-mudanca'),
-          onPressed: _saving || unchanged
-              ? null
-              : cancelsChange
-              ? () => _apply(s.current, s)
-              : () => _confirm(s),
-          child: Text(
-            _saving
-                ? 'Salvando…'
-                : cancelsChange
-                ? 'Manter a configuração atual'
-                : 'Agendar mudança',
-          ),
+          onPressed: _saving || selected == current ? null : _confirm,
+          child: Text(_saving ? 'Salvando…' : 'Mudar configuração'),
         ),
-        const SizedBox(height: 24),
-        Text('Histórico', style: Theme.of(context).textTheme.titleMedium),
-        const SizedBox(height: 8),
-        for (final item in s.history)
-          ListTile(
-            key: Key('historico-${item.range.start.toIso()}'),
-            dense: true,
-            title: Text(
-              '${item.range.start.toBr()} a ${item.range.end.addDays(-1).toBr()}',
-            ),
-            subtitle: Text(describePeriodConfig(item.config)),
-          ),
       ],
     );
   }

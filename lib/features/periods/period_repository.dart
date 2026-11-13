@@ -1,17 +1,21 @@
+import '../../core/domain/period_calendar.dart';
 import 'period_models.dart';
 
-/// Acesso aos períodos. Celular: banco local + fila de envio. Web: servidor.
+/// Configuração de período. Celular: banco local + fila de envio. Web:
+/// servidor. Períodos não são gravados: são calculados (RN002).
 abstract interface class PeriodRepository {
-  Future<List<PeriodConfigRecord>> configurations();
+  /// Configuração única do usuário, ou `null` no primeiro acesso.
+  Future<PeriodSettingsRecord?> settings();
 
-  /// Ordenados pelo início, do mais antigo ao mais recente.
-  Future<List<PeriodRecord>> periods();
+  /// Grava a configuração. [expectedVersion] 0 = primeiro acesso; senão, a
+  /// versão lida (conflito por versão, nunca "última gravação vence").
+  Future<void> saveSettings(
+    PeriodConfig config, {
+    required int expectedVersion,
+  });
 
-  Future<void> createPeriod(PeriodDraft draft);
-
-  /// Grava a configuração que vale a partir do fim do último período
-  /// (Entrega 59): cria ou altera a configuração agendada.
-  Future<void> scheduleConfiguration(ScheduleDraft draft);
+  /// Datas do lançamento mais antigo e do mais distante.
+  Future<EntryDateSpan> entryDateSpan();
 
   /// Traz do servidor o que já existe, quando houver conexão (celular).
   /// Na Web é desnecessário: a leitura já é remota.

@@ -8,6 +8,7 @@ import '../periods/period_providers.dart';
 import '../sync/download_service.dart';
 import '../sync/supabase_sync_gateway.dart';
 import '../sync/supabase_sync_reader.dart';
+import '../sync/sync_providers.dart';
 import '../sync/sync_service.dart';
 import 'attention_models.dart';
 import 'attention_repository.dart';
@@ -36,5 +37,11 @@ final attentionRepositoryProvider = FutureProvider<AttentionRepository>((
 
 final attentionItemsProvider = FutureProvider<List<AttentionItem>>((ref) async {
   final repo = await ref.watch(attentionRepositoryProvider.future);
-  return repo.items();
+  final items = await repo.items();
+  // O aviso no topo deve refletir a lista real (some assim que for resolvida).
+  Future.microtask(() {
+    if (!ref.mounted) return;
+    ref.read(syncStatusProvider.notifier).setAttentionCount(items.length);
+  });
+  return items;
 });

@@ -3,20 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/domain/calendar_date.dart';
 import '../../core/domain/period_calendar.dart';
-import 'period_models.dart';
 import 'period_providers.dart';
-import 'period_service.dart';
 
-/// Período exibido: o que já existe ou, se ainda não foi criado, o que o
-/// usuário pode criar com confirmação (RN002).
+/// Período exibido: sempre calculado pela configuração atual (RN002, RN036);
+/// nunca precisa ser criado. [bounds] limita a navegação ao intervalo entre o
+/// lançamento mais antigo e o mais distante, sempre incluindo o atual.
 class PeriodView {
-  const PeriodView({required this.range, this.record, this.missingPlan});
+  const PeriodView({
+    required this.range,
+    required this.bounds,
+    required this.config,
+  });
 
   final PeriodRange range;
-  final PeriodRecord? record;
-  final PeriodPlan? missingPlan;
+  final PeriodBounds bounds;
+  final PeriodConfig config;
 
-  bool get exists => record != null;
+  bool get hasPrevious => bounds.hasBefore(range);
+  bool get hasNext => bounds.hasAfter(range);
 }
 
 /// Data que define o período exibido; `null` = hoje. Dashboard e Lançamentos
@@ -32,17 +36,19 @@ final periodAnchorProvider = NotifierProvider<PeriodAnchor, CalendarDate?>(
   PeriodAnchor.new,
 );
 
+/// Período da data escolhida (ou de hoje) pela configuração atual; `null`
+/// antes do primeiro acesso.
 final selectedPeriodProvider = FutureProvider<PeriodView?>((ref) async {
-  final anchor =
-      ref.watch(periodAnchorProvider) ?? ref.watch(userClockProvider).today();
+  final today = ref.watch(userClockProvider).today();
+  final anchor = ref.watch(periodAnchorProvider) ?? today;
   final service = await ref.watch(periodServiceProvider.future);
-  final existing = await service.periodFor(anchor);
-  if (existing != null) {
-    return PeriodView(range: existing.range, record: existing);
-  }
-  final plan = await service.planFor(anchor);
-  if (plan == null) return null;
-  return PeriodView(range: plan.ranges.last, missingPlan: plan);
+  final config = await service.currentConfig();
+  if (config == null) return null;
+  return PeriodView(
+    range: PeriodCalendar.containing(config, anchor),
+    bounds: await service.bounds(today),
+    config: config,
+  );
 });
 
 /// Barra com anterior/próximo/hoje e o intervalo do período.
@@ -63,7 +69,9 @@ class PeriodNavigator extends ConsumerWidget {
           key: const Key('periodo-anterior'),
           tooltip: 'Período anterior',
           icon: const Icon(Icons.chevron_left),
-          onPressed: () => anchor.set(view.range.start.addDays(-1)),
+          onPressed: view.hasPrevious
+              ? () => anchor.set(view.range.start.addDays(-1))
+              : null,
         ),
         Expanded(
           child: Column(
@@ -86,61 +94,9 @@ class PeriodNavigator extends ConsumerWidget {
           key: const Key('periodo-proximo'),
           tooltip: 'Próximo período',
           icon: const Icon(Icons.chevron_right),
-          onPressed: () => anchor.set(view.range.end),
+          onPressed: view.hasNext ? () => anchor.set(view.range.end) : null,
         ),
       ],
-    );
-  }
-}
-
-/// Período ainda inexistente: pergunta antes de criar (nunca cria sozinho).
-class MissingPeriodCard extends ConsumerStatefulWidget {
-  const MissingPeriodCard({required this.view, super.key});
-
-  final PeriodView view;
-
-  @override
-  ConsumerState<MissingPeriodCard> createState() => _MissingPeriodCardState();
-}
-
-class _MissingPeriodCardState extends ConsumerState<MissingPeriodCard> {
-  bool _busy = false;
-
-  Future<void> _create() async {
-    setState(() => _busy = true);
-    final messenger = ScaffoldMessenger.of(context);
-    try {
-      final service = await ref.read(periodServiceProvider.future);
-      await service.createCovering(widget.view.range.start);
-      ref.invalidate(selectedPeriodProvider);
-    } on Object catch (e) {
-      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
-      if (mounted) setState(() => _busy = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final plan = widget.view.missingPlan!;
-    return Card(
-      margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Este período ainda não foi criado.'),
-            const SizedBox(height: 8),
-            Text(plan.question, key: const Key('pergunta-periodos')),
-            const SizedBox(height: 12),
-            FilledButton(
-              key: const Key('criar-periodos'),
-              onPressed: _busy ? null : _create,
-              child: Text(_busy ? 'Criando…' : 'Criar'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

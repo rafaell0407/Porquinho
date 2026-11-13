@@ -26,6 +26,13 @@ class PeriodConfig {
     }
   }
 
+  /// Configuração a partir dos campos do banco (`mode`, `custom_start_day`).
+  factory PeriodConfig.fromDb(String mode, int? customStartDay) =>
+      switch (PeriodMode.fromDb(mode)) {
+        PeriodMode.calendarMonth => PeriodConfig.calendarMonth(),
+        PeriodMode.customCycle => PeriodConfig.customCycle(customStartDay!),
+      };
+
   final PeriodMode mode;
   final int? customStartDay;
 
@@ -73,6 +80,29 @@ class PeriodRange {
   String toString() => '[$start, $end)';
 }
 
+/// Primeiro e último período navegáveis de uma configuração (RN002).
+class PeriodBounds {
+  const PeriodBounds(this.first, this.last);
+  final PeriodRange first;
+  final PeriodRange last;
+
+  /// Há período navegável antes de [period].
+  bool hasBefore(PeriodRange period) => period.start.isAfter(first.start);
+
+  /// Há período navegável depois de [period].
+  bool hasAfter(PeriodRange period) => period.start.isBefore(last.start);
+
+  @override
+  bool operator ==(Object other) =>
+      other is PeriodBounds && other.first == first && other.last == last;
+
+  @override
+  int get hashCode => Object.hash(first, last);
+
+  @override
+  String toString() => '$first … $last';
+}
+
 /// Cálculo de períodos (RN001–RN003, RN036, RN037). Sem acesso a dados.
 class PeriodCalendar {
   const PeriodCalendar._();
@@ -106,6 +136,31 @@ class PeriodCalendar {
       end = config.startInMonth(start.year, start.month + 1);
     }
     return PeriodRange(start, end);
+  }
+
+  /// Períodos consecutivos da [config] do que contém [from] ao que contém
+  /// [to] (inclusive), em ordem. Vazio se [to] for anterior a [from].
+  static List<PeriodRange> between(
+    PeriodConfig config,
+    CalendarDate from,
+    CalendarDate to,
+  ) {
+    if (to.isBefore(from)) return const [];
+    return forward(config, containing(config, from), to);
+  }
+
+  /// Limites da navegação entre períodos calculados (RN002): do período do
+  /// lançamento mais antigo ao do lançamento mais distante no futuro, sempre
+  /// incluindo o período de [today]. [oldest]/[newest] `null` = sem lançamento.
+  static PeriodBounds bounds(
+    PeriodConfig config, {
+    required CalendarDate today,
+    CalendarDate? oldest,
+    CalendarDate? newest,
+  }) {
+    final from = oldest != null && oldest.isBefore(today) ? oldest : today;
+    final to = newest != null && newest.isAfter(today) ? newest : today;
+    return PeriodBounds(containing(config, from), containing(config, to));
   }
 
   /// Períodos consecutivos de [from] até [to] (inclusive), para frente.

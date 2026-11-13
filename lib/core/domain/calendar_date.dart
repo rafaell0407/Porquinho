@@ -54,6 +54,12 @@ class CalendarDate implements Comparable<CalendarDate> {
   /// Número de meses desde o ano 0; útil para contar meses entre datas.
   int get monthIndex => year * 12 + (month - 1);
 
+  /// Dia da semana: 1 = segunda … 7 = domingo.
+  int get weekday => DateTime.utc(year, month, day).weekday;
+
+  /// Segunda a sexta (feriados não são considerados, RN038).
+  bool get isBusinessDay => weekday <= DateTime.friday;
+
   CalendarDate addDays(int days) {
     final result = DateTime.utc(year, month, day).add(Duration(days: days));
     return CalendarDate(result.year, result.month, result.day);
