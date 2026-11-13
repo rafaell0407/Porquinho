@@ -1,7 +1,7 @@
 # Fase 8 — Sincronização completa, qualidade e publicação
 
 **Status:** EM EXECUÇÃO. Entregas 69–74 e 75 (parcial) implementadas em 11/11/2026 e validadas pelo responsável em 12/11/2026 (§8). 76–81 dependem de decisões/serviços externos; 82 fecha a fase.
-**Estado vigente:** `docs/estado_atual.md`. Regras permanentes: `docs/arquitetura.md` §9, §13, §16 e §17.2. Escopo: `docs/requisitos.md` (RF022, RF027, §8).
+**Estado vigente:** `docs/estado_atual.md`. Regras permanentes: `docs/arquitetura.md` §4, §5 e §7. Escopo: `docs/requisitos.md` (RF022, RF027, §8).
 
 ## 1. Objetivo
 Provar a sincronização de ponta a ponta, fechar falhas de robustez, implementar exclusão de conta, CSV e backup (requisitos aprovados ainda ausentes), provisionar o Supabase hospedado e publicar Android e Web.
@@ -120,6 +120,8 @@ Resultados dos testes automáticos: `flutter analyze` limpo; `flutter test` 419 
 | 73 | FEITA | Migration `20261113000200`: RPC `delete_my_account` (apaga tudo na ordem segura e o usuário do Auth; guarda só id+data em `deleted_accounts`). Tela "Excluir conta" em Mais: exige fila vazia, 2 confirmações (digitar EXCLUIR), mensagem de irreversibilidade; volta ao login e apaga o banco local. Página `web/excluir-conta.html` (rascunho, D12) | Teste manual no emulador e na Web com conta de teste; revisar o texto da página; restaurar backup reaplicando exclusões (Entrega 77) |
 | 74 | FEITA | Mais → Exportar dados (CSV): 4 arquivos (receitas, despesas, investimentos, categorias/subcategorias), valores em centavos exatos, cancelados incluídos com o status, UTF-8 com BOM, aspas e proteção contra fórmula de planilha; leitura paginada (sem o limite de 1.000). No celular a tela orienta usar a Web | Baixar e abrir os arquivos no navegador (Excel/Planilhas) |
 | 75 | PARCIAL | `env/*.example.json` + `--dart-define-from-file`; assinatura por `android/key.properties` (modelo versionado); `tooling/build_release.ps1` valida o ambiente (recusa chave secreta, local fora do ambiente local, sem HTTPS, sem keystore) e gera apk/aab/web | `applicationId`, nome e ícone definitivos (D1) e a chave de upload (responsável); primeiro build real de loja |
+
+| 79 | PARCIAL (12/11/2026) | Só o tratamento global de erros: `lib/core/error_reporting.dart` (`FlutterError.onError` e `PlatformDispatcher.onError`), instalado no `main.dart`; registra apenas o tipo da exceção, sem mensagem, pilha ou valores. 2 testes passando, analyze limpo | Projeto de produção, migrations, Auth, SMTP (D5, exige domínio), backup ativo, Play Vitals, painel e verificação de disponibilidade (D10). Depende das Entregas 77 e 78 e de autorização |
 
 ### Checklist de Auth para produção (Entregas 72/76)
 - Confirmação de e-mail ligada (`enable_confirmations`) com SMTP próprio (D5); limites de envio ajustados.

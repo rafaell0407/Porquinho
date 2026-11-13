@@ -99,6 +99,14 @@ void main() {
     expect(op.expectedVersion, 0);
   });
 
+  test('criar devolve o id da categoria e da subcategoria', () async {
+    final id = await service.createCategory(CategoryKind.expense, 'Mercado');
+    final cat = (await repo.categories()).single;
+    expect(cat.id, id);
+    final subId = await service.createSubcategory(cat, 'Feira');
+    expect((await repo.subcategories()).single.id, subId);
+  });
+
   test('renomear mantém o vínculo (mesmo id) e sobe a versão', () async {
     await service.createCategory(CategoryKind.income, 'Salario');
     final before = (await repo.categories()).single;

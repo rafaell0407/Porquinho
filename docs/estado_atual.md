@@ -1,53 +1,23 @@
 # Estado atual — Norte
 
-**Atualizado em:** 11/11/2026. Ponto de partida de cada sessão. Detalhe das entregas: `docs/entregas_fase2.md` a `docs/entregas_fase7.md`. Histórico de decisões: `docs/historico/decisoes.md`.
+**Atualizado em:** 12/11/2026.
 
 ## Fase
-- Fase 1 (documentação): CONCLUÍDA em 08/11/2026.
-- Fase 2 (modelagem física e base técnica): CONCLUÍDA em 10/11/2026 (Entregas 1–21).
-- Fase 3 (estrutura Flutter e base offline): CONCLUÍDA em 10/11/2026 (Entregas 23–31 validadas pelo responsável).
-- Fase 4 (categorias e lançamentos avulsos): CONCLUÍDA em 11/11/2026 (Entregas 32–42, `docs/entregas_fase4.md`, validadas pelo responsável).
-- Fase 5 (recorrências): CONCLUÍDA em 11/11/2026 (Entregas 43–50, `docs/entregas_fase5.md`, validadas pelo responsável). 
-- Fase 6 (investimentos simples e rendimentos manuais): CONCLUÍDA em 11/11/2026 (Entregas 51–58, `docs/entregas_fase6.md`; a 54 foi removida por D3; validadas pelo responsável; commit `3560366`).
-- Fase 7 (períodos, Dashboard e relatórios, `docs/entregas_fase7.md`): CONCLUÍDA e VALIDADA em 11/11/2026 (Entregas 59A–68, incluindo o assistente inicial (67, Drift v5) e os gráficos com `fl_chart`).
-- Fase 8 (sincronização completa, qualidade e publicação, `docs/entregas_fase8.md`): EM EXECUÇÃO em 11/11/2026. Implementadas e VALIDADAS pelo responsável em 12/11/2026: 69, 70, 71, 72, 73, 74 e 75 (parcial: falta D1). Entrega 76 FEITA exceto SMTP, aguardando validação (12/11/2026; segredo antigo do Google substituído): homologação `norte-homologacao` com as 19 migrations e 33 testes de integração passando; Auth do painel configurado (senha 8, URLs, Google); falta SMTP/D5 (Entrega 79). Bloqueadas por decisão/serviço externo: 75 (final), 77–81. Falta: 82.
-- Plataformas do MVP: Android e Web (iOS fora do MVP — decisão de 10/11/2026). Web somente online.
+- Fases 1–7: CONCLUÍDAS e validadas (detalhe em `historico/`).
+- **Fase 8** (sincronização completa, qualidade e publicação — `entregas_fase8.md`): EM EXECUÇÃO.
+  - Validadas: 69–74 e 75 parcial (falta D1).
+  - 76: feita exceto SMTP, aguardando validação (homologação `norte-homologacao`, 19 migrations, 33 testes de integração passando).
+  - Restam: 75 final, 77–82 (ver `pendencias.md` §E).
+- Plataformas: Android (offline) e Web (somente online). iOS fora do MVP.
 
-## Entregas (detalhe em cada arquivo de fase)
-| Fase | Entregas | Arquivo | Observação |
-|---|---|---|---|
-| 2 | 1–21 | `entregas_fase2.md` | Entregas 3, 4, 7B–8 sem validação registrada; biometria só em testes automáticos |
-| 3 | 22(→Fase 4), 23–31 | `entregas_fase3.md` | Validadas |
-| 4 | 22, 32–42 | `entregas_fase4.md` | Validadas |
-| 5 | 43–50 | `entregas_fase5.md` | Validadas |
-| 6 | 51–58 (54 removida) | `entregas_fase6.md` | Validadas |
-| 7 | 59–68 (+59A) | `entregas_fase7.md` | Implementada exceto 67; aguarda validação |
-| 8 | 69–82 | `entregas_fase8.md` | 69–74 e 75 (parcial) implementadas e validadas (12/11/2026) |
+## Entrega avulsa (12/11/2026) — aguardando validação
+Criar categoria direto no formulário de lançamento ("+ Nova categoria", receita/despesa; não no investimento). Subcategoria no formulário ficou fora (M5, aguarda aprovação).
 
-## Lacunas conhecidas
-- Contrato de dados Web × celular tem só a porta de gravação e o modo (`lib/core/data_access.dart`); repositórios local e remoto nascem com cada funcionalidade.
-- Faixa "sem conexão" demora até 1 minuto para refletir a volta da rede.
-- Listas de lançamentos da Web limitadas a 1.000 linhas por consulta (`remote_table_reader.dart`); as somas serão resolvidas na Fase 7 (D11).
-
-## Pendências técnicas (lista-mestra: `docs/arquitetura.md` §15)
-1. Validar migrations, grants, RLS e ownership no Supabase gerenciado; provisionar dev/teste/produção — Fase 8 (exige autorização explícita).
-2. Backup, restauração, retenção, CSV e exclusão definitiva da conta (FKs hoje `RESTRICT`).
-3. Observabilidade e Vector do Supabase local reiniciando (notificações móveis: feitas na Fase 5).
-4. Relatórios 4 e 5 sem biblioteca de gráficos (D9 pendente de aprovação).
-5. Medir índices e metas de desempenho (RN043).
-
-## Ações do responsável
-- Testar biometria em aparelho com digital cadastrada.
-- Autorizar e fornecer referências do Supabase gerenciado (Fase 8).
-- Supabase local: `supabase migration up` (já aplicado em 11/11/2026; faltavam 4 migrations).
-
-## Decisões abertas
-- D1: nome **Norte** e `applicationId` provisório `br.com.norte.app` aprovados em 12/11/2026; confirmar como definitivo antes da primeira publicação. Domínio próprio fica opcional até a produção (Entrega 79), quando é necessário para o e-mail com Resend (D5, aprovado em 12/11/2026).
-- Renomeação Porquinho → Norte (12/11/2026): feita nos documentos, textos da interface, nome do app Android e Web. Mantidos por compatibilidade: pacote Dart, `applicationId`, nomes de arquivos/chaves internas. Falta o ícone (D1).
-- Política para futura alteração da zona IANA do usuário: pendente.
-
-## Como testar no Android (máquina do responsável)
-Emulador `Medium_Phone_API_37.0`, aberto sem flags gráficas; app com `--dart-define=SUPABASE_URL=http://10.0.2.2:54321` e a chave publicável local. Google exige `adb reverse tcp:54321 tcp:54321`. Detalhes na memória do agente.
+## Entrega 79 — parcial (12/11/2026), aguardando validação
+Feito: tratamento global de erros, sem valores nos registros. O restante (produção, SMTP, monitoramento externo) depende das Entregas 77/78, de domínio e de autorização.
 
 ## Próximo passo
-Concluir a configuração de Auth da homologação no painel (checklist em `entregas_fase8.md`) e decidir D1/D5; depois, Entrega 77 (backup). Commits só quando você pedir.
+Validar a 76; decidir D1/D5; depois Entrega 77 (backup).
+
+## Testar no Android (máquina do responsável)
+Emulador `Medium_Phone_API_37.0`, sem flags gráficas; app com `--dart-define=SUPABASE_URL=http://10.0.2.2:54321` e chave publicável local. Login Google exige `adb reverse tcp:54321 tcp:54321`.

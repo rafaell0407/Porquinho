@@ -26,7 +26,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 **Objetivo:** consolidar escopo, regras financeiras e decisões pendentes.
 
 **Entregáveis:**
-- `AGENTS.md`.
+- `CLAUDE.md` (instruções do agente; substituiu o `AGENTS.md` em 12/11/2026).
 - `docs/requisitos.md`.
 - `docs/arquitetura.md`.
 - `docs/banco_de_dados.md`.
@@ -54,7 +54,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 **Critérios de aceitação:** detalhamentos registrados em arquitetura e banco; modelo lógico revisado; schema e políticas de segurança preparados; cálculos e eventos cobertos por casos de teste.
 
 **Prioridade:** Essencial.  
-**Status:** CONCLUÍDA em 10/11/2026 (Entregas 1 a 21; Entrega 21 validada pelo responsável). Antecipou da Fase 3: login, sessão, recuperação de senha, PIN/biometria, banco local criptografado, fila de envio e logout com pendências. Pendências que dependem do responsável seguem em `docs/estado_atual.md`; detalhe: `docs/entregas_fase2.md`.
+**Status:** CONCLUÍDA em 10/11/2026 (Entregas 1 a 21; Entrega 21 validada pelo responsável). Antecipou da Fase 3: login, sessão, recuperação de senha, PIN/biometria, banco local criptografado, fila de envio e logout com pendências. Pendências que dependem do responsável seguem em `docs/estado_atual.md`; detalhe: `docs/historico/entregas_fase2.md`.
 
 ### Fase 3 — Estrutura Flutter, autenticação e base offline
 
@@ -68,7 +68,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 - Persistência local inicial e indicação do estado de conexão/sincronização.
 - Base de testes automatizados.
 
-**Plano aprovado em 10/11/2026 (detalhe em `docs/entregas_fase3.md`):**
+**Plano aprovado em 10/11/2026 (detalhe em `docs/historico/entregas_fase3.md`):**
 23. Composição pelo Riverpod.
 24. Navegação principal (Dashboard, Lançamentos, Mais).
 25. Banco local ligado ao usuário (outra conta bloqueada se houver pendências da anterior).
@@ -102,7 +102,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 - Cálculo local inicial do dinheiro livre.
 - Persistência offline para os fluxos implementados.
 
-**Plano aprovado em 10/11/2026 (detalhe e decisões D1–D13 em `docs/entregas_fase4.md`):**
+**Plano aprovado em 10/11/2026 (detalhe e decisões D1–D13 em `docs/historico/entregas_fase4.md`):**
 32. Domínio: valores em reais (centavos exatos) e data corrente em `America/Sao_Paulo`.
 33. Domínio de períodos (mês-calendário, ciclo, dias 29–31, bissexto, para frente e para trás).
 35. Dependências na fila de envio (lançamento espera categoria/período).
@@ -144,7 +144,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 **Testes:** geração mensal e por período, ocorrência fixa/variável, confirmação de receita, edição isolada, despesa recorrente e ausência de duplicidade.
 
 **Prioridade:** Essencial.  
-**Status:** CONCLUÍDA em 11/11/2026 — Entregas 43–50 (`docs/entregas_fase5.md`) implementadas e validadas pelo responsável.
+**Status:** CONCLUÍDA em 11/11/2026 — Entregas 43–50 (`docs/historico/entregas_fase5.md`) implementadas e validadas pelo responsável.
 
 ### Fase 6 — Investimentos simples e rendimentos manuais
 
@@ -162,7 +162,7 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 **Testes:** destinação deduz uma vez, edição/cancelamento recalculam dinheiro livre, recorrência idempotente e igual no app e no servidor, rendimento manual é receita, ausência de cálculo automático.
 
 **Prioridade:** Alta.  
-**Status:** CONCLUÍDA e VALIDADA em 11/11/2026 — Entregas 51–58 (`docs/entregas_fase6.md`; a 54 foi removida por D3).
+**Status:** CONCLUÍDA e VALIDADA em 11/11/2026 — Entregas 51–58 (`docs/historico/entregas_fase6.md`; a 54 foi removida por D3).
 
 ### Fase 7 — Períodos, Dashboard e relatórios
 
@@ -186,10 +186,10 @@ O aplicativo será individual e multiplataforma (Android e Web; iOS fora do MVP 
 
 **Testes:** cálculo em mês-calendário e ciclo personalizado, mudança de configuração, período histórico, edição/cancelamento entre períodos, dashboard e relatórios.
 
-**Status:** CONCLUÍDA e VALIDADA em 11/11/2026 — Entregas 59A–68 (`docs/entregas_fase7.md`), incluindo assistente inicial (67) e gráficos (`fl_chart`).
+**Status:** CONCLUÍDA e VALIDADA em 11/11/2026 — Entregas 59A–68 (`docs/historico/entregas_fase7.md`), incluindo assistente inicial (67) e gráficos (`fl_chart`).
 
 **Prioridade:** Alta.  
-**Status:** CONCLUÍDA e VALIDADA em 11/11/2026 (`docs/entregas_fase7.md`).
+**Status:** CONCLUÍDA e VALIDADA em 11/11/2026 (`docs/historico/entregas_fase7.md`).
 
 ### Fase 8 — Sincronização completa, qualidade e publicação
 

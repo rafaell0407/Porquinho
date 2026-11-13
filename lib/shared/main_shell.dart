@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 /// Estrutura da navegação principal: somente Dashboard, Lançamentos e Mais
-/// (`AGENTS.md` §4.1). Cada aba mantém o próprio estado de navegação.
+/// (`CLAUDE.md` §4.1). Cada aba mantém o próprio estado de navegação.
 class MainShell extends StatelessWidget {
   const MainShell({
     required this.navigationShell,

@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/app.dart';
+import 'core/error_reporting.dart';
 import 'core/infra_providers.dart';
 import 'features/app_lock/app_lock_providers.dart';
 import 'features/auth/auth_models.dart';
@@ -20,6 +21,7 @@ const _supabaseKey = String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  installGlobalErrorHandlers();
   if (_supabaseUrl.isEmpty || _supabaseKey.isEmpty) {
     runApp(const _MissingConfigApp());
     return;

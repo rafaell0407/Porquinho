@@ -10,7 +10,7 @@ import 'entry_models.dart';
 import 'entry_repository.dart';
 
 /// Regras de receitas e despesas, avulsas e recorrentes (RN004–RN008, RN011,
-/// RN015, `AGENTS.md` §4.3–4.4). As mesmas validações da RPC, para que o que
+/// RN015, `CLAUDE.md` §4.4–4.5). As mesmas validações da RPC, para que o que
 /// for salvo no aparelho não seja recusado depois.
 class EntryService {
   EntryService(

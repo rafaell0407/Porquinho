@@ -49,8 +49,11 @@ class CategoryService {
   Future<CategoryData> load() async =>
       CategoryData(await _repo.categories(), await _repo.subcategories());
 
-  Future<void> createCategory(CategoryKind kind, String name) async {
-    await _repo.apply([CreateCategory(_newId(), kind, _checked(name))]);
+  /// Devolve o id da categoria criada.
+  Future<String> createCategory(CategoryKind kind, String name) async {
+    final id = _newId();
+    await _repo.apply([CreateCategory(id, kind, _checked(name))]);
+    return id;
   }
 
   Future<void> renameCategory(CategoryRecord category, String name) async {
@@ -65,13 +68,16 @@ class CategoryService {
     await _repo.apply([DeactivateCategory(category)]);
   }
 
-  Future<void> createSubcategory(CategoryRecord parent, String name) async {
+  /// Devolve o id da subcategoria criada.
+  Future<String> createSubcategory(CategoryRecord parent, String name) async {
     if (!parent.isActive) {
       throw const ChangeRejectedException(
         'Só é possível criar subcategorias em categorias ativas.',
       );
     }
-    await _repo.apply([CreateSubcategory(_newId(), parent.id, _checked(name))]);
+    final id = _newId();
+    await _repo.apply([CreateSubcategory(id, parent.id, _checked(name))]);
+    return id;
   }
 
   Future<void> renameSubcategory(SubcategoryRecord sub, String name) async {

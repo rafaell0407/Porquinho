@@ -1,4 +1,4 @@
-/// Cálculo do dinheiro livre do período (RN005–RN007, RN022, `AGENTS.md` §4.2).
+/// Cálculo do dinheiro livre do período (RN005–RN007, RN022, `CLAUDE.md` §4.3).
 ///
 /// `Dinheiro livre = receitas contabilizadas − despesas contabilizadas − investimentos`.
 /// Funções puras sobre valores em centavos ([BigInt]); sem acesso a dados.

@@ -319,7 +319,7 @@ Alertas do MVP serão enviados a dispositivos móveis Android (iOS fora do MVP �
 
 ## 13. Detalhamentos pendentes
 
-As regras funcionais consolidadas não estão pendentes. Permanecem detalhamentos técnicos (`docs/arquitetura.md` §15) e o método/dispositivos representativos para validar as metas iniciais de desempenho (RN043). A zona IANA `America/Sao_Paulo` por usuário foi definida em 08/11/2026; a continuidade dos alertas, os relatórios básicos e a regra de meses curtos estão aprovados.
+As regras funcionais consolidadas não estão pendentes. Permanecem detalhamentos técnicos (`docs/pendencias.md` §T) e o método/dispositivos representativos para validar as metas iniciais de desempenho (RN043). A zona IANA `America/Sao_Paulo` por usuário foi definida em 08/11/2026; a continuidade dos alertas, os relatórios básicos e a regra de meses curtos estão aprovados.
 
 ## 14. Regras complementares (RN036–RN045)
 
@@ -342,15 +342,6 @@ O dia originalmente configurado deve ser preservado. Quando não existir no mês
 Recorrências mensais mantêm o dia de referência original; se a data não existir, usar o último dia do mês sem alterar a referência dos meses seguintes. A primeira ocorrência mensal é a primeira data de referência igual ou posterior ao início da recorrência (por exemplo, criada em 10 de maio com referência no dia 31, começa em 31 de maio). Recorrências por período geram uma ocorrência no início de cada período; se criadas durante um período, também geram a ocorrência desse período, mesmo que sua data seja anterior à criação. Na abertura do aplicativo e durante a sincronização, verificar ocorrências faltantes e recuperar as atrasadas até a data corrente na zona do usuário, sem depender de agendador em segundo plano. A combinação modelo de recorrência + referência programada/competência identifica unicamente uma ocorrência e deve possuir garantia de unicidade no armazenamento. Edição individual não altera modelo nem ocorrências futuras; desativação impede novas ocorrências e preserva o histórico.
 
 Receitas recorrentes são criadas pendentes e só entram no dinheiro livre após confirmação do recebimento (data padrão: hoje; o usuário pode informar outra). Despesas recorrentes entram no dinheiro livre quando geradas e com valor definido; pagamento não gera segunda dedução. A zona de calendário por usuário é `America/Sao_Paulo`, decisão de 08/11/2026. A geração ocorre ao abrir o aplicativo e sincronizar, usando a data corrente nessa zona.
-
-**Decisões de 11/11/2026 (Fase 5):**
-
-- **D1 — identificador:** a ocorrência tem identificador determinístico calculado de modelo + data programada, igual no aplicativo e no servidor; dois aparelhos que geram offline produzem a mesma ocorrência.
-- **D2 — mudar a agenda:** todos os campos do modelo podem mudar (dia, frequência, início, fixo/variável), mas só valem para ocorrências ainda não geradas: nunca há duas ocorrências do mesmo modelo no mesmo mês/período e a mudança não cria ocorrências passadas (ex.: dia 5 já gerado em 05/11 → muda para dia 20 → próxima em 20/12). Descrição, valor padrão e categoria valem para as próximas.
-- **D4:** início anterior ao primeiro período: o app pergunta se cria os períodos (RN002); sem confirmação não salva. O servidor recusa em vez de ignorar.
-- **D6:** o lançamento avulso só se repete se o usuário marcar a recorrência. A confirmação de recebimento usa hoje como padrão e aceita outra data.
-- **D7:** ao parar de repetir, as ocorrências já geradas ficam como estão.
-- **D8:** a recorrência é ativada no formulário do lançamento (“Repetir”: todo mês ou todo período). O próprio lançamento é a primeira ocorrência; as seguintes seguem o dia dele; data passada gera também as atrasadas até hoje. Em “todo período”, a data da ocorrência é o início do período que contém a data informada. Ao editar uma ocorrência, o usuário escolhe “só esta” ou “a recorrência”. Lista de consulta em Mais → Recorrências.
 
 **Decisões de 11/11/2026 (Fase 5):**
 

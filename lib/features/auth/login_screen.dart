@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,7 +15,8 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _password = TextEditingController();
@@ -28,23 +31,70 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return state is SessionSignedOut ? state.blockedPendingCount : 0;
   }
 
+  bool _googleOpen = false;
+  Timer? _returnTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// Voltando do navegador sem concluir o login com Google, libera os botões
+  /// para nova tentativa. A pequena espera dá tempo de o retorno do login
+  /// chegar, se o usuário tiver concluído.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_googleOpen) return;
+    if (state == AppLifecycleState.resumed) {
+      _returnTimer?.cancel();
+      _returnTimer = Timer(const Duration(seconds: 3), () {
+        if (!mounted || !_googleOpen) return;
+        setState(() {
+          _googleOpen = false;
+          _busy = false;
+          _error = authFailureMessage(AuthFailureCode.cancelled);
+        });
+      });
+    } else if (state == AppLifecycleState.paused) {
+      _returnTimer?.cancel();
+    }
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _returnTimer?.cancel();
     _email.dispose();
     _password.dispose();
     super.dispose();
   }
 
-  Future<void> _run(Future<void> Function() action) async {
+  /// Tempo máximo de espera por e-mail/senha: sem resposta, o usuário volta a
+  /// poder tentar em vez de ficar preso no indicador de carregamento.
+  static const _timeout = Duration(seconds: 15);
+
+  Future<void> _run(
+    Future<void> Function() action, {
+    bool withTimeout = true,
+  }) async {
     setState(() {
       _busy = true;
       _error = null;
       _info = null;
     });
     try {
-      await action();
+      await (withTimeout ? action().timeout(_timeout) : action());
     } on AuthFailure catch (e) {
       if (mounted) setState(() => _error = authFailureMessage(e.code));
+    } on TimeoutException {
+      if (mounted) {
+        setState(() => _error = authFailureMessage(AuthFailureCode.network));
+      }
+    } on Object {
+      if (mounted) {
+        setState(() => _error = authFailureMessage(AuthFailureCode.unknown));
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -71,8 +121,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     });
   }
 
-  Future<void> _google() =>
-      _run(() => ref.read(sessionControllerProvider).signInWithGoogle());
+  Future<void> _google() async {
+    _googleOpen = true;
+    await _run(
+      () => ref.read(sessionControllerProvider).signInWithGoogle(),
+      withTimeout: false,
+    );
+    _googleOpen = false;
+  }
 
   Future<void> _forgotPassword() async {
     final email = _email.text.trim();

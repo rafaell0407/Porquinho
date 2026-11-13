@@ -220,7 +220,7 @@ Os cinco relatórios aprovados estão especificados na seção 13.7. Esta seçã
 
 ## 11. Detalhamentos pendentes
 
-As regras funcionais desta baseline estão aprovadas. Não há decisão pendente sobre meses curtos, conflitos, relatórios aprovados ou encerramento manual de períodos. Detalhamentos técnicos pendentes: `docs/arquitetura.md` §15; critérios de medição das metas de desempenho: RN043.
+As regras funcionais desta baseline estão aprovadas. Não há decisão pendente sobre meses curtos, conflitos, relatórios aprovados ou encerramento manual de períodos. Detalhamentos técnicos pendentes: `docs/pendencias.md` §T; critérios de medição das metas de desempenho: RN043.
 
 ## 12. Funcionalidades para versões futuras
 
@@ -244,7 +244,7 @@ As regras funcionais desta baseline estão aprovadas. Não há decisão pendente
 | Pagamento integral (pagamento parcial FORA DO MVP) | RN015, RN039 |
 | Categorias: desativação, categoria opcional e grupo "Sem categoria" | RN024–RN027, RN040, RN044 |
 | Alertas e períodos históricos (sem encerramento manual) | RN016, RN018, RN041, RN042 |
-| Segurança, sincronização, backup e portabilidade | `docs/arquitetura.md` §16 |
+| Segurança, sincronização, backup e portabilidade | `docs/arquitetura.md` §4–§5 e §7 |
 | Metas iniciais de desempenho | RN043 |
 | Moeda e precisão monetária | RN045 |
 

@@ -6,6 +6,7 @@ import '../../core/domain/calendar_date.dart';
 import '../../core/domain/money.dart';
 import '../../core/domain/recurrence_schedule.dart';
 import '../categories/category_models.dart';
+import '../categories/category_name_dialog.dart';
 import '../categories/category_providers.dart';
 import '../investments/investment_models.dart';
 import '../investments/investment_providers.dart';
@@ -43,6 +44,7 @@ class EntryFormScreen extends ConsumerStatefulWidget {
 
 class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _categoryField = GlobalKey<FormFieldState<String?>>();
   late final TextEditingController _amount;
   late final TextEditingController _description;
   late CalendarDate _date;
@@ -100,6 +102,41 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     _amount.dispose();
     _description.dispose();
     super.dispose();
+  }
+
+  static const _newCategoryValue = '__nova_categoria__';
+
+  /// Cria uma categoria do tipo do lançamento sem sair do formulário e a
+  /// seleciona. Cancelar ou falhar mantém a escolha anterior.
+  Future<void> _createCategory() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final name = await askName(
+      context,
+      title: _isIncome
+          ? 'Nova categoria de receita'
+          : 'Nova categoria de despesa',
+    );
+    if (name == null || !mounted) {
+      _categoryField.currentState?.didChange(_categoryId);
+      return;
+    }
+    try {
+      final service = await ref.read(categoryServiceProvider.future);
+      final id = await service.createCategory(
+        CategoryKind.fromDb(widget.kind.categoryKind),
+        name,
+      );
+      ref.invalidate(categoryDataProvider);
+      if (!mounted) return;
+      setState(() {
+        _categoryId = id;
+        _subcategoryId = null;
+      });
+      _categoryField.currentState?.didChange(id);
+    } on Object catch (e) {
+      _categoryField.currentState?.didChange(_categoryId);
+      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
+    }
   }
 
   Future<CalendarDate?> _pick(CalendarDate initial) async {
@@ -403,29 +440,43 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                   labelText: 'Descrição (opcional)',
                 ),
               ),
-              DropdownButtonFormField<String?>(
+              KeyedSubtree(
                 key: const Key('campo-categoria'),
-                initialValue: _categoryId,
-                decoration: const InputDecoration(
-                  labelText: 'Categoria (opcional)',
-                ),
-                items: [
-                  const DropdownMenuItem<String?>(
-                    value: null,
-                    child: Text('Sem categoria'),
+                child: DropdownButtonFormField<String?>(
+                  key: _categoryField,
+                  initialValue: _categoryId,
+                  decoration: const InputDecoration(
+                    labelText: 'Categoria (opcional)',
                   ),
-                  for (final c in categories)
-                    DropdownMenuItem<String?>(
-                      value: c.id,
-                      child: Text(
-                        c.isActive ? c.name : '${c.name} (desativada)',
-                      ),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      value: null,
+                      child: Text('Sem categoria'),
                     ),
-                ],
-                onChanged: (v) => setState(() {
-                  _categoryId = v;
-                  _subcategoryId = null;
-                }),
+                    for (final c in categories)
+                      DropdownMenuItem<String?>(
+                        value: c.id,
+                        child: Text(
+                          c.isActive ? c.name : '${c.name} (desativada)',
+                        ),
+                      ),
+                    const DropdownMenuItem<String?>(
+                      key: Key('nova-categoria-form'),
+                      value: _newCategoryValue,
+                      child: Text('+ Nova categoria'),
+                    ),
+                  ],
+                  onChanged: (v) {
+                    if (v == _newCategoryValue) {
+                      _createCategory();
+                      return;
+                    }
+                    setState(() {
+                      _categoryId = v;
+                      _subcategoryId = null;
+                    });
+                  },
+                ),
               ),
               if (subs.isNotEmpty)
                 DropdownButtonFormField<String?>(
