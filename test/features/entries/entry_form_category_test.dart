@@ -42,6 +42,7 @@ void main() {
   late PorquinhoDatabase db;
   late CategoryService categories;
   late EntryService entries;
+  late PeriodService periodService;
   var ids = 0;
 
   setUp(() async {
@@ -60,6 +61,7 @@ void main() {
       periods,
       newId: () => 'e${++ids}',
     );
+    periodService = periods;
     await periods.setup(
       PeriodConfig.calendarMonth(),
       CalendarDate(2026, 11, 10),
@@ -148,7 +150,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('campo-categoria')),
-        matching: find.text('Sem categoria'),
+        matching: find.text('Escolher'),
       ),
       findsOneWidget,
     );
@@ -195,7 +197,7 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const Key('campo-categoria')),
-        matching: find.text('Sem categoria'),
+        matching: find.text('Escolher'),
       ),
       findsOneWidget,
     );
@@ -204,6 +206,67 @@ void main() {
   testWidgets('não aparece no modo investimento', (tester) async {
     await pumpForm(tester, const EntryFormScreen.investment());
     expect(find.byKey(const Key('campo-categoria')), findsNothing);
+  });
+
+  testWidgets('seletor de tipo troca título, texto, botão e campos', (
+    tester,
+  ) async {
+    await pumpForm(tester, const EntryFormScreen(kind: EntryKind.expense));
+    expect(find.text('Nova despesa'), findsOneWidget);
+    expect(find.text('Salvar despesa'), findsOneWidget);
+    expect(
+      find.text('Despesa avulsa entra no período assim que é salva.'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('campo-vencimento')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('tipo-income')));
+    await tester.pumpAndSettle();
+    expect(find.text('Nova receita'), findsOneWidget);
+    expect(find.text('Salvar receita'), findsOneWidget);
+    expect(find.text('Data do recebimento'), findsOneWidget);
+    expect(find.byKey(const Key('campo-vencimento')), findsNothing);
+    expect(find.byKey(const Key('ja-paga')), findsNothing);
+
+    await tester.tap(find.byKey(const Key('tipo-investment')));
+    await tester.pumpAndSettle();
+    expect(find.text('Novo investimento'), findsOneWidget);
+    expect(find.text('Salvar investimento'), findsOneWidget);
+    expect(find.byKey(const Key('campo-descricao')), findsNothing);
+    expect(find.byKey(const Key('campo-categoria')), findsNothing);
+    expect(find.byKey(const Key('repetir')), findsOneWidget);
+  });
+
+  testWidgets('trocar para receita salva como receita', (tester) async {
+    await pumpForm(tester, const EntryFormScreen(kind: EntryKind.expense));
+    await tester.tap(find.byKey(const Key('tipo-income')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('campo-valor')), '25,50');
+    await tester.tap(find.byKey(const Key('salvar-lancamento')));
+    await tester.pumpAndSettle();
+    final period = (await periodService.periodFor(CalendarDate(2026, 11, 10)))!;
+    final saved = await entries.entriesInPeriod(period.id);
+    expect(saved.single.kind, EntryKind.income);
+    expect(saved.single.amount, BigInt.from(2550));
+  });
+
+  testWidgets('Repetir: escolhe frequência e volta para "Não se repete"', (
+    tester,
+  ) async {
+    await pumpForm(tester, const EntryFormScreen(kind: EntryKind.expense));
+    expect(find.text('Não se repete'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('repetir')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('repetir-by_period')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('frequencia')), findsOneWidget);
+    expect(find.text('Todo período'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('repetir')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('repetir-nao')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('frequencia')), findsNothing);
+    expect(find.text('Não se repete'), findsOneWidget);
   });
 
   testWidgets('offline: categoria sai da fila antes do lançamento', (

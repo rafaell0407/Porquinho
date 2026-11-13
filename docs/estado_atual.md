@@ -18,8 +18,14 @@ Direção aprovada: Menta (cor) + Inter (fonte), claro e escuro, categorias com 
   - V3 Dashboard; V4 Lançamentos (lista por dia, ícone/cor da categoria) e formulário (valor grande, seletor de categoria); V5 Categorias (editor com ícone/cor), seletor de categoria e menu Mais; barra de abas em pílula.
 - Testes: `flutter analyze` sem problemas; suíte completa (inclui migração Drift v5→v6), 13 testes SQL e integração contra o Supabase local passaram.
 
+## Evolução visual da Dashboard (12/11/2026) — aguardando validação
+Layout da imagem de referência: seletor de período em pílula + botão "+" (abre o mesmo menu de novo lançamento), dinheiro livre com "R$" menor, barra segmentada (receitas/despesas/investimentos, proporcional), legenda com valores, card de atenção (só com itens; abre `/atencao`) e card "A receber (ainda não conta)" com as receitas pendentes reais. Rótulo "Nov 2026" vira intervalo de datas quando o período é ciclo. Barra inferior: aba selecionada com texto em Menta. Sem mudança de regra, banco ou rotas.
+
 ## Entrega avulsa (12/11/2026) — aguardando validação
 Criar categoria direto no formulário de lançamento ("+ Nova categoria", receita/despesa; não no investimento). Subcategoria no formulário ficou fora (M5, aguarda aprovação).
+
+## Formulário de lançamento no layout da referência (13/11/2026) — aguardando validação
+Cabeçalho com título centralizado e botão fechar, seletor de tipo em pílula (só em lançamento novo; troca despesa/receita/investimento), valor grande, campos em linhas com divisor, "Repetir" como lista de opções (Não se repete / Todo mês / Todo período), texto explicativo por tipo e botão "Salvar despesa/receita/investimento" fixo embaixo. Sem mudança de regra, banco ou sincronização.
 
 ## Entrega 79 — parcial (12/11/2026), aguardando validação
 Feito: tratamento global de erros, sem valores nos registros. O restante (produção, SMTP, monitoramento externo) depende das Entregas 77/78, de domínio e de autorização.

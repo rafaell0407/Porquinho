@@ -62,8 +62,13 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
   bool _saving = false;
   String? _error;
 
-  bool get _isIncome => widget.kind == EntryKind.income;
-  bool get _isInvestment => widget.isInvestment;
+  /// Tipo mostrado no seletor; só muda em lançamento novo (o tipo de um
+  /// lançamento existente não troca).
+  late _FormType _type;
+
+  EntryKind get _kind => _isIncome ? EntryKind.income : EntryKind.expense;
+  bool get _isIncome => _type == _FormType.income;
+  bool get _isInvestment => _type == _FormType.investment;
   bool get _editing =>
       widget.existing != null || widget.existingInvestment != null;
 
@@ -87,6 +92,11 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     final e = widget.existing;
     final inv = widget.existingInvestment;
     final today = ref.read(userClockProvider).today();
+    _type = widget.isInvestment
+        ? _FormType.investment
+        : widget.kind == EntryKind.income
+        ? _FormType.income
+        : _FormType.expense;
     final amount = e?.amount ?? inv?.amount;
     _amount = TextEditingController(
       text: amount == null ? '' : formatBrl(amount).replaceFirst('R\$ ', ''),
@@ -113,7 +123,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     final pick = await showCategoryPicker(
       context,
       data: data,
-      kind: CategoryKind.fromDb(widget.kind.categoryKind),
+      kind: CategoryKind.fromDb(_kind.categoryKind),
       selectedCategoryId: _categoryId,
       selectedSubcategoryId: _subcategoryId,
     );
@@ -148,7 +158,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     try {
       final service = await ref.read(categoryServiceProvider.future);
       final id = await service.createCategory(
-        CategoryKind.fromDb(widget.kind.categoryKind),
+        CategoryKind.fromDb(_kind.categoryKind),
         draft.name,
         iconKey: draft.iconKey,
         colorKey: draft.colorKey,
@@ -192,7 +202,7 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
       return;
     }
     final draft = EntryDraft(
-      kind: widget.kind,
+      kind: _kind,
       amount: _amount.text.trim().isEmpty
           ? null
           : parseBrlToCentavos(_amount.text),
@@ -303,79 +313,123 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     await _confirmingPeriods(service.createMissingPeriods, attempt);
   }
 
+  /// Troca o tipo de um lançamento novo. Campos que não existem no outro tipo
+  /// (categoria, vencimento, "já paga/recebi", valor variável) voltam ao
+  /// padrão; valor, data e "Repetir" ficam.
+  void _selectType(_FormType type) {
+    if (type == _type || _editing) return;
+    setState(() {
+      _type = type;
+      _categoryId = null;
+      _subcategoryId = null;
+      _dueOn = null;
+      _alreadyPaid = false;
+      _alreadyReceived = false;
+      if (type == _FormType.investment) _variable = false;
+      _error = null;
+    });
+  }
+
   /// "Repetir" (D8): o lançamento vira a primeira ocorrência; as próximas
   /// seguem o dia dele (todo mês) ou o início de cada período.
-  List<Widget> _repeatSection() => [
-    SwitchListTile(
-      key: const Key('repetir'),
-      contentPadding: EdgeInsets.zero,
-      title: const Text('Repetir'),
-      subtitle: Text(
+  Future<void> _chooseRepeat() async {
+    final choice = await showModalBottomSheet<(RecurrenceFrequency?,)>(
+      context: context,
+      builder: (sheet) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              key: const Key('repetir-nao'),
+              title: const Text('Não se repete'),
+              trailing: _repeat ? null : const Icon(Icons.check),
+              onTap: () => Navigator.pop(sheet, (null,)),
+            ),
+            for (final f in RecurrenceFrequency.values)
+              ListTile(
+                key: Key('repetir-${f.dbValue}'),
+                title: Text(f.label),
+                trailing: _repeat && _frequency == f
+                    ? const Icon(Icons.check)
+                    : null,
+                onTap: () => Navigator.pop(sheet, (f,)),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (choice == null) return; // fechou sem escolher: nada muda
+    setState(() {
+      final frequency = choice.$1;
+      _repeat = frequency != null;
+      if (frequency != null) _frequency = frequency;
+    });
+  }
+
+  /// Explicação curta do tipo escolhido, com as regras vigentes (RN).
+  List<String> _notes() {
+    final lines = <String>[];
+    if (_isInvestment) {
+      lines.add(
+        'Investimento é descontado do dinheiro livre do período da data '
+        'informada.',
+      );
+    } else if (_isIncome) {
+      lines.add(
         _repeat
-            ? 'Este ${_isInvestment ? 'investimento' : 'lançamento'} é o '
-                  'primeiro; os próximos são criados automaticamente'
-            : (_isInvestment ? 'Investimento único' : 'Lançamento único'),
-      ),
-      value: _repeat,
-      onChanged: (v) => setState(() => _repeat = v),
-    ),
-    if (_repeat) ...[
-      SegmentedButton<RecurrenceFrequency>(
-        key: const Key('frequencia'),
-        segments: [
-          for (final f in RecurrenceFrequency.values)
-            ButtonSegment(value: f, label: Text(f.label)),
-        ],
-        selected: {_frequency},
-        onSelectionChanged: (s) => setState(() => _frequency = s.first),
-      ),
-      Padding(
-        padding: const EdgeInsets.only(top: 4),
-        child: Text(
-          _frequency == RecurrenceFrequency.monthly
-              ? 'Repete todo dia ${_date.day} (em mês curto, no último dia).'
-              : 'A ocorrência fica no início do período que contém a data '
-                    'informada.',
-          style: Theme.of(context).textTheme.bodySmall,
-        ),
-      ),
-      if (_isInvestment)
-        Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Text(
-            'Cada ocorrência nasce com este valor e entra no dinheiro livre do período '
-            'da sua data. Você pode mudar o valor de um mês depois.',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-        )
-      else
-        SwitchListTile(
-          key: const Key('valor-variavel'),
-          contentPadding: EdgeInsets.zero,
-          title: const Text('O valor muda todo mês'),
-          subtitle: const Text('Informe o valor de cada ocorrência depois'),
-          value: _variable,
-          onChanged: (v) => setState(() => _variable = v),
-        ),
-      if (_isIncome)
-        SwitchListTile(
-          key: const Key('ja-recebi'),
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Já recebi'),
-          subtitle: Text(
-            _alreadyReceived
-                ? 'Recebida em ${_paidOn.toBr()}'
-                : 'Nasce pendente e só entra no dinheiro livre quando confirmada',
-          ),
-          value: _alreadyReceived,
-          onChanged: (v) => setState(() => _alreadyReceived = v),
-        ),
-    ],
-  ];
+            ? 'Receita recorrente nasce pendente e só entra no dinheiro livre '
+                  'quando o recebimento é confirmado.'
+            : 'Receita entra no período da data de recebimento.',
+      );
+    } else {
+      lines.add(
+        _repeat
+            ? 'Despesa recorrente entra no período quando a ocorrência é '
+                  'gerada (se o valor muda, depois de informado).'
+            : 'Despesa avulsa entra no período assim que é salva.',
+      );
+    }
+    if (_pendingIncome) {
+      lines.add(
+        'A data de recebimento é informada ao confirmar o recebimento.',
+      );
+    }
+    if (_repeat && _canRepeat) {
+      lines.add(
+        _frequency == RecurrenceFrequency.monthly
+            ? 'Repete todo dia ${_date.day} (em mês curto, no último dia).'
+            : 'A ocorrência fica no início do período que contém a data '
+                  'informada.',
+      );
+      if (_isInvestment) {
+        lines.add(
+          'Cada ocorrência nasce com este valor; você pode mudar o valor de um '
+          'mês depois.',
+        );
+      }
+    }
+    return lines;
+  }
+
+  String get _title => _isInvestment
+      ? (_editing ? 'Editar investimento' : 'Novo investimento')
+      : _editing
+      ? (_isIncome ? 'Editar receita' : 'Editar despesa')
+      : (_isIncome ? 'Nova receita' : 'Nova despesa');
+
+  String get _saveLabel => _saving
+      ? 'Salvando…'
+      : _isInvestment
+      ? 'Salvar investimento'
+      : _isIncome
+      ? 'Salvar receita'
+      : 'Salvar despesa';
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final cats = ref.watch(categoryDataProvider).value;
     final chosen = _categoryId == null
         ? null
@@ -383,169 +437,456 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
     final chosenSub = _subcategoryId == null
         ? null
         : cats?.subcategories.where((s) => s.id == _subcategoryId).firstOrNull;
-    final title = _isInvestment
-        ? (_editing ? 'Editar investimento' : 'Novo investimento')
-        : _editing
-        ? (_isIncome ? 'Editar receita' : 'Editar despesa')
-        : (_isIncome ? 'Nova receita' : 'Nova despesa');
+    final placeholder = _valueStyle(
+      theme,
+    ).copyWith(color: scheme.onSurfaceVariant);
+
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            TextFormField(
-              key: const Key('campo-valor'),
-              controller: _amount,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              style: theme.textTheme.displaySmall?.copyWith(fontSize: 40),
-              decoration: InputDecoration(
-                labelText: _isInvestment ? 'Valor investido' : 'Valor',
-                prefixText: 'R\$ ',
-                hintText: '0,00',
-                filled: false,
-                border: const UnderlineInputBorder(),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.outlineVariant,
+      body: SafeArea(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              _Header(title: _title),
+              if (!_editing)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+                  child: _TypeSelector(
+                    selected: _type,
+                    onSelected: _selectType,
                   ),
                 ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(
-                    color: theme.colorScheme.primary,
-                    width: 2,
-                  ),
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              validator: (v) {
-                if (_amountOptional && (v ?? '').trim().isEmpty) return null;
-                try {
-                  parseBrlToCentavos(v ?? '');
-                  return null;
-                } on MoneyFormatException catch (e) {
-                  return e.message;
-                }
-              },
-            ),
-            const SizedBox(height: 12),
-            if (_pendingIncome)
-              ListTile(
-                key: const Key('campo-data-prevista'),
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Recebimento previsto'),
-                subtitle: Text(
-                  '${_date.toBr()} (a data de recebimento é informada '
-                  'ao confirmar)',
-                ),
-              )
-            else
-              ListTile(
-                key: const Key('campo-data'),
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  _isInvestment
-                      ? 'Data do investimento'
-                      : _isIncome
-                      ? 'Data do recebimento'
-                      : 'Data da despesa',
-                ),
-                subtitle: Text(_date.toBr()),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final picked = await _pick(_date);
-                  if (picked != null) setState(() => _date = picked);
-                },
-              ),
-            if (!_isInvestment) ...[
-              TextFormField(
-                key: const Key('campo-descricao'),
-                controller: _description,
-                maxLength: EntryService.maxDescriptionLength,
-                decoration: const InputDecoration(
-                  labelText: 'Descrição (opcional)',
-                ),
-              ),
-              ListTile(
-                key: const Key('campo-categoria'),
-                contentPadding: EdgeInsets.zero,
-                leading: chosen == null
-                    ? const CategoryBadge(
-                        iconKey: defaultCategoryIconKey,
-                        colorKey: defaultCategoryColorKey,
-                      )
-                    : CategoryBadge(
-                        iconKey: chosen.iconKey,
-                        colorKey: chosen.colorKey,
-                        filled: true,
+              Expanded(
+                child: ListView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                  children: [
+                    TextFormField(
+                      key: const Key('campo-valor'),
+                      controller: _amount,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
                       ),
-                title: const Text('Categoria (opcional)'),
-                subtitle: Text(
-                  chosen == null
-                      ? 'Sem categoria'
-                      : [
-                          chosen.isActive
-                              ? chosen.name
-                              : '${chosen.name} (desativada)',
-                          ?chosenSub?.name,
-                        ].join(' › '),
-                ),
-                trailing: const Icon(Icons.expand_more),
-                onTap: () => _chooseCategory(cats),
-              ),
-              if (!_isIncome) ...[
-                ListTile(
-                  key: const Key('campo-vencimento'),
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Vencimento (opcional)'),
-                  subtitle: Text(_dueOn?.toBr() ?? 'Sem vencimento'),
-                  trailing: _dueOn == null
-                      ? const Icon(Icons.event)
-                      : IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () => setState(() => _dueOn = null),
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        fontSize: 44,
+                        fontWeight: FontWeight.w800,
+                      ),
+                      decoration: InputDecoration(
+                        prefixText: 'R\$ ',
+                        prefixStyle: theme.textTheme.displaySmall?.copyWith(
+                          fontSize: 44,
+                          fontWeight: FontWeight.w800,
                         ),
-                  onTap: () async {
-                    final picked = await _pick(_dueOn ?? _date);
-                    if (picked != null) setState(() => _dueOn = picked);
-                  },
-                ),
-                if (!_editing)
-                  SwitchListTile(
-                    key: const Key('ja-paga'),
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Já está paga'),
-                    subtitle: _alreadyPaid
-                        ? Text('Paga em ${_paidOn.toBr()}')
-                        : const Text('Nasce como pendente'),
-                    value: _alreadyPaid,
-                    onChanged: (v) => setState(() => _alreadyPaid = v),
-                  ),
-              ],
-            ],
-            if (_canRepeat) ..._repeatSection(),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  _error!,
-                  key: const Key('erro-formulario'),
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                        hintText: '0,00',
+                        hintStyle: theme.textTheme.displaySmall?.copyWith(
+                          fontSize: 44,
+                          fontWeight: FontWeight.w800,
+                          color: scheme.onSurface,
+                        ),
+                        filled: false,
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        errorBorder: InputBorder.none,
+                        focusedErrorBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      validator: (v) {
+                        if (_amountOptional && (v ?? '').trim().isEmpty) {
+                          return null;
+                        }
+                        try {
+                          parseBrlToCentavos(v ?? '');
+                          return null;
+                        } on MoneyFormatException catch (e) {
+                          return e.message;
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Divider(color: scheme.outlineVariant),
+                    if (_pendingIncome)
+                      _FieldRow(
+                        key: const Key('campo-data-prevista'),
+                        label: 'Recebimento previsto',
+                        value: Text(_date.toBr(), style: _valueStyle(theme)),
+                      )
+                    else
+                      _FieldRow(
+                        key: const Key('campo-data'),
+                        label: _isInvestment
+                            ? 'Data do investimento'
+                            : _isIncome
+                            ? 'Data do recebimento'
+                            : 'Data da despesa',
+                        value: Text(_date.toBr(), style: _valueStyle(theme)),
+                        showChevron: true,
+                        onTap: () async {
+                          final picked = await _pick(_date);
+                          if (picked != null) setState(() => _date = picked);
+                        },
+                      ),
+                    if (!_isInvestment) ...[
+                      _FieldRow(
+                        label: 'Descrição',
+                        value: TextFormField(
+                          key: const Key('campo-descricao'),
+                          controller: _description,
+                          maxLength: EntryService.maxDescriptionLength,
+                          textAlign: TextAlign.end,
+                          style: _valueStyle(theme),
+                          decoration: InputDecoration(
+                            hintText: 'Opcional',
+                            hintStyle: placeholder,
+                            counterText: '',
+                            filled: false,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                          ),
+                        ),
+                      ),
+                      _FieldRow(
+                        key: const Key('campo-categoria'),
+                        label: 'Categoria',
+                        value: chosen == null
+                            ? Text('Escolher', style: placeholder)
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  CategoryBadge(
+                                    iconKey: chosen.iconKey,
+                                    colorKey: chosen.colorKey,
+                                    size: 28,
+                                    filled: true,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      [
+                                        chosen.isActive
+                                            ? chosen.name
+                                            : '${chosen.name} (desativada)',
+                                        ?chosenSub?.name,
+                                      ].join(' › '),
+                                      style: _valueStyle(theme),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                        showChevron: true,
+                        onTap: () => _chooseCategory(cats),
+                      ),
+                      if (!_isIncome) ...[
+                        _FieldRow(
+                          key: const Key('campo-vencimento'),
+                          label: 'Vencimento',
+                          value: _dueOn == null
+                              ? Text('Opcional', style: placeholder)
+                              : Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      _dueOn!.toBr(),
+                                      style: _valueStyle(theme),
+                                    ),
+                                    IconButton(
+                                      tooltip: 'Remover vencimento',
+                                      visualDensity: VisualDensity.compact,
+                                      icon: const Icon(Icons.clear, size: 18),
+                                      onPressed: () =>
+                                          setState(() => _dueOn = null),
+                                    ),
+                                  ],
+                                ),
+                          showChevron: _dueOn == null,
+                          onTap: () async {
+                            final picked = await _pick(_dueOn ?? _date);
+                            if (picked != null) setState(() => _dueOn = picked);
+                          },
+                        ),
+                        if (!_editing)
+                          _FieldRow(
+                            key: const Key('ja-paga'),
+                            label: 'Já está paga',
+                            value: Text(
+                              _alreadyPaid
+                                  ? 'Paga em ${_paidOn.toBr()}'
+                                  : 'Nasce como pendente',
+                              style: placeholder,
+                            ),
+                            trailing: Switch(
+                              value: _alreadyPaid,
+                              onChanged: (v) =>
+                                  setState(() => _alreadyPaid = v),
+                            ),
+                            onTap: () =>
+                                setState(() => _alreadyPaid = !_alreadyPaid),
+                          ),
+                      ],
+                    ],
+                    if (_canRepeat) ...[
+                      _FieldRow(
+                        key: const Key('repetir'),
+                        label: 'Repetir',
+                        value: Text(
+                          _repeat ? _frequency.label : 'Não se repete',
+                          key: _repeat ? const Key('frequencia') : null,
+                          style: _valueStyle(theme),
+                        ),
+                        showChevron: true,
+                        onTap: _chooseRepeat,
+                      ),
+                      if (_repeat && !_isInvestment)
+                        _FieldRow(
+                          key: const Key('valor-variavel'),
+                          label: 'O valor muda todo mês',
+                          value: Text(
+                            _variable ? 'Informe o valor depois' : 'Valor fixo',
+                            style: placeholder,
+                          ),
+                          trailing: Switch(
+                            value: _variable,
+                            onChanged: (v) => setState(() => _variable = v),
+                          ),
+                          onTap: () => setState(() => _variable = !_variable),
+                        ),
+                      if (_repeat && _isIncome)
+                        _FieldRow(
+                          key: const Key('ja-recebi'),
+                          label: 'Já recebi',
+                          value: Text(
+                            _alreadyReceived
+                                ? 'Recebida em ${_paidOn.toBr()}'
+                                : 'Nasce pendente',
+                            style: placeholder,
+                          ),
+                          trailing: Switch(
+                            value: _alreadyReceived,
+                            onChanged: (v) =>
+                                setState(() => _alreadyReceived = v),
+                          ),
+                          onTap: () => setState(
+                            () => _alreadyReceived = !_alreadyReceived,
+                          ),
+                        ),
+                    ],
+                    const SizedBox(height: 16),
+                    for (final line in _notes())
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          line,
+                          key: line == _notes().first
+                              ? const Key('texto-explicativo')
+                              : null,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    if (_error != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          _error!,
+                          key: const Key('erro-formulario'),
+                          style: TextStyle(color: scheme.error),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-            const SizedBox(height: 16),
-            FilledButton(
-              key: const Key('salvar-lancamento'),
-              onPressed: _saving ? null : _save,
-              child: Text(
-                _saving
-                    ? 'Salvando…'
-                    : (_isInvestment ? 'Salvar investimento' : 'Salvar'),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    key: const Key('salvar-lancamento'),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size.fromHeight(56),
+                    ),
+                    onPressed: _saving ? null : _save,
+                    child: Text(_saveLabel),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  TextStyle _valueStyle(ThemeData theme) => TextStyle(
+    fontFamily: theme.textTheme.bodyMedium?.fontFamily,
+    fontSize: 15,
+    fontWeight: FontWeight.w700,
+    color: theme.colorScheme.onSurface,
+  );
+}
+
+enum _FormType { expense, income, investment }
+
+/// Cabeçalho compacto: título centralizado e botão circular de fechar.
+class _Header extends StatelessWidget {
+  const _Header({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      height: 64,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 72),
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
               ),
             ),
+          ),
+          Positioned(
+            right: 20,
+            child: Material(
+              color: scheme.surfaceContainerHighest,
+              shape: const CircleBorder(),
+              child: IconButton(
+                key: const Key('fechar-formulario'),
+                tooltip: 'Fechar',
+                icon: const Icon(Icons.close, size: 20),
+                onPressed: () => Navigator.of(context).maybePop(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Barra em pílula com os três tipos de lançamento.
+class _TypeSelector extends StatelessWidget {
+  const _TypeSelector({required this.selected, required this.onSelected});
+
+  final _FormType selected;
+  final ValueChanged<_FormType> onSelected;
+
+  static const _labels = {
+    _FormType.expense: 'Despesa',
+    _FormType.income: 'Receita',
+    _FormType.investment: 'Investimento',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: ShapeDecoration(
+        color: scheme.surfaceContainerHigh,
+        shape: const StadiumBorder(),
+      ),
+      child: Row(
+        children: [
+          for (final type in _FormType.values)
+            Expanded(
+              child: Semantics(
+                selected: type == selected,
+                button: true,
+                child: GestureDetector(
+                  key: Key('tipo-${type.name}'),
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => onSelected(type),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: ShapeDecoration(
+                      color: type == selected
+                          ? scheme.primaryContainer
+                          : Colors.transparent,
+                      shape: const StadiumBorder(),
+                    ),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        _labels[type]!,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: type == selected
+                              ? scheme.onPrimaryContainer
+                              : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Linha do formulário: nome à esquerda, valor ou ação à direita, divisor
+/// discreto embaixo.
+class _FieldRow extends StatelessWidget {
+  const _FieldRow({
+    required this.label,
+    required this.value,
+    this.onTap,
+    this.showChevron = false,
+    this.trailing,
+    super.key,
+  });
+
+  final String label;
+  final Widget value;
+  final VoidCallback? onTap;
+  final bool showChevron;
+  final Widget? trailing;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 56),
+        decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: scheme.outlineVariant)),
+        ),
+        child: Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(fontSize: 15, color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Align(alignment: Alignment.centerRight, child: value),
+            ),
+            if (showChevron) ...[
+              const SizedBox(width: 4),
+              Icon(Icons.expand_more, size: 20, color: scheme.onSurfaceVariant),
+            ],
+            if (trailing != null) ...[const SizedBox(width: 8), trailing!],
           ],
         ),
       ),

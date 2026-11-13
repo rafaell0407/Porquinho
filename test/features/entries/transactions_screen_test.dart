@@ -89,7 +89,7 @@ void main() {
   ) async {
     await pumpScreen(tester);
     expect(find.text('Nenhum lançamento neste período.'), findsOneWidget);
-    expect(find.text('01/11/2026 a 30/11/2026'), findsOneWidget);
+    expect(find.text('Novembro 2026'), findsOneWidget);
 
     // Receita.
     await tester.tap(find.byKey(const Key('novo-lancamento')));
@@ -181,7 +181,7 @@ void main() {
     await pumpScreen(tester);
     await tester.tap(find.byKey(const Key('periodo-anterior')));
     await tester.pumpAndSettle();
-    expect(find.text('01/10/2026 a 31/10/2026'), findsOneWidget);
+    expect(find.text('Outubro 2026'), findsOneWidget);
     expect(find.byKey(const Key('pergunta-periodos')), findsOneWidget);
     expect(
       find.text('Criar o período de 01/10/2026 a 31/10/2026?'),
@@ -196,7 +196,7 @@ void main() {
 
     await tester.tap(find.byKey(const Key('periodo-hoje')));
     await tester.pumpAndSettle();
-    expect(find.text('01/11/2026 a 30/11/2026'), findsOneWidget);
+    expect(find.text('Novembro 2026'), findsOneWidget);
   });
 
   testWidgets('data em período inexistente pede confirmação e só então salva', (
@@ -267,7 +267,6 @@ void main() {
     await tester.tap(find.byKey(const Key('novo-investimento')));
     await tester.pumpAndSettle();
     expect(find.text('Novo investimento'), findsOneWidget);
-    expect(find.text('Valor investido'), findsOneWidget);
     expect(find.text('Data do investimento'), findsOneWidget);
     expect(find.byKey(const Key('campo-descricao')), findsNothing);
     expect(find.byKey(const Key('campo-categoria')), findsNothing);

@@ -79,8 +79,10 @@ void main() {
     );
   }
 
-  String shown(WidgetTester tester, String key) =>
-      tester.widget<Text>(find.byKey(Key(key))).data!;
+  String shown(WidgetTester tester, String key) {
+    final w = tester.widget<Text>(find.byKey(Key(key)));
+    return w.data ?? w.textSpan!.toPlainText();
+  }
 
   Future<void> add(EntryKind kind, int cents, CalendarDate date) => service
       .create(EntryDraft(kind: kind, amount: BigInt.from(cents), date: date));
@@ -119,7 +121,7 @@ void main() {
     // Vai para outubro.
     await tester.tap(find.byKey(const Key('periodo-anterior')));
     await tester.pumpAndSettle();
-    expect(find.text('01/10/2026 a 31/10/2026'), findsOneWidget);
+    expect(find.text('Outubro 2026'), findsOneWidget);
     expect(shown(tester, 'valor-sobra'), 'R\$ 1.000,00');
 
     // Edita a receita de outubro para 1.500,00 e recalcula só outubro.

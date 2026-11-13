@@ -126,6 +126,8 @@ void main() {
     await tester.enterText(find.byKey(const Key('campo-descricao')), 'Salário');
     await tester.tap(find.byKey(const Key('repetir')));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('repetir-monthly')));
+    await tester.pumpAndSettle();
     expect(find.byKey(const Key('frequencia')), findsOneWidget);
     expect(find.byKey(const Key('ja-recebi')), findsOneWidget);
     await tester.tap(find.byKey(const Key('salvar-lancamento')));
@@ -161,11 +163,13 @@ void main() {
     await tester.enterText(find.byKey(const Key('campo-descricao')), 'Cartão');
     await tester.tap(find.byKey(const Key('repetir')));
     await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('repetir-monthly')));
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('valor-variavel')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('salvar-lancamento')));
     await tester.pumpAndSettle();
-    expect(find.text('- Sem valor'), findsOneWidget);
+    expect(find.text('Informar valor'), findsOneWidget);
 
     await tester.tap(find.text('Cartão'));
     await tester.pumpAndSettle();
@@ -212,6 +216,8 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byKey(const Key('campo-valor')), '300');
     await tester.tap(find.byKey(const Key('repetir')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('repetir-monthly')));
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('frequencia')), findsOneWidget);
     expect(find.byKey(const Key('valor-variavel')), findsNothing);

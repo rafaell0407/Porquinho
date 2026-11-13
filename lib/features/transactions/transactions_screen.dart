@@ -14,6 +14,7 @@ import '../entries/entry_providers.dart';
 import '../investments/investment_models.dart';
 import '../investments/investment_providers.dart';
 import '../investments/investment_recurrence_edit_screen.dart';
+import '../dashboard/dashboard_screen.dart' show PeriodHeader;
 import '../periods/period_navigation.dart';
 import '../periods/period_providers.dart';
 import '../recurrence/recurrence_edit_screen.dart';
@@ -44,6 +45,17 @@ final entryFilterProvider = NotifierProvider<EntryFilterNotifier, EntryFilter>(
   EntryFilterNotifier.new,
 );
 
+class EntrySearchNotifier extends Notifier<String> {
+  @override
+  String build() => '';
+
+  void set(String text) => state = text;
+}
+
+final entrySearchProvider = NotifierProvider<EntrySearchNotifier, String>(
+  EntrySearchNotifier.new,
+);
+
 /// Aba Lançamentos: receitas e despesas avulsas do período escolhido.
 class TransactionsScreen extends ConsumerWidget {
   const TransactionsScreen({super.key});
@@ -52,115 +64,142 @@ class TransactionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final view = ref.watch(selectedPeriodProvider);
     final filter = ref.watch(entryFilterProvider);
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Lançamentos')),
-      floatingActionButton: FloatingActionButton.extended(
-        key: const Key('novo-lancamento'),
-        onPressed: () => _chooseKind(context, ref),
-        icon: const Icon(Icons.add),
-        label: const Text('Novo'),
-      ),
-      body: Column(
-        children: [
-          const PeriodNavigator(),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                for (final f in EntryFilter.values)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      key: Key('filtro-${f.name}'),
-                      label: Text(f.label),
-                      showCheckmark: false,
-                      selected: filter == f,
-                      labelStyle: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: filter == f
-                            ? Theme.of(context).colorScheme.surface
-                            : Theme.of(context).colorScheme.onSurface,
-                      ),
-                      onSelected: (_) =>
-                          ref.read(entryFilterProvider.notifier).set(f),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: view.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => const Center(
-                child: Text('Não foi possível carregar os lançamentos.'),
-              ),
-              data: (v) {
-                if (v == null) {
-                  return const Center(child: Text('Nenhum período ainda.'));
-                }
-                if (!v.exists) return MissingPeriodCard(view: v);
-                return _EntryList(filter: filter);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _chooseKind(BuildContext context, WidgetRef ref) async {
-    final kind = await showModalBottomSheet<_NewItem>(
-      context: context,
-      builder: (sheet) => SafeArea(
+      body: SafeArea(
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
-            ListTile(
-              key: const Key('nova-receita'),
-              leading: const Icon(Icons.arrow_downward),
-              title: const Text('Nova receita'),
-              onTap: () => Navigator.pop(sheet, _NewItem.income),
+            if (view.value != null)
+              PeriodHeader(
+                view: view.value!,
+                newButtonKey: const Key('novo-lancamento'),
+              ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Text(
+                  'Lançamentos',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
             ),
-            ListTile(
-              key: const Key('nova-despesa'),
-              leading: const Icon(Icons.arrow_upward),
-              title: const Text('Nova despesa'),
-              onTap: () => Navigator.pop(sheet, _NewItem.expense),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: TextField(
+                key: const Key('busca-lancamentos'),
+                onChanged: (t) => ref.read(entrySearchProvider.notifier).set(t),
+                decoration: InputDecoration(
+                  hintText: 'Buscar',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(999),
+                    borderSide: BorderSide(color: scheme.outlineVariant),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(999),
+                    borderSide: BorderSide(color: scheme.primary),
+                  ),
+                ),
+              ),
             ),
-            ListTile(
-              key: const Key('novo-investimento'),
-              leading: const Icon(Icons.savings_outlined),
-              title: const Text('Novo investimento'),
-              onTap: () => Navigator.pop(sheet, _NewItem.investment),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  for (final f in EntryFilter.values)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        key: Key('filtro-${f.name}'),
+                        label: Text(f.label),
+                        showCheckmark: false,
+                        selected: filter == f,
+                        labelStyle: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          color: filter == f
+                              ? Theme.of(context).colorScheme.surface
+                              : Theme.of(context).colorScheme.onSurface,
+                        ),
+                        onSelected: (_) =>
+                            ref.read(entryFilterProvider.notifier).set(f),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: view.when(
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) => const Center(
+                  child: Text('Não foi possível carregar os lançamentos.'),
+                ),
+                data: (v) {
+                  if (v == null) {
+                    return const Center(child: Text('Nenhum período ainda.'));
+                  }
+                  if (!v.exists) return MissingPeriodCard(view: v);
+                  return _EntryList(filter: filter);
+                },
+              ),
             ),
           ],
         ),
       ),
     );
-    if (kind == null || !context.mounted) return;
-    if (kind == _NewItem.investment) {
-      await Navigator.of(context).push<bool>(
-        MaterialPageRoute(builder: (_) => const EntryFormScreen.investment()),
-      );
-      return;
-    }
-    await _openForm(
-      context,
-      ref,
-      kind == _NewItem.income ? EntryKind.income : EntryKind.expense,
-    );
   }
+}
 
-  Future<void> _openForm(
-    BuildContext context,
-    WidgetRef ref,
-    EntryKind kind,
-  ) async {
+/// Escolhe o tipo (receita, despesa, investimento) e abre o formulário.
+/// Também usado pelo botão "+" da Dashboard.
+Future<void> showNewEntryChooser(BuildContext context, WidgetRef ref) async {
+  final kind = await showModalBottomSheet<_NewItem>(
+    context: context,
+    builder: (sheet) => SafeArea(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            key: const Key('nova-receita'),
+            leading: const Icon(Icons.arrow_downward),
+            title: const Text('Nova receita'),
+            onTap: () => Navigator.pop(sheet, _NewItem.income),
+          ),
+          ListTile(
+            key: const Key('nova-despesa'),
+            leading: const Icon(Icons.arrow_upward),
+            title: const Text('Nova despesa'),
+            onTap: () => Navigator.pop(sheet, _NewItem.expense),
+          ),
+          ListTile(
+            key: const Key('novo-investimento'),
+            leading: const Icon(Icons.savings_outlined),
+            title: const Text('Novo investimento'),
+            onTap: () => Navigator.pop(sheet, _NewItem.investment),
+          ),
+        ],
+      ),
+    ),
+  );
+  if (kind == null || !context.mounted) return;
+  if (kind == _NewItem.investment) {
     await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => EntryFormScreen(kind: kind)),
+      MaterialPageRoute(builder: (_) => const EntryFormScreen.investment()),
     );
+    return;
   }
+  await Navigator.of(context).push<bool>(
+    MaterialPageRoute(
+      builder: (_) => EntryFormScreen(
+        kind: kind == _NewItem.income ? EntryKind.income : EntryKind.expense,
+      ),
+    ),
+  );
 }
 
 /// Linha da lista mista: lançamento (receita/despesa) ou investimento.
@@ -202,16 +241,27 @@ class _EntryList extends ConsumerWidget {
     if (!entries.hasValue || !investments.hasValue) {
       return const Center(child: CircularProgressIndicator());
     }
+    final query = ref.watch(entrySearchProvider).trim().toLowerCase();
+    bool matches(String? text) =>
+        query.isEmpty || (text ?? '').toLowerCase().contains(query);
     final rows = <_Row>[
       for (final e in entries.requireValue)
         if (!e.isCancelled &&
             (filter == EntryFilter.all ||
                 (filter == EntryFilter.income && e.kind == EntryKind.income) ||
-                (filter == EntryFilter.expense && e.kind == EntryKind.expense)))
+                (filter == EntryFilter.expense &&
+                    e.kind == EntryKind.expense)) &&
+            (matches(e.description) ||
+                matches(
+                  cats?.categories
+                      .where((c) => c.id == e.categoryId)
+                      .firstOrNull
+                      ?.name,
+                )))
           _Row.entry(e),
       if (filter == EntryFilter.all || filter == EntryFilter.investment)
         for (final i in investments.requireValue)
-          if (!i.cancelled) _Row.investment(i),
+          if (!i.cancelled && matches('investimento')) _Row.investment(i),
     ]..sort((a, b) => b.date.compareTo(a.date));
     if (rows.isEmpty) {
       return Center(
@@ -296,6 +346,122 @@ TextStyle _amountStyle(BuildContext context, Color color, {TextStyle? base}) =>
       fontFeatures: const [FontFeature.tabularFigures()],
     );
 
+/// Item da lista em duas regiões: esquerda flexível (ícone, título, detalhes,
+/// com reticências) e direita com largura natural (valor e badge de status,
+/// alinhados à direita). O valor nunca é cortado.
+class _TxTile extends StatelessWidget {
+  const _TxTile({
+    required this.leading,
+    required this.title,
+    required this.subtitle,
+    required this.amountText,
+    required this.amountStyle,
+    required this.onTap,
+    super.key,
+    this.badge,
+    this.badgePending = false,
+    this.strike = false,
+  });
+
+  final Widget leading;
+  final String title;
+  final String subtitle;
+  final String amountText;
+  final TextStyle amountStyle;
+  final String? badge;
+  final bool badgePending;
+  final bool strike;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = NorteColors.of(context);
+    final scheme = theme.colorScheme;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            leading,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      decoration: strike ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Região direita: largura natural, até 55% da linha (acima disso o
+            // valor reduz só se realmente não couber, nunca é cortado).
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.sizeOf(context).width * 0.55,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(amountText, style: amountStyle, maxLines: 1),
+                  ),
+                  if (badge != null) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: badgePending
+                            ? colors.pendingBackground
+                            : scheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        badge!,
+                        maxLines: 1,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: badgePending
+                              ? colors.pending
+                              : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Investimento na lista: só valor e data, sem status de pagamento (D2).
 class _InvestmentTile extends ConsumerWidget {
   const _InvestmentTile({required this.investment});
@@ -309,33 +475,25 @@ class _InvestmentTile extends ConsumerWidget {
     final strike = investment.cancelled
         ? const TextStyle(decoration: TextDecoration.lineThrough)
         : null;
-    return ListTile(
+    return _TxTile(
       key: Key('investimento-${investment.id}'),
       leading: CircleAvatar(
         backgroundColor: scheme.surfaceContainerHighest,
         foregroundColor: colors.investment,
         child: const Icon(Icons.trending_up),
       ),
-      title: Text(
-        'Investimento',
-        style: (strike ?? const TextStyle()).copyWith(
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      subtitle: Text(
-        [
-          investment.date.toBr(),
-          if (investment.cancelled) 'Cancelado',
-          if (investment.isRecurring) 'Recorrente',
-        ].join(' · '),
-      ),
-      trailing: Text(
-        '- ${formatBrl(investment.amount)}',
-        style: _amountStyle(
-          context,
-          investment.cancelled ? scheme.onSurfaceVariant : colors.investment,
-          base: strike,
-        ),
+      title: 'Investimento',
+      strike: investment.cancelled,
+      subtitle: [
+        investment.date.toBr(),
+        if (investment.cancelled) 'Cancelado',
+        if (investment.isRecurring) 'Recorrente',
+      ].join(' · '),
+      amountText: '- ${formatBrl(investment.amount)}',
+      amountStyle: _amountStyle(
+        context,
+        investment.cancelled ? scheme.onSurfaceVariant : colors.investment,
+        base: strike,
       ),
       onTap: () => _showActions(context, ref),
     );
@@ -501,13 +659,17 @@ class _EntryTile extends ConsumerWidget {
     final title = entry.description?.isNotEmpty == true
         ? entry.description!
         : (categoryName ?? entry.kind.label);
+    final needsAmount = entry.amount == null && !entry.isCancelled;
     final amount = entry.amount == null
-        ? 'Sem valor'
+        ? (needsAmount ? 'Informar valor' : 'Sem valor')
         : formatBrl(entry.amount!);
     final strike = entry.isCancelled
         ? const TextStyle(decoration: TextDecoration.lineThrough)
         : null;
-    return ListTile(
+    final pending =
+        !entry.isCancelled &&
+        (income ? entry.status == 'pending' : !entry.isPaid);
+    return _TxTile(
       key: Key('lancamento-${entry.id}'),
       leading: category != null
           ? CategoryBadge(
@@ -520,32 +682,29 @@ class _EntryTile extends ConsumerWidget {
               foregroundColor: income ? colors.income : colors.expense,
               child: Icon(income ? Icons.south_west : Icons.north_east),
             ),
-      title: Text(
-        title,
-        style: (strike ?? const TextStyle()).copyWith(
-          fontWeight: FontWeight.w700,
-        ),
+      title: title,
+      strike: entry.isCancelled,
+      subtitle: [
+        entry.date.toBr(),
+        ?categoryName,
+        if (entry.isRecurring) 'Recorrente',
+        if (entry.dueOn != null && entry.isPendingExpense)
+          'vence ${entry.dueOn!.toBr()}',
+      ].join(' · '),
+      amountText: entry.amount == null
+          ? amount
+          : (income ? '+ $amount' : '- $amount'),
+      amountStyle: _amountStyle(
+        context,
+        entry.isCancelled
+            ? theme.colorScheme.onSurfaceVariant
+            : (needsAmount
+                  ? theme.colorScheme.onSurfaceVariant
+                  : (income ? colors.income : colors.expense)),
+        base: strike,
       ),
-      subtitle: Text(
-        [
-          entry.date.toBr(),
-          ?categoryName,
-          entryStatusLabel(entry),
-          if (entry.isRecurring) 'Recorrente',
-          if (entry.dueOn != null && entry.isPendingExpense)
-            'vence ${entry.dueOn!.toBr()}',
-        ].join(' · '),
-      ),
-      trailing: Text(
-        income ? '+ $amount' : '- $amount',
-        style: _amountStyle(
-          context,
-          entry.isCancelled
-              ? theme.colorScheme.onSurfaceVariant
-              : (income ? colors.income : colors.expense),
-          base: strike,
-        ),
-      ),
+      badge: entryStatusLabel(entry),
+      badgePending: pending,
       onTap: () => _showActions(context, ref),
     );
   }
