@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../features/transactions/transactions_screen.dart';
 
-/// Estrutura da navegação principal: barra inferior fixa, retangular, com
-/// Home, Relatórios, Adicionar (+), Lançamentos e Mais. Só Home, Lançamentos
-/// e Mais são abas (cada uma mantém o próprio estado); Relatórios abre a tela
-/// de relatórios e Adicionar abre o menu de novo lançamento.
+/// Estrutura da navegação principal: barra inferior em pílula com Home,
+/// Ferramentas, Adicionar (+), Lançamentos e Mais. Home, Ferramentas,
+/// Lançamentos e Mais são abas (cada uma mantém o próprio estado); Adicionar
+/// abre o menu de novo lançamento.
 class MainShell extends ConsumerWidget {
   const MainShell({
     required this.navigationShell,
@@ -39,30 +39,30 @@ class MainShell extends ConsumerWidget {
         currentIndex: current,
         onTab: _goTab,
         onAdd: () => showNewEntryChooser(context, ref),
-        onReports: () => context.push('/relatorios'),
       ),
     );
   }
 }
 
 /// Barra em pílula, solta das bordas; o "+" fica elevado no centro. Usada no
-/// shell principal e na tela de Relatórios.
+/// shell principal e nas telas de ferramenta abertas por cima dele (ex.:
+/// Relatórios, com Ferramentas selecionada).
 class NorteNavBar extends StatelessWidget {
   const NorteNavBar({
     required this.onTab,
     required this.onAdd,
-    required this.onReports,
     this.currentIndex,
-    this.reportsSelected = false,
     super.key,
   });
 
-  /// Aba selecionada (0 Home, 1 Lançamentos, 2 Mais); null se nenhuma.
+  /// Rotas das abas, na ordem dos índices.
+  static const tabRoutes = ['/', '/ferramentas', '/lancamentos', '/mais'];
+
+  /// Aba selecionada (0 Home, 1 Ferramentas, 2 Lançamentos, 3 Mais); null se
+  /// nenhuma.
   final int? currentIndex;
-  final bool reportsSelected;
   final void Function(int index) onTab;
   final VoidCallback onAdd;
-  final VoidCallback onReports;
 
   @override
   Widget build(BuildContext context) {
@@ -89,12 +89,12 @@ class NorteNavBar extends StatelessWidget {
                   onTap: () => onTab(0),
                 ),
                 _NavItem(
-                  itemKey: const Key('nav-relatorios'),
-                  icon: Icons.bar_chart_outlined,
-                  selectedIcon: Icons.bar_chart,
-                  label: 'Relatórios',
-                  selected: reportsSelected,
-                  onTap: () => onReports(),
+                  itemKey: const Key('nav-ferramentas'),
+                  icon: Icons.home_repair_service_outlined,
+                  selectedIcon: Icons.home_repair_service,
+                  label: 'Ferramentas',
+                  selected: currentIndex == 1,
+                  onTap: () => onTab(1),
                 ),
                 _AddItem(onTap: () => onAdd()),
                 _NavItem(
@@ -102,16 +102,16 @@ class NorteNavBar extends StatelessWidget {
                   icon: Icons.receipt_long_outlined,
                   selectedIcon: Icons.receipt_long,
                   label: 'Lançamentos',
-                  selected: currentIndex == 1,
-                  onTap: () => onTab(1),
+                  selected: currentIndex == 2,
+                  onTap: () => onTab(2),
                 ),
                 _NavItem(
                   itemKey: const Key('nav-mais'),
                   icon: Icons.more_horiz,
                   selectedIcon: Icons.more_horiz,
                   label: 'Mais',
-                  selected: currentIndex == 2,
-                  onTap: () => onTab(2),
+                  selected: currentIndex == 3,
+                  onTap: () => onTab(3),
                 ),
               ],
             ),

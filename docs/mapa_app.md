@@ -3,8 +3,9 @@
 Onde fica cada coisa no código, como está hoje. Ler só a linha do módulo que vai mexer. Testes espelham `lib/` em `test/` (integração em `test/integration/`). Atualizar este arquivo quando criar/mover módulo, tela ou rota.
 
 ## Telas e rotas (`lib/app/app.dart`)
-- Barra inferior (`lib/shared/main_shell.dart`), em pílula: Home (`/`) · Relatórios (abre `/relatorios`) · Adicionar + (abre `showNewEntryChooser`) · Lançamentos (`/lancamentos`) · Mais (`/mais`, com Categorias).
-- Mais (`features/more/more_screen.dart`): Sincronizar agora (celular) · `/atencao` Itens que precisam de atenção · `/categorias` · `/periodo` · `/relatorios` · `/configuracao-inicial` · `/tema` · `/recorrencias` · `/exportar` (CSV) · `/seguranca` (celular) · Excluir conta · Sair.
+- Barra inferior (`lib/shared/main_shell.dart`, `NorteNavBar`), em pílula: Home (`/`) · Ferramentas (`/ferramentas`) · Adicionar + (abre `showNewEntryChooser`) · Lançamentos (`/lancamentos`) · Mais (`/mais`, com Categorias).
+- Ferramentas (`features/tools/`): `/ferramentas` (catálogo) · `/ferramentas/personalizar`. Relatórios é a ferramenta `reports` e abre `/relatorios` (fora do shell; a barra mostra Ferramentas selecionada).
+- Mais (`features/more/more_screen.dart`): Sincronizar agora (celular) · `/atencao` Itens que precisam de atenção · `/categorias` · `/periodo` · `/configuracao-inicial` · `/tema` · `/recorrencias` · `/exportar` (CSV) · `/seguranca` (celular) · Excluir conta · Sair.
 - Fora das abas: `/login`, `/nova-senha`, `/bloqueio` (PIN).
 
 ## Núcleo (`lib/core/`)
@@ -35,18 +36,19 @@ Padrão por módulo: `*_models` · `*_repository` (interface) · `local_*` (Drif
 | `transactions/` | aba Lançamentos (lista e filtros) | RF004 | — |
 | `dashboard/` | dinheiro livre e composição do período | RF020 | — |
 | `totals/` | totais por período (intervalo de datas) para o Dashboard | RN005 | — |
-| `reports/` | relatórios e gráficos (`fl_chart`); somam por intervalo de datas (`PeriodRange`) | RF025 | RPC `get_range_report` |
+| `reports/` | relatórios e gráficos (`fl_chart`); somam por intervalo de datas (`PeriodRange`); aberto pela ferramenta Relatórios | RF025 | RPC `get_range_report` |
+| `tools/` | aba Ferramentas: `models/` (`ToolDefinition`, `ToolCategory`/`ToolCategories`, `ToolIntroMode`, `ToolPreferences`), `registry/tool_registry.dart` (catálogo único; hoje só Relatórios), `domain/tool_catalog.dart` (Suas/Outras, adicionar, remover, reordenar, busca, categorias), `tools_providers.dart` (estado e gravação), `tool_launcher.dart` (abre respeitando a explicação), `screens/` (catálogo e Personalizar), `widgets/` (cartões, informação, explicação inicial) | RF004, RF025 | `user_preferences.tools`; RPCs `set_tool_selection`, `dismiss_tool_intro` |
 | `alerts/` | notificação diária de vencimentos (Android) | RF023, RN018, RN041 | — |
 | `sync/` | fila, envio, download, agendador, indicador de status | RF021–022, RF027, RN031–033 | `sync_outbox`, `sync_cursors`, `applied_sync_operations` |
 | `attention/` | conflitos e recusas para o usuário decidir | RN033 | `sync_conflicts` |
-| `preferences/` | tema claro/escuro | RF026 | `user_preferences` |
+| `preferences/` | tema claro/escuro; repositório único das preferências da conta (tema, assistente, Ferramentas) | RF026 | `user_preferences` |
 | `app/theme/` | tema central (`norte_theme.dart`): cores Menta claro/escuro, fonte Inter, componentes, e `NorteColors` (receita, despesa, investimento, pendente). Telas devem usar `colorScheme`/`NorteColors`, sem cor própria | — | — |
 | `onboarding/` | assistente inicial com etapas puláveis | RF024 | `user_preferences.onboarding` |
 | `export/` | CSV (só Web) | requisitos §8, D4 Fase 8 | — |
 | `more/` | menu da aba Mais | RF004 | — |
 
 ## Fora de `lib/`
-- `supabase/migrations/` (24) e `supabase/tests/` — ver `banco_de_dados.md`.
+- `supabase/migrations/` (25) e `supabase/tests/` — ver `banco_de_dados.md`.
 - `tooling/`: `test_postgres_schema.ps1`, `test_integration_local.ps1`, `test_integration_homolog.ps1`, `build_release.ps1`.
 - `env/*.example.json` (config por ambiente), `drift_schemas/` (snapshots), `web/excluir-conta.html`.
 - `assets/fonts/inter/`: fonte Inter (licença OFL em `OFL-LICENSE.txt`), embutida no app.

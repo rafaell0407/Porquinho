@@ -32,7 +32,7 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 3. Autenticação por Google e por e-mail/senha.
 4. Confirmação de e-mail para cadastro tradicional e recuperação de senha.
 5. Bloqueio opcional por PIN ou biometria no aplicativo móvel, solicitado ao abrir o app quando ativado.
-6. Navegação principal com três áreas: Dashboard, Lançamentos e Mais.
+6. Navegação principal com quatro áreas (Home, Ferramentas, Lançamentos e Mais) e o botão Adicionar (+) no centro da barra inferior.
 7. Cadastro de receitas avulsas, com data de recebimento informada pelo usuário (passada ou futura — decisão de 10/11/2026).
 8. Cadastro de receitas recorrentes mensais, com valores fixos ou variáveis; ocorrência pendente até confirmação do recebimento.
 9. Cadastro de despesas avulsas e recorrentes mensais, com valores fixos ou variáveis.
@@ -85,11 +85,13 @@ Casais ou famílias poderão compartilhar um planejamento financeiro em versão 
 
 ## 5. Navegação e módulos funcionais
 
-A navegação principal terá somente:
+A navegação principal terá somente (barra inferior: Home, Ferramentas, Adicionar +, Lançamentos e Mais — 13/11/2026):
 
-- **Dashboard:** período selecionado, dinheiro livre do período e visão resumida de receitas, despesas e investimentos.
+- **Home (Dashboard):** período selecionado, dinheiro livre do período e visão resumida de receitas, despesas e investimentos.
+- **Ferramentas:** catálogo personalizável de ferramentas financeiras (o usuário escolhe, ordena e restaura "Suas ferramentas"; as demais ficam em "Outras ferramentas"). Os cinco relatórios (RF025, §13.7) são uma ferramenta deste catálogo. Ferramentas futuras são simulações independentes, sem criar lançamentos, e cada uma precisa de aprovação própria.
+- **Adicionar (+):** abre o novo lançamento (despesa, receita ou investimento).
 - **Lançamentos:** inclusão, consulta, edição e cancelamento de receitas, despesas e destinações para investimentos; filtros por período, tipo, categoria e status quando aplicável.
-- **Mais:** categorias, relatórios, configurações, preferências de período, tema, segurança e onboarding.
+- **Mais:** categorias, configurações, preferências de período, tema, segurança e onboarding.
 
 Não haverá abas próprias para Contas ou Porquinho.
 
@@ -102,7 +104,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF001 | Autenticação com Google e e-mail/senha | Essencial | APROVADO |
 | RF002 | Verificação de e-mail e recuperação de senha | Essencial | APROVADO |
 | RF003 | Bloqueio móvel opcional por PIN ou biometria ao abrir o app | Alta | APROVADO |
-| RF004 | Navegação principal: Home, Relatórios, Adicionar, Lançamentos e Mais | Essencial | APROVADO |
+| RF004 | Navegação principal: Home, Ferramentas, Adicionar, Lançamentos e Mais (Ferramentas substituiu Relatórios em 13/11/2026; os relatórios ficam dentro de Ferramentas) | Essencial | APROVADO |
 | RF005 | Registrar receitas avulsas com data de recebimento informada (passada ou futura) | Essencial | APROVADO (revisado em 10/11/2026) |
 | RF006 | Criar receitas recorrentes mensais ("Todo mês"; por período retirado em 13/11/2026), fixas ou variáveis, ativando "Repetir" no formulário do lançamento (o lançamento é a primeira ocorrência); consultar em Mais → Recorrências | Alta | APROVADO (D8, 11/11/2026) |
 | RF007 | Gerar ocorrência pendente de receita recorrente e contabilizar somente após confirmação de recebimento | Essencial | APROVADO |
@@ -123,7 +125,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF022 | Sincronizar operações pendentes com idempotência e detecção de conflitos | Essencial | APROVADO |
 | RF023 | Alertas móveis de vencimento de despesas | Alta | APROVADO |
 | RF024 | Assistente de configuração inicial com etapas opcionais | Média | APROVADO |
-| RF025 | Disponibilizar cinco relatórios básicos | Média | APROVADO; conteúdo definido na seção 13.7 |
+| RF025 | Disponibilizar cinco relatórios básicos (acesso pela aba Ferramentas → Relatórios) | Média | APROVADO; conteúdo definido na seção 13.7 |
 | RF026 | Seleção manual de tema claro ou escuro | Média | APROVADO |
 | RF027 | Cálculos locais e validação remota segundo as mesmas regras, com resultados equivalentes | Essencial | APROVADO |
 

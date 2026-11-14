@@ -27,7 +27,7 @@ enum ReportKind {
       this == ReportKind.evolution || this == ReportKind.comparison;
 }
 
-/// Mais → Relatórios.
+/// Ferramentas → Relatórios (rota `/relatorios`).
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
@@ -44,10 +44,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Relatórios')),
       bottomNavigationBar: NorteNavBar(
-        reportsSelected: true,
-        onTab: (i) => context.go(const ['/', '/lancamentos', '/mais'][i]),
+        currentIndex: 1,
+        onTab: (i) => context.go(NorteNavBar.tabRoutes[i]),
         onAdd: () => showNewEntryChooser(context, ref),
-        onReports: () {},
       ),
       body: Column(
         children: [

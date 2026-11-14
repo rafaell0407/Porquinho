@@ -24,12 +24,15 @@ import '../features/export/export_screen.dart';
 import '../features/reports/reports_screen.dart';
 import '../features/recurrence/recurrences_screen.dart';
 import 'theme/norte_theme.dart';
+import '../features/tools/screens/manage_tools_screen.dart';
+import '../features/tools/screens/tools_screen.dart';
 import '../features/transactions/transactions_screen.dart';
 import '../features/sync/sync_indicator.dart';
 import '../shared/main_shell.dart';
 
 /// Rotas: `/login` sem sessão; `/nova-senha` após o link de recuperação;
-/// com sessão, as três abas `/` (Dashboard), `/lancamentos` e `/mais`.
+/// com sessão, as quatro abas `/` (Dashboard), `/ferramentas`, `/lancamentos`
+/// e `/mais`. `/relatorios` abre os relatórios (ferramenta do catálogo).
 final routerProvider = Provider<GoRouter>((ref) {
   final controller = ref.watch(sessionControllerProvider);
   final refresh = ValueNotifier<int>(0);
@@ -94,6 +97,20 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(path: '/', builder: (_, _) => const DashboardScreen()),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/ferramentas',
+                builder: (_, _) => const ToolsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'personalizar',
+                    builder: (_, _) => const ManageToolsScreen(),
+                  ),
+                ],
+              ),
             ],
           ),
           StatefulShellBranch(

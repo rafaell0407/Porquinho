@@ -12,7 +12,7 @@ Só o schema vigente. Modelo conceitual, justificativas e status históricos: `h
 ## 2. Tabelas
 | Tabela | Campos-chave / regras |
 |---|---|
-| `user_preferences` | PK `owner_id`; `theme` (`light`/`dark`); `time_zone_id` (padrão `America/Sao_Paulo`); `onboarding` JSON `{etapa: done\|skipped}` |
+| `user_preferences` | PK `owner_id`; `theme` (`light`/`dark`); `time_zone_id` (padrão `America/Sao_Paulo`); `onboarding` JSON `{etapa: done\|skipped}`; `tools` JSON `{selected?: [IDs na ordem], dismissed_intros?: [IDs]}` (sem `selected` = padrão do app; IDs `^[a-z][a-z0-9_]{0,63}$`) |
 | `period_settings` | configuração única por usuário (`id` = dono): `mode` (`calendar_month`/`custom_cycle`), `custom_start_day` 1–31, `version`. Períodos não são gravados: são calculados (`[início, fim)`) a partir dela (RN002, P6/P7) |
 | `categories` | `kind` (`income`/`expense`, imutável), `name`, `is_active`, `icon_key` (padrão `category`), `color_key` (uma de 8 chaves; padrão `gray`) |
 | `subcategories` | `category_id`, `name`, `is_active` |
@@ -38,13 +38,13 @@ Unicidade de ocorrência: índice parcial `(owner_id, recurrence_template_id, sc
 | Recorrências | `apply_{income,expense,investment}_recurrence_template_change`, `create_recurrence_from_entry`, `create_investment_recurrence_from_entry`, `generate_due_recurrence_occurrences` (só mensal; no máximo uma ocorrência por modelo e mês), `recurrence_occurrence_id`, `recurrence_monthly_date` (dia inexistente → último dia útil do mês, RN038). Gatilho `enforce_monthly_recurrence`: recusa criar, reativar ou mudar para `by_period`; modelos `by_period` antigos foram desativados (auditado) | `20261109000700–0900`, `20261111000300`, `20261111000400`, `20261113000500` |
 | Conflitos | `resolve_sync_conflict` | `20261110000100`, `20261111000400`, `20261113000300` |
 | Relatórios (leitura) | `get_range_report(p_starts, p_ends)`: somas exatas como texto por intervalo de datas `[início, fim)` pela data de competência (índices por data) | `20261113000400` |
-| Preferências | `set_user_theme`, `set_onboarding_step` | `20261112000300` |
+| Preferências | `set_user_theme`, `set_onboarding_step`; Ferramentas: `set_tool_selection(p_tool_ids text[])` (lista ordenada, `NULL` = padrão; última gravação vence) e `dismiss_tool_intro(p_tool_id)` (soma entre aparelhos) | `20261112000300`, `20261113000800` |
 | Conta | `delete_my_account` | `20261113000200`, `20261113000700` |
 | Segurança | revoga funções de gatilho para `anon` | `20261113000100` |
 
 Testes SQL: `supabase/tests/*_test.sql` (inclui `security_catalog_test.sql`). Nova mudança = nova migration; nunca editar as existentes.
 
 ## 4. Drift (local)
-- `lib/core/local_database/app_database.dart`, **schemaVersion 8**; snapshots em `drift_schemas/porquinho/drift_schema_v1..v8.json`; testes em `test/core/local_database/migration_test.dart`.
-- v4: recorrência de investimento. v5: `user_preferences.onboarding`. v6: `categories.icon_key` e `color_key` (padrões iguais aos do servidor; o download usa o padrão se o servidor ainda não enviar as colunas). v7: `period_settings` (configuração única, preenchida com a que valia no aparelho) e vínculo com o período opcional. v8: sem `accounting_periods`, `period_configurations` nem colunas de vínculo; pendências e conflitos antigos de período descartados.
+- `lib/core/local_database/app_database.dart`, **schemaVersion 9**; snapshots em `drift_schemas/porquinho/drift_schema_v1..v9.json`; testes em `test/core/local_database/migration_test.dart`.
+- v4: recorrência de investimento. v5: `user_preferences.onboarding`. v6: `categories.icon_key` e `color_key` (padrões iguais aos do servidor; o download usa o padrão se o servidor ainda não enviar as colunas). v7: `period_settings` (configuração única, preenchida com a que valia no aparelho) e vínculo com o período opcional. v8: sem `accounting_periods`, `period_configurations` nem colunas de vínculo; pendências e conflitos antigos de período descartados. v9: `user_preferences.tools` (escolhas da aba Ferramentas, padrão `{}`).
 - Alterou o schema: incrementar versão, gerar snapshot, testar migração da anterior.

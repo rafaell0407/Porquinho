@@ -55,6 +55,10 @@ class UserPreferences extends Table {
   /// Progresso do assistente inicial (RF024, D7): JSON `{etapa: done|skipped}`.
   TextColumn get onboarding => text().withDefault(const Constant('{}'))();
 
+  /// Aba Ferramentas: JSON `{selected?: [ids], dismissed_intros?: [ids]}`.
+  /// Sem `selected` = configuração padrão do app.
+  TextColumn get tools => text().withDefault(const Constant('{}'))();
+
   @override
   Set<Column<Object>> get primaryKey => {ownerId};
 }
@@ -376,7 +380,7 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
   PorquinhoDatabase(super.executor);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -500,6 +504,13 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
         await migrator.alterTable(TableMigration(schema.investmentAllocations));
         await customStatement('DROP TABLE IF EXISTS accounting_periods');
         await customStatement('DROP TABLE IF EXISTS period_configurations');
+      },
+      // v9 (aba Ferramentas): escolhas do catálogo de ferramentas na conta.
+      from8To9: (migrator, schema) async {
+        await migrator.addColumn(
+          schema.userPreferences,
+          schema.userPreferences.tools,
+        );
       },
     ),
     beforeOpen: (_) async => customStatement('PRAGMA foreign_keys = ON'),

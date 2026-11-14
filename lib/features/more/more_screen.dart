@@ -9,8 +9,9 @@ import '../auth/logout_flow.dart';
 import '../sync/sync_indicator.dart';
 import '../sync/sync_providers.dart';
 
-/// Aba "Mais": atalhos para categorias, período, relatórios, tema,
-/// recorrências, exportação, segurança, exclusão de conta e saída.
+/// Aba "Mais": atalhos para categorias, período, tema, recorrências,
+/// exportação, segurança, exclusão de conta e saída. Relatórios ficam na aba
+/// Ferramentas.
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
 
@@ -34,12 +35,6 @@ class MoreScreen extends ConsumerWidget {
             icon: Icons.date_range_outlined,
             title: 'Período',
             onTap: () => context.push('/periodo'),
-          ),
-          _MoreTile(
-            tileKey: const Key('mais-relatorios'),
-            icon: Icons.bar_chart_outlined,
-            title: 'Relatórios',
-            onTap: () => context.push('/relatorios'),
           ),
           _MoreTile(
             tileKey: const Key('mais-configuracao-inicial'),

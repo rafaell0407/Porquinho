@@ -38,6 +38,7 @@ const _rpcs = [
   'apply_investment_allocation_change',
   'apply_investment_recurrence_template_change',
   'apply_subcategory_change',
+  'dismiss_tool_intro',
   'create_investment_recurrence_from_entry',
   'create_recurrence_from_entry',
   'generate_due_recurrence_occurrences',
@@ -46,6 +47,7 @@ const _rpcs = [
   'resolve_sync_conflict',
   'set_onboarding_step',
   'set_period_settings',
+  'set_tool_selection',
   'set_user_theme',
 ];
 

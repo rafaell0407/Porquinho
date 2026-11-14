@@ -53,7 +53,7 @@ void main() {
     final schemaVersion = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(schemaVersion.read<int>('user_version'), 8);
+    expect(schemaVersion.read<int>('user_version'), 9);
   });
 
   test('grava e lê centavos exatos no SQLite', () async {

@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../../core/local_database/app_database.dart';
+import '../tools/models/tool_preferences.dart';
 import '../sync/local_change_recorder.dart';
 import '../sync/remote_table_reader.dart';
 import '../sync/sync_models.dart';
 
-/// Preferências da conta (`user_preferences`): por enquanto, o tema (RF026).
+/// Preferências da conta (`user_preferences`): tema (RF026), progresso do
+/// assistente inicial e escolhas da aba Ferramentas.
 /// Celular: banco local + fila de envio. Web: servidor.
 abstract interface class PreferencesRepository {
   /// `'light'`, `'dark'` ou `null` (sem escolha: segue o aparelho, D4).
@@ -23,6 +25,16 @@ abstract interface class PreferencesRepository {
   /// Marca a etapa como concluída ou pulada. Etapas de aparelhos diferentes se
   /// somam no servidor.
   Future<void> setOnboardingStep(String step, String status);
+
+  /// Escolhas da aba Ferramentas.
+  Future<ToolPreferences> tools();
+
+  /// Grava a lista ordenada de "Suas ferramentas"; `null` = padrão do app.
+  /// Decisão de 13/11/2026: vale a última lista enviada (como o tema).
+  Future<void> setToolSelection(List<String>? toolIds);
+
+  /// "Não mostrar novamente" da explicação inicial. Aparelhos se somam.
+  Future<void> dismissToolIntro(String toolId);
 }
 
 Map<String, String> decodeOnboarding(Object? raw) {
@@ -40,6 +52,8 @@ Map<String, String> decodeOnboarding(Object? raw) {
 
 const setThemeRpc = 'set_user_theme';
 const setOnboardingStepRpc = 'set_onboarding_step';
+const setToolSelectionRpc = 'set_tool_selection';
+const dismissToolIntroRpc = 'dismiss_tool_intro';
 
 /// Celular: grava primeiro no banco local (registro, auditoria e fila na mesma
 /// transação), funcionando sem conexão.
@@ -149,6 +163,74 @@ class LocalPreferencesRepository implements PreferencesRepository {
       },
     );
   }
+
+  @override
+  Future<ToolPreferences> tools() async =>
+      ToolPreferences.decode((await _row())?['tools']);
+
+  @override
+  Future<void> setToolSelection(List<String>? toolIds) async {
+    final old = await _row();
+    final next = ToolPreferences.decode(old?['tools']).withSelected(toolIds);
+    await _recordTools(
+      old,
+      next,
+      rpc: setToolSelectionRpc,
+      params: {'p_tool_ids': toolIds},
+    );
+  }
+
+  @override
+  Future<void> dismissToolIntro(String toolId) async {
+    final old = await _row();
+    final next = ToolPreferences.decode(old?['tools']).withDismissed(toolId);
+    await _recordTools(
+      old,
+      next,
+      rpc: dismissToolIntroRpc,
+      params: {'p_tool_id': toolId},
+    );
+  }
+
+  Future<void> _recordTools(
+    Map<String, dynamic>? old,
+    ToolPreferences next, {
+    required String rpc,
+    required Map<String, dynamic> params,
+  }) async {
+    final previousVersion = (old?['version'] as int?) ?? 0;
+    final now = _clock().toUtc().toIso8601String();
+    await _recorder.record(
+      ownerId: _ownerId,
+      entityType: 'user_preferences',
+      entityId: _ownerId,
+      operation: old == null ? 'create' : 'update',
+      expectedVersion: previousVersion,
+      rpc: rpc,
+      params: params,
+      oldSnapshot: old == null
+          ? null
+          : {
+              'owner_id': _ownerId,
+              'tools': ToolPreferences.decode(old['tools']).toJson(),
+              'version': previousVersion,
+            },
+      newSnapshot: {
+        'owner_id': _ownerId,
+        'tools': next.toJson(),
+        'version': previousVersion + 1,
+      },
+      apply: () async {
+        await _db.customStatement(
+          'INSERT INTO user_preferences (owner_id, tools, version, '
+          'updated_at) VALUES (?, ?, ?, ?) '
+          'ON CONFLICT (owner_id) DO UPDATE SET tools = excluded.tools, '
+          'version = excluded.version, updated_at = excluded.updated_at',
+          [_ownerId, next.encode(), previousVersion + 1, now],
+        );
+      },
+    );
+  }
 }
 
 /// Web: lê e grava direto no servidor (somente online).
@@ -195,6 +277,36 @@ class RemotePreferencesRepository implements PreferencesRepository {
     });
     if (response['status'] != 'applied') {
       throw const SyncRejectedError('Não foi possível salvar a etapa.');
+    }
+  }
+
+  @override
+  Future<ToolPreferences> tools() async {
+    final rows = await _reader.select('user_preferences');
+    return rows.isEmpty
+        ? ToolPreferences.empty
+        : ToolPreferences.decode(rows.first['tools']);
+  }
+
+  @override
+  Future<void> setToolSelection(List<String>? toolIds) async {
+    final response = await _gateway.call(setToolSelectionRpc, {
+      'p_operation_id': _newId(),
+      'p_tool_ids': toolIds,
+    });
+    if (response['status'] != 'applied') {
+      throw const SyncRejectedError('Não foi possível salvar as ferramentas.');
+    }
+  }
+
+  @override
+  Future<void> dismissToolIntro(String toolId) async {
+    final response = await _gateway.call(dismissToolIntroRpc, {
+      'p_operation_id': _newId(),
+      'p_tool_id': toolId,
+    });
+    if (response['status'] != 'applied') {
+      throw const SyncRejectedError('Não foi possível salvar a preferência.');
     }
   }
 }

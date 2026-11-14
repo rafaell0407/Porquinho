@@ -452,4 +452,42 @@ void main() {
       await db.close();
     });
   });
+
+  group('v8 -> v9 (aba Ferramentas)', () {
+    test(
+      'produz o esquema do snapshot v9 e preserva as preferências',
+      () async {
+        final schema = await verifier.schemaAt(8);
+        schema.rawDatabase.execute(
+          "INSERT INTO user_preferences (owner_id, theme, time_zone_id, "
+          "version, updated_at, onboarding) VALUES ('u1', 'dark', "
+          "'America/Sao_Paulo', 4, 'x', '{\"intro\":\"done\"}')",
+        );
+        final db = PorquinhoDatabase(schema.newConnection());
+        await verifier.migrateAndValidate(db, 9);
+        final row = await db
+            .customSelect('SELECT * FROM user_preferences')
+            .getSingle();
+        expect(row.data['theme'], 'dark');
+        expect(row.data['version'], 4);
+        expect(row.data['onboarding'], '{"intro":"done"}');
+        expect(row.data['tools'], '{}');
+        await db.close();
+      },
+    );
+
+    test('criação direta na v9 equivale ao snapshot v9', () async {
+      final schema = await verifier.schemaAt(9);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 9);
+      await db.close();
+    });
+
+    test('v1 -> v9 (todos os passos)', () async {
+      final schema = await verifier.schemaAt(1);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 9);
+      await db.close();
+    });
+  });
 }
