@@ -51,6 +51,12 @@ O menu do "+" virou bottom sheet com cartões (Despesa, Receita, Investimento), 
 - **Sem mudança** de regra financeira, cálculo, lançamentos ou escopo; nenhuma ferramenta fictícia.
 - **Testes:** `flutter analyze` sem problemas; suíte completa 1.128 passando (31 de integração pulados); suíte SQL completa com o novo `rpc_tool_preferences_test.sql` e catálogo de segurança. Web (`--platform chrome`) não roda neste ambiente (T9).
 
+## Calculadora de juros compostos (14/11/2026) — aguardando validação
+- **Para o usuário:** nova ferramenta em Ferramentas → Outras ferramentas (categoria Investimentos; não entra sozinha em "Suas ferramentas", dá para adicionar). Abre com explicação antes do primeiro uso. Campos: valor inicial, valor mensal, taxa (mensal/anual) e período (meses/anos); Calcular, Limpar e "Simular retiradas mensais". Resultado: valor final (destaque), total investido, total em juros, gráfico (total acumulado × investido, toque mostra o mês) e tabela mês a mês (rolagem própria; horizontal só dentro da tabela no celular). Retiradas: tela própria, patrimônio sugerido = valor final da simulação, aviso de quando o dinheiro acaba, cartões, gráfico e tabela; premissas no ícone de informação.
+- **Cálculo** (`lib/features/compound_interest/domain/`): mês 0 = valor inicial; cada mês, saldo × (1 + taxa) + aporte no fim do mês; taxa anual efetiva convertida na mensal equivalente (1 + anual)^(1/12) − 1 (12% a.a. ≈ 0,9489% a.m.; 8.000 a 12% a.a. por 10 anos = R$ 24.846,79, igual a 8.000 × 1,12^10), corrigido em 14/11/2026 a pedido do responsável (antes era ÷ 12). Retiradas: juros sobre o saldo do início do mês, retirada no fim, sem saldo negativo (para no mês em que acaba). Precisão em `BigInt` (10^18 por centavo), arredondamento para centavos só na exibição; totais derivados para cartões e tabela baterem.
+- **Sem mudança** de banco, Drift, sincronização, preferências, regra financeira ou lançamentos. Rotas `/juros-compostos` e `/juros-compostos/retiradas`. Pontos a confirmar em `pendencias.md` F4.
+- **Testes:** `flutter analyze` sem problemas; suíte completa 1.168 passando (31 de integração pulados), com 26 de domínio, 11 de tela e 3 de catálogo novos; telas renderizadas conferidas em claro/escuro, celular e largura Web; no emulador (escuro): catálogo, explicação inicial e cálculo de R$ 8.000 a 12% a.a. por 2 anos = R$ 10.157,88.
+
 ## Próximo passo
 Validar P2–P7 no emulador e na Web (P8; roteiro T7). Homologação só com autorização (R2). Fase 8 (76, D1/D5, 77) retoma depois.
 

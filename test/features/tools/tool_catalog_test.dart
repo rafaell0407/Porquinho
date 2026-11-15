@@ -52,6 +52,19 @@ void main() {
       expect(norteToolRegistry.defaultSelection, ['reports']);
     });
 
+    test('juros compostos: fora do padrão, em Investimentos, com explicação '
+        'antes do primeiro uso', () {
+      final tool = norteToolRegistry.byId('compound_interest')!;
+      expect(tool.route, '/juros-compostos');
+      expect(tool.category, ToolCategories.investments);
+      expect(tool.defaultPosition, isNull);
+      expect(tool.introMode, ToolIntroMode.beforeFirstUse);
+      expect(tool.explanation.disclaimer, isNotNull);
+      expect(norteToolRegistry.defaultSelection, isNot(contains(tool.id)));
+      expect(toolMatches(tool, query: 'juros'), isTrue);
+      expect(toolMatches(tool, query: 'retirada'), isTrue);
+    });
+
     test('padrão segue a posição definida, não a ordem de registro', () {
       final r = ToolRegistry([
         tool('a', defaultPosition: 2),

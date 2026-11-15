@@ -155,18 +155,54 @@ void main() {
     expect(_key('ferramentas-grupo-planning'), findsOneWidget);
   });
 
-  testWidgets('catálogo real: Relatórios em Suas, sem destaque vazio', (
+  testWidgets(
+    'catálogo real: Relatórios em Suas, juros compostos em Outras, sem '
+    'destaque vazio',
+    (tester) async {
+      await _pump(
+        tester,
+        FakePreferencesRepository(),
+        registry: norteToolRegistry,
+      );
+      expect(_key('ferramenta-reports'), findsOneWidget);
+      expect(find.text('Em destaque'), findsNothing);
+      expect(_key('ferramenta-compound_interest'), findsNothing);
+      await _scrollTo(tester, _key('ferramenta-adicionar-compound_interest'));
+      expect(find.text('Outras ferramentas'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'juros compostos: explicação antes do primeiro uso e abre a rota',
+    (tester) async {
+      final repo = FakePreferencesRepository();
+      await _pump(tester, repo, registry: norteToolRegistry);
+      await _scrollTo(tester, find.text('Juros compostos'));
+      await tester.tap(find.text('Juros compostos'));
+      await tester.pumpAndSettle();
+      expect(_key('ferramenta-intro-compound_interest'), findsOneWidget);
+      await tester.tap(_key('ferramenta-intro-continuar'));
+      await tester.pumpAndSettle();
+      expect(find.text('ABRIU /juros-compostos'), findsOneWidget);
+      // Abrir não muda a lista de quem nunca personalizou.
+      expect(repo.tools_.selected, isNull);
+    },
+  );
+
+  testWidgets('juros compostos não entra na lista salva de quem já tinha', (
     tester,
   ) async {
-    await _pump(
-      tester,
-      FakePreferencesRepository(),
-      registry: norteToolRegistry,
+    final repo = FakePreferencesRepository(
+      const ToolPreferences(selected: ['reports']),
     );
+    await _pump(tester, repo, registry: norteToolRegistry);
     expect(_key('ferramenta-reports'), findsOneWidget);
-    expect(find.text('Em destaque'), findsNothing);
-    expect(find.text('Outras ferramentas'), findsNothing);
-    expect(_key('ferramentas-categoria-todas'), findsNothing);
+    expect(_key('ferramenta-compound_interest'), findsNothing);
+    await _scrollTo(tester, _key('ferramenta-adicionar-compound_interest'));
+    expect(repo.tools_.selected, ['reports']);
+    await tester.tap(_key('ferramenta-adicionar-compound_interest'));
+    await tester.pumpAndSettle();
+    expect(repo.tools_.selected, ['reports', 'compound_interest']);
   });
 
   testWidgets('adicionar: aparece em Suas na hora e sai de Outras', (

@@ -38,7 +38,8 @@ Ordem revista em 13/11/2026: o app continua funcionando entre as entregas e nada
 ## F — Aba Ferramentas (13–14/11/2026)
 | ID | Item | Situação |
 |---|---|---|
-| F3 | A explicação antes do primeiro uso (modalidade B), o destaque e o agrupamento/filtro por categoria estão prontos e testados só com ferramentas de teste: o catálogo real tem apenas Relatórios (modalidade A, sem destaque, uma categoria) | Aceito até existir a 2ª ferramenta |
+| F3 | A área "Em destaque" está pronta e testada só com ferramenta de teste (nenhuma ferramenta real em destaque). A explicação antes do primeiro uso e as categorias já são usadas pela Calculadora de juros compostos | Aceito |
+| F4 | Calculadora de juros compostos (14/11/2026) aguardando validação no emulador e na Web. (a) taxa anual: definida pelo responsável em 14/11/2026 como taxa efetiva convertida na mensal equivalente (8.000 a 12% a.a. por 10 anos = R$ 24.846,79; por 2 anos = R$ 10.035,20). Confirmar: (b) arredondamento só na exibição, "meio para cima"; a coluna Juros é a diferença dos totais arredondados (soma exata com o Total em juros, mas pode diferir 1 centavo do juro isolado do mês); (c) limites: até R$ 1.000.000.000,00 por campo, taxa até 1.000%, até 600 meses (50 anos), resultado até R$ 1 quatrilhão; valor inicial e mensal não podem ser ambos zero; (d) nome "Juros compostos" (o nome longo cortava na lista), categoria Investimentos e explicação antes do primeiro uso. É só simulação: não cria lançamentos (não conflita com "rendimento automático" fora do MVP) | Aguardando validação |
 
 ## V — Renovação visual (aprovada em 12/11/2026; uma entrega por vez)
 Visual próprio do Norte (Menta + Inter), sem copiar elementos de outro app: sem mascote, sem barra de assistente, abas só as da barra inferior (RF004), ícones do Material do Flutter, lista de categorias própria.

@@ -85,8 +85,55 @@ const reportsTool = ToolDefinition(
   ),
 );
 
+/// Calculadora de juros compostos (`features/compound_interest/`): simulação
+/// em memória, sem lançamentos. Nova: fora do padrão (`defaultPosition` nulo).
+const compoundInterestTool = ToolDefinition(
+  id: 'compound_interest',
+  name: 'Juros compostos',
+  shortDescription:
+      'Calculadora: evolução de um valor com aportes ou retiradas.',
+  icon: Icons.trending_up,
+  category: ToolCategories.investments,
+  route: '/juros-compostos',
+  introMode: ToolIntroMode.beforeFirstUse,
+  keywords: [
+    'juros',
+    'simulador',
+    'simulação',
+    'rendimento',
+    'aporte',
+    'retirada',
+    'patrimônio',
+    'investimento',
+  ],
+  explanation: ToolExplanation(
+    purpose:
+        'Ver como um valor pode crescer com juros compostos e aportes '
+        'mensais, e quanto tempo um patrimônio dura com retiradas mensais.',
+    howItWorks:
+        'Informe o valor inicial, o valor mensal, a taxa de juros (mensal ou '
+        'anual) e o período. A calculadora mostra o valor final, o total '
+        'investido, o total em juros, um gráfico e a tabela mês a mês. Em '
+        '"Simular retiradas mensais", veja o patrimônio com retiradas.',
+    assumptions: [
+      'Juros compostos, calculados mês a mês sobre o saldo do início do mês.',
+      'Taxa anual convertida na mensal equivalente: 12% ao ano ≈ 0,9489% '
+          'ao mês, o que rende exatamente 12% em 12 meses.',
+      'O valor mensal entra no final de cada mês, depois dos juros.',
+      'Valores arredondados para centavos só na exibição.',
+      'Não considera impostos, inflação, tarifas nem mudança da taxa.',
+    ],
+    disclaimer:
+        'É só uma simulação: não cria lançamentos, não muda o dinheiro livre '
+        'e não é recomendação de investimento.',
+  ),
+);
+
 /// Ferramentas do app. Nova ferramenta: criar o próprio módulo (tela, regras
 /// e testes) e acrescentar a definição aqui; a tela não muda.
-final norteToolRegistry = ToolRegistry(const [reportsTool]);
+final norteToolRegistry = ToolRegistry(const [
+  reportsTool,
+  compoundInterestTool,
+]);
 
 final toolRegistryProvider = Provider<ToolRegistry>((_) => norteToolRegistry);
