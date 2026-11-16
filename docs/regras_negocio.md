@@ -9,7 +9,7 @@
 1. O MVP é um controle de receitas, despesas e valores destinados a investimentos por período.
 2. O único indicador de resultado financeiro é o dinheiro livre do período.
 3. O sistema não controla saldos bancários nem contas financeiras.
-4. O sistema não possui o antigo Porquinho virtual, reservas ou cálculo de saldo disponível. "Dinheiro livre do período" é só o nome do indicador `receitas − despesas − investimentos` (decisão de 11/11/2026).
+4. O sistema não possui o antigo Porquinho virtual, reservas ou cálculo de saldo disponível. "Dinheiro livre do período" é só o nome do indicador `receitas − despesas − investimentos` (decisão de 11/11/2026). Exceção (16/11/2026): a ferramenta separada "Gestão de Faturas de Cartões" (RF029) tem reserva e "Saldo não comprometido" próprios, sem efeito no dinheiro livre (ver RN020).
 5. Receitas são contabilizadas pela data de recebimento: a avulsa aceita data passada ou futura (RN008); a recorrente só após confirmação (RN011).
 6. Despesas são contabilizadas no cadastro ou geração da ocorrência, não no pagamento.
 7. O pagamento de despesa não cria uma segunda dedução.
@@ -195,7 +195,9 @@ A fatura de cartão é representada por uma despesa recorrente variável, por ex
 
 Não haverá cadastro técnico de cartões, compras individuais, parcelas, fechamento, geração automática de fatura, controle de limite ou módulo próprio de cartões.
 
-**Status:** FORA DO ESCOPO.
+**Exceção (16/11/2026; desenvolvimento ainda não autorizado):** a ferramenta "Gestão de Faturas de Cartões" (RF029) tem cartões, compras parceladas, assinaturas, fechamento e faturas calculadas **só dentro dela**, separada dos lançamentos: não cria lançamentos, não altera o dinheiro livre nem a fatura lançada como despesa recorrente variável (RN019). Dentro dela também não valem RN029/RN030 (cadastros são apagados de verdade, histórico simples) nem a proibição de "última gravação vence" da RN033 nos cadastros. Regras: `docs/ferramentas/gestao_de_faturas.md`. Controle de limite continua fora.
+
+**Status:** FORA DO ESCOPO (exceto a ferramenta acima).
 
 ## 7. Investimentos
 

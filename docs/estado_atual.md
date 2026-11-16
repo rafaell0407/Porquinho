@@ -1,6 +1,6 @@
 # Estado atual — Norte
 
-**Atualizado em:** 14/11/2026.
+**Atualizado em:** 16/11/2026.
 
 ## Fase
 - Fases 1–7: CONCLUÍDAS e validadas (detalhe em `historico/`).
@@ -51,21 +51,24 @@ O menu do "+" virou bottom sheet com cartões (Despesa, Receita, Investimento), 
 - **Sem mudança** de regra financeira, cálculo, lançamentos ou escopo; nenhuma ferramenta fictícia.
 - **Testes:** `flutter analyze` sem problemas; suíte completa 1.128 passando (31 de integração pulados); suíte SQL completa com o novo `rpc_tool_preferences_test.sql` e catálogo de segurança. Web (`--platform chrome`) não roda neste ambiente (T9).
 
-## Calculadora de juros compostos (14/11/2026) — aguardando validação
+## Calculadora de juros compostos (14/11/2026) — validada pelo responsável em 16/11/2026
 - **Para o usuário:** nova ferramenta em Ferramentas → Outras ferramentas (categoria Investimentos; não entra sozinha em "Suas ferramentas", dá para adicionar). Abre com explicação antes do primeiro uso. Campos: valor inicial, valor mensal, taxa (mensal/anual) e período (meses/anos); Calcular, Limpar e "Simular retiradas mensais". Resultado: valor final (destaque), total investido, total em juros, gráfico (total acumulado × investido, toque mostra o mês) e tabela mês a mês (rolagem própria; horizontal só dentro da tabela no celular). Retiradas: tela própria, patrimônio sugerido = valor final da simulação, aviso de quando o dinheiro acaba, cartões, gráfico e tabela; premissas no ícone de informação.
 - **Cálculo** (`lib/features/compound_interest/domain/`): mês 0 = valor inicial; cada mês, saldo × (1 + taxa) + aporte no fim do mês; taxa anual efetiva convertida na mensal equivalente (1 + anual)^(1/12) − 1 (12% a.a. ≈ 0,9489% a.m.; 8.000 a 12% a.a. por 10 anos = R$ 24.846,79, igual a 8.000 × 1,12^10), corrigido em 14/11/2026 a pedido do responsável (antes era ÷ 12). Retiradas: juros sobre o saldo do início do mês, retirada no fim, sem saldo negativo (para no mês em que acaba). Precisão em `BigInt` (10^18 por centavo), arredondamento para centavos só na exibição; totais derivados para cartões e tabela baterem.
-- **Sem mudança** de banco, Drift, sincronização, preferências, regra financeira ou lançamentos. Rotas `/juros-compostos` e `/juros-compostos/retiradas`. Pontos a confirmar em `pendencias.md` F4.
+- **Sem mudança** de banco, Drift, sincronização, preferências, regra financeira ou lançamentos. Rotas `/juros-compostos` e `/juros-compostos/retiradas`. Arredondamento, limites, nome e categoria aceitos na validação.
 - **Testes:** `flutter analyze` sem problemas; suíte completa 1.168 passando (31 de integração pulados), com 26 de domínio, 11 de tela e 3 de catálogo novos; telas renderizadas conferidas em claro/escuro, celular e largura Web; no emulador (escuro): catálogo, explicação inicial e cálculo de R$ 8.000 a 12% a.a. por 2 anos = R$ 10.157,88.
 
-## Calculadora à vista ou parcelado (14/11/2026) — AP0–AP8 feitas, aguardando validação
+## Calculadora à vista ou parcelado (14/11/2026) — AP0–AP8 validadas pelo responsável em 16/11/2026
 Planejamento aprovado e desenvolvimento autorizado pelo responsável em 14/11/2026, com validação de tudo no fim. Spec: `docs/ferramentas/a_vista_ou_parcelado.md`; RF028 (exceção à §3.2 e RN007 restrita à ferramenta).
 - **Para o usuário:** nova ferramenta "À vista ou parcelado" em Ferramentas → Outras ferramentas (Compras e crédito), com alerta e explicação antes do primeiro uso. Tela "Calculadora à vista ou parcelado": faixa de aviso fixa com "Ler mais"; A compra (valor à vista ou preço + desconto); No cartão (total ou valor da parcela, 1–24 parcelas, dia de vencimento, próxima/seguinte fatura com as datas, lista de vencimentos); Onde o dinheiro fica (CDB liquidez diária com % do CDI até 120% ou Tesouro Selic; taxa buscada no Banco Central, editável). Resultado: veredito (À VISTA / A PRAZO / DÁ NO MESMO abaixo de R$ 1), premissas, lado a lado com IR e IOF, gráfico do saldo e tabela fatura a fatura.
 - **Cálculo:** dias úteis com feriados nacionais (só nesta ferramenta), base 252, IR regressivo + IOF por resgate e por dentro, conta exata em `BigInt`, arredondamento só na exibição. Sem banco, Drift, sincronização ou lançamentos.
 - **Catálogo:** campo opcional novo `initialAlert` (alerta inicial no topo da apresentação e do ⓘ).
-- **Testes:** referência independente em Python (`tooling/a_vista_ou_parcelado_referencia.py`, 102 casos) bate ao centavo com o app em tudo (datas, linhas, impostos, veredito); propriedade de controle (a diferença não depende da reserva) em todos os casos; `flutter analyze` sem problemas; suíte completa 1.436 passando (31 de integração pulados). Telas renderizadas conferidas em claro e escuro. Caso do esboço (R$ 1.000 com 5% ou 10x, CDI 13,65%): à vista R$ 54,38 × a prazo R$ 46,53 → à vista, R$ 7,85. Pontos a confirmar: `pendencias.md` F5.
+- **Testes:** referência independente em Python (`tooling/a_vista_ou_parcelado_referencia.py`, 102 casos) bate ao centavo com o app em tudo (datas, linhas, impostos, veredito); propriedade de controle (a diferença não depende da reserva) em todos os casos; `flutter analyze` sem problemas; suíte completa 1.436 passando (31 de integração pulados). Telas renderizadas conferidas em claro e escuro. Caso do esboço (R$ 1.000 com 5% ou 10x, CDI 13,65%): à vista R$ 54,38 × a prazo R$ 46,53 → à vista, R$ 7,85. Pontos da spec §15 (limites, textos, nome, resgate no dia útil anterior) aceitos na validação.
+
+## Gestão de Faturas de Cartões (16/11/2026) — especificação escrita, desenvolvimento não autorizado
+Produto discutido e aprovado pelo responsável: ferramenta separada e opcional (sem lançamentos, sem efeito no dinheiro livre) com dinheiro reservado, faturas por cartão (parcelas, assinaturas só na fatura atual ou valor informado, que substitui os itens), pagamento só da fatura inteira pela reserva ou outras fontes, "Saldo não comprometido = reservado − comprometido" e calculadora ao editar a reserva. Spec: `docs/ferramentas/gestao_de_faturas.md`; RF029 e exceções registradas em `requisitos.md` §3.2 e `regras_negocio.md` (princípio 4, RN020). Nenhum código. Pendente: `pendencias.md` F6.
 
 ## Próximo passo
-Validar a Calculadora à vista ou parcelado (F5) e a de juros compostos (F4). Validar P2–P7 no emulador e na Web (P8; roteiro T7). Homologação só com autorização (R2). Fase 8 (76, D1/D5, 77) retoma depois.
+Decidir a autorização e o momento da Gestão de Faturas (F6). Validar P2–P7 no emulador e na Web (P8; roteiro T7). Homologação só com autorização (R2). Fase 8 (76, D1/D5, 77) retoma depois.
 
 ## Testar no Android (máquina do responsável)
 Emulador `Medium_Phone_API_37.0`, sem flags gráficas; app com `--dart-define=SUPABASE_URL=http://10.0.2.2:54321` e chave publicável local. Login Google exige `adb reverse tcp:54321 tcp:54321`.

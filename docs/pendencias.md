@@ -1,6 +1,6 @@
 # Pendências, ajustes e melhorias — Norte
 
-Lista-mestra única do que falta. **Atualizado em:** 14/11/2026.
+Lista-mestra única do que falta. **Atualizado em:** 16/11/2026.
 Regras: cada item tem ID fixo (não reaproveitar). Concluiu → apagar a linha e registrar na entrega da fase. Achou algo fora da entrega em curso → registrar aqui, não resolver sozinho. Melhorias (M) só com aprovação.
 
 ## D — Decisões abertas (responsável)
@@ -9,6 +9,7 @@ Regras: cada item tem ID fixo (não reaproveitar). Concluiu → apagar a linha e
 | D1 | Nome Norte e `applicationId` `br.com.norte.app` | Aprovados 12/11/2026; confirmar como definitivos antes da 1ª publicação. Falta ícone. Domínio próprio opcional até a Entrega 79. |
 | D5 | E-mail Resend / SMTP | Aprovado 12/11/2026; configurar na Entrega 79 (exige domínio). |
 | D14 | Política para futura alteração da zona IANA do usuário | Pendente. |
+| D15 | Rever a guarda de histórico dos lançamentos (auditoria, versões antigas, cancelados): o que guardar, por quanto tempo e como mostrar ao usuário | Pendente (registrado em 16/11/2026, a pedido do responsável). |
 
 ## R — Ações do responsável
 - R1: Validar a Entrega 76 (homologação `norte-homologacao`, exceto SMTP).
@@ -39,8 +40,7 @@ Ordem revista em 13/11/2026: o app continua funcionando entre as entregas e nada
 | ID | Item | Situação |
 |---|---|---|
 | F3 | A área "Em destaque" está pronta e testada só com ferramenta de teste (nenhuma ferramenta real em destaque). A explicação antes do primeiro uso e as categorias já são usadas pela Calculadora de juros compostos | Aceito |
-| F4 | Calculadora de juros compostos (14/11/2026) aguardando validação no emulador e na Web. (a) taxa anual: definida pelo responsável em 14/11/2026 como taxa efetiva convertida na mensal equivalente (8.000 a 12% a.a. por 10 anos = R$ 24.846,79; por 2 anos = R$ 10.035,20). Confirmar: (b) arredondamento só na exibição, "meio para cima"; a coluna Juros é a diferença dos totais arredondados (soma exata com o Total em juros, mas pode diferir 1 centavo do juro isolado do mês); (c) limites: até R$ 1.000.000.000,00 por campo, taxa até 1.000%, até 600 meses (50 anos), resultado até R$ 1 quatrilhão; valor inicial e mensal não podem ser ambos zero; (d) nome "Juros compostos" (o nome longo cortava na lista), categoria Investimentos e explicação antes do primeiro uso. É só simulação: não cria lançamentos (não conflita com "rendimento automático" fora do MVP) | Aguardando validação |
-| F5 | Calculadora à vista ou parcelado (AP0–AP8, 14/11/2026) aguardando validação no emulador e na Web (spec `docs/ferramentas/a_vista_ou_parcelado.md` §15). Confirmar: (a) limite de R$ 1.000.000,00 por campo; (b) textos de aviso, "Ler mais", apresentação e premissas (rascunho, em `cash_or_installments_texts.dart`); (c) "Total parcelado" pré-preenchido só no modo "Preço + desconto"; (d) vencimento em fim de semana/feriado resgatado no dia útil anterior; (e) nome "À vista ou parcelado" no catálogo (título longo na tela); (f) conferência na Calculadora do Cidadão (Banco Central → "Correção de valores" pelo CDI): R$ 1.000,00 de 01/09/2022 a 01/08/2023, 100% do CDI. A ferramenta, com CDI fixo de 13,65% no período (228 dias úteis), dá **R$ 1.122,73**; a Calculadora do Cidadão deve dar o mesmo valor ou diferir em poucos centavos (a B3 arredonda o fator diário) | Aguardando validação |
+| F6 | Gestão de Faturas de Cartões (RF029): produto aprovado na discussão de 16/11/2026, spec `docs/ferramentas/gestao_de_faturas.md`. **Desenvolvimento não autorizado.** Antes de desenvolver: autorização, momento (antes ou depois da publicação da Fase 8) e os pontos da spec §15 (compra antiga com parcelas vencidas, compra em fatura já paga, desfazer pagamento, limites, ordem das operações da calculadora, dias 29–31, cancelamento de assinatura, textos) | Aguardando autorização |
 
 ## V — Renovação visual (aprovada em 12/11/2026; uma entrega por vez)
 Visual próprio do Norte (Menta + Inter), sem copiar elementos de outro app: sem mascote, sem barra de assistente, abas só as da barra inferior (RF004), ícones do Material do Flutter, lista de categorias própria.

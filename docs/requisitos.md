@@ -71,6 +71,8 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 
 **Exceção aprovada em 14/11/2026:** a ferramenta de simulação "Calculadora à vista ou parcelado" (RF028) simula parcelamento no cartão e rendimento por % do CDI/Selic **só dentro de Ferramentas**, sem criar lançamentos, compras, parcelas ou faturas. Os itens acima continuam fora do MVP no restante do app. Especificação: `docs/ferramentas/a_vista_ou_parcelado.md`.
 
+**Exceção aprovada em 16/11/2026 (desenvolvimento ainda não autorizado):** a ferramenta "Gestão de Faturas de Cartões" (RF029) tem, **só dentro dela**, reserva para os cartões, compromissos, o indicador "Saldo não comprometido", cadastro de cartões, compras parceladas, assinaturas, fechamento e faturas calculadas a partir de compras. É separada e opcional: não cria lançamentos nem altera o dinheiro livre. Os itens acima continuam fora do MVP no restante do app. Especificação: `docs/ferramentas/gestao_de_faturas.md`.
+
 ### 3.3 Observação sobre saldo inicial
 
 Não existe campo próprio de saldo inicial. Como as categorias de receitas são personalizáveis, o usuário pode criar uma categoria chamada “Saldo inicial” ou equivalente e registrar um valor como receita comum. O aplicativo não atribui tratamento especial a essa categoria, não a cria obrigatoriamente e não detecta se o valor já foi considerado em outro registro. O usuário é responsável por evitar lançamentos duplicados.
@@ -90,7 +92,7 @@ Casais ou famílias poderão compartilhar um planejamento financeiro em versão 
 A navegação principal terá somente (barra inferior: Home, Ferramentas, Adicionar +, Lançamentos e Mais — 13/11/2026):
 
 - **Home (Dashboard):** período selecionado, dinheiro livre do período e visão resumida de receitas, despesas e investimentos.
-- **Ferramentas:** catálogo personalizável de ferramentas financeiras (o usuário escolhe, ordena e restaura "Suas ferramentas"; as demais ficam em "Outras ferramentas"). Os cinco relatórios (RF025, §13.7) são uma ferramenta deste catálogo. Ferramentas futuras são simulações independentes, sem criar lançamentos, e cada uma precisa de aprovação própria.
+- **Ferramentas:** catálogo personalizável de ferramentas financeiras (o usuário escolhe, ordena e restaura "Suas ferramentas"; as demais ficam em "Outras ferramentas"). Os cinco relatórios (RF025, §13.7) são uma ferramenta deste catálogo. Ferramentas futuras são simulações independentes, sem criar lançamentos, e cada uma precisa de aprovação própria. Exceção: a Gestão de Faturas de Cartões (RF029) grava dados próprios, também sem criar lançamentos.
 - **Adicionar (+):** abre o novo lançamento (despesa, receita ou investimento).
 - **Lançamentos:** inclusão, consulta, edição e cancelamento de receitas, despesas e destinações para investimentos; filtros por período, tipo, categoria e status quando aplicável.
 - **Mais:** categorias, configurações, preferências de período, tema, segurança e onboarding.
@@ -131,6 +133,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF026 | Seleção manual de tema claro ou escuro | Média | APROVADO |
 | RF027 | Cálculos locais e validação remota segundo as mesmas regras, com resultados equivalentes | Essencial | APROVADO |
 | RF028 | Ferramenta "Calculadora à vista ou parcelado": comparar pagar à vista × parcelar no cartão deixando a reserva no CDB liquidez diária ou Tesouro Selic, com IR/IOF e dias úteis; só simulação, sem lançamentos (`docs/ferramentas/a_vista_ou_parcelado.md`) | Média | APROVADO (14/11/2026; exceção à §3.2 e RN007 restrita à ferramenta) |
+| RF029 | Ferramenta "Gestão de Faturas de Cartões": dinheiro reservado para os cartões, faturas por cartão (parcelas, assinaturas ou valor informado), pagamento da fatura inteira pela reserva ou outras fontes e "Saldo não comprometido = reservado − comprometido"; separada, sem lançamentos (`docs/ferramentas/gestao_de_faturas.md`) | Média | APROVADO como produto (16/11/2026; exceções à §3.2, RN020, RN029/RN030 e RN033 restritas à ferramenta); desenvolvimento PENDENTE de autorização |
 
 ### 6.1 Critérios de aceitação
 

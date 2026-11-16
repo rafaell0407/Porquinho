@@ -1,6 +1,6 @@
 # Calculadora à vista ou parcelado — especificação
 
-**Status:** APROVADO pelo responsável em 14/11/2026 (planejamento e decisões); desenvolvimento autorizado em 14/11/2026 (entregas AP0–AP8, validação no fim). Textos de apresentação e avisos (§9) estão em **rascunho** até a validação. Requisito: RF028. Pontos a confirmar: §15 e `pendencias.md` F5.
+**Status:** APROVADO pelo responsável em 14/11/2026 (planejamento e decisões); entregas AP0–AP8 **validadas pelo responsável em 16/11/2026**, inclusive os textos (§9) e os pontos da §15. Requisito: RF028.
 
 ## 1. Para que serve
 Comparar, para uma compra no **cartão de crédito**, duas formas de pagar: **à vista** (normalmente com desconto) ou **parcelado** (deixando o dinheiro investido e resgatando a cada fatura). O resultado é quanto a pessoa terá em caixa no fim, nos dois caminhos, e qual é melhor.

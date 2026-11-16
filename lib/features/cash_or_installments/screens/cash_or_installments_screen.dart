@@ -142,6 +142,7 @@ class _CashOrInstallmentsScreenState
     final controller = ref.read(cashOrInstallmentsProvider.notifier);
     if (v.input == null) {
       controller.clear();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _showFirstError());
       return;
     }
     controller.calculate(v.input!);
@@ -154,6 +155,47 @@ class _CashOrInstallmentsScreenState
         curve: Curves.easeOut,
       );
     });
+  }
+
+  static const _fieldKeys = <PurchaseField, Key>{
+    PurchaseField.cashValue: Key('avp-campo-valor-a-vista'),
+    PurchaseField.price: Key('avp-campo-preco'),
+    PurchaseField.discount: Key('avp-campo-desconto'),
+    PurchaseField.total: Key('avp-campo-total'),
+    PurchaseField.installmentValue: Key('avp-campo-parcela'),
+    PurchaseField.count: Key('avp-campo-parcelas'),
+    PurchaseField.dueDay: Key('avp-campo-vencimento'),
+    PurchaseField.percent: Key('avp-campo-cdi'),
+    PurchaseField.rate: Key('avp-campo-taxa'),
+  };
+
+  /// Rola a tela até o primeiro campo (na ordem do formulário) com erro.
+  void _showFirstError() {
+    if (!mounted) return;
+    for (final field in PurchaseField.values) {
+      if (_errors[field] == null) continue;
+      final key = _fieldKeys[field];
+      BuildContext? target;
+      void visit(Element e) {
+        if (target != null) return;
+        if (e.widget.key == key) {
+          target = e;
+          return;
+        }
+        e.visitChildren(visit);
+      }
+
+      (context as Element).visitChildren(visit);
+      final ctx = target;
+      if (ctx == null) continue;
+      Scrollable.ensureVisible(
+        ctx,
+        alignment: 0.15,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+      return;
+    }
   }
 
   void _clear() {
