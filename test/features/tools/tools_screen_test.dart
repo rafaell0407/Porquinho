@@ -24,6 +24,7 @@ ToolDefinition _tool(
   ToolCategory category, {
   ToolIntroMode intro = ToolIntroMode.onDemand,
   bool featured = false,
+  String? alert,
 }) => ToolDefinition(
   id: id,
   name: name,
@@ -33,6 +34,7 @@ ToolDefinition _tool(
   route: '/$id',
   introMode: intro,
   featured: featured,
+  initialAlert: alert,
   explanation: ToolExplanation(
     purpose: 'Serve para $name',
     howItWorks: 'Funciona assim',
@@ -171,6 +173,23 @@ void main() {
       expect(find.text('Outras ferramentas'), findsOneWidget);
     },
   );
+
+  testWidgets('à vista ou parcelado: em Outras (Compras e crédito), alerta na '
+      'apresentação e abre a rota', (tester) async {
+    final repo = FakePreferencesRepository();
+    await _pump(tester, repo, registry: norteToolRegistry);
+    expect(_key('ferramenta-cash_or_installments'), findsNothing);
+    await _scrollTo(tester, find.text('À vista ou parcelado'));
+    expect(find.text('Compras e crédito'), findsWidgets);
+    await tester.tap(find.text('À vista ou parcelado'));
+    await tester.pumpAndSettle();
+    expect(_key('ferramenta-intro-cash_or_installments'), findsOneWidget);
+    expect(_key('ferramenta-alerta-cash_or_installments'), findsOneWidget);
+    await tester.tap(_key('ferramenta-intro-continuar'));
+    await tester.pumpAndSettle();
+    expect(find.text('ABRIU /a-vista-ou-parcelado'), findsOneWidget);
+    expect(repo.tools_.selected, isNull);
+  });
 
   testWidgets(
     'juros compostos: explicação antes do primeiro uso e abre a rota',
@@ -339,6 +358,62 @@ void main() {
       expect(_key('ferramenta-info-sheet-sim_b'), findsOneWidget);
       expect(find.text('Serve para Simulador B'), findsOneWidget);
       expect(find.text('Aviso de Simulador B'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'alerta inicial: no topo da apresentação e do ícone de informação; '
+    'ferramenta sem alerta não mostra nada',
+    (tester) async {
+      final registry = ToolRegistry([
+        _tool(
+          'com_alerta',
+          'Com alerta',
+          ToolCategories.purchasesAndCredit,
+          intro: ToolIntroMode.beforeFirstUse,
+          alert: 'Cuidado com isto.',
+        ),
+        _tool('sem_alerta', 'Sem alerta', ToolCategories.others),
+      ]);
+      final repo = FakePreferencesRepository(
+        const ToolPreferences(selected: ['com_alerta', 'sem_alerta']),
+      );
+      await _pump(tester, repo, registry: registry);
+
+      await tester.tap(_key('ferramenta-com_alerta'));
+      await tester.pumpAndSettle();
+      final alert = _key('ferramenta-alerta-com_alerta');
+      expect(alert, findsOneWidget);
+      expect(find.text('Cuidado com isto.'), findsOneWidget);
+      // Acima de toda a explicação.
+      expect(
+        tester.getTopLeft(alert).dy <
+            tester.getTopLeft(find.text('Para que serve')).dy,
+        isTrue,
+      );
+      expect(
+        tester.getTopLeft(alert).dy <
+            tester.getTopLeft(find.text('Descrição de Com alerta').last).dy,
+        isTrue,
+      );
+      await tester.tap(find.byTooltip('Fechar'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(_key('ferramenta-info-com_alerta'));
+      await tester.pumpAndSettle();
+      expect(_key('ferramenta-info-sheet-com_alerta'), findsOneWidget);
+      expect(alert, findsOneWidget);
+      expect(
+        tester.getTopLeft(alert).dy <
+            tester.getTopLeft(find.text('Para que serve')).dy,
+        isTrue,
+      );
+      await _back(tester);
+
+      await tester.tap(_key('ferramenta-info-sem_alerta'));
+      await tester.pumpAndSettle();
+      expect(_key('ferramenta-info-sheet-sem_alerta'), findsOneWidget);
+      expect(_key('ferramenta-alerta-sem_alerta'), findsNothing);
     },
   );
 

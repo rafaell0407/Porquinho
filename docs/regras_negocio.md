@@ -92,6 +92,8 @@ O usuário é responsável por não registrar duas vezes o mesmo recurso.
 
 Qualquer valor efetivamente recebido que o usuário decida registrar pode ser lançado como receita, inclusive rendimentos. Rendimentos recebidos manualmente são receitas comuns. Não existe cálculo automático de rendimento por taxa fixa, CDI ou projeção.
 
+**Exceção (14/11/2026):** a ferramenta de simulação "Calculadora à vista ou parcelado" (RF028) projeta rendimento por % do CDI/Selic só dentro dela, sem lançamento nem efeito no dinheiro livre (`docs/ferramentas/a_vista_ou_parcelado.md`).
+
 **Status:** APROVADO.
 
 ## 4. Receitas

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../cash_or_installments/cash_or_installments_texts.dart';
 import '../models/tool_definition.dart';
 import '../models/tool_preferences.dart';
 
@@ -129,11 +130,61 @@ const compoundInterestTool = ToolDefinition(
   ),
 );
 
+/// Calculadora à vista ou parcelado (`features/cash_or_installments/`, RF028;
+/// spec `docs/ferramentas/a_vista_ou_parcelado.md`): simulação em memória,
+/// sem lançamentos. Nova: fora do padrão (`defaultPosition` nulo). O nome
+/// longo ("Calculadora à vista ou parcelado") fica no título da tela; no
+/// catálogo vai o curto, que não corta nos cartões.
+const cashOrInstallmentsTool = ToolDefinition(
+  id: 'cash_or_installments',
+  name: 'À vista ou parcelado',
+  shortDescription:
+      'Calculadora: pagar à vista ou parcelar no cartão deixando o dinheiro '
+      'rendendo.',
+  icon: Icons.credit_card,
+  category: ToolCategories.purchasesAndCredit,
+  route: '/a-vista-ou-parcelado',
+  introMode: ToolIntroMode.beforeFirstUse,
+  initialAlert: CashOrInstallmentsTexts.initialAlert,
+  keywords: [
+    'calculadora',
+    'à vista',
+    'a vista',
+    'parcelado',
+    'parcelas',
+    'parcelar',
+    'cartão',
+    'crédito',
+    'desconto',
+    'compra',
+    'CDB',
+    'CDI',
+    'Tesouro Selic',
+  ],
+  explanation: ToolExplanation(
+    purpose:
+        'Descobrir se vale mais pagar uma compra à vista (com desconto) ou '
+        'parcelar no cartão e deixar o dinheiro rendendo até cada fatura.',
+    howItWorks:
+        'Informe o valor à vista (ou o preço e o desconto), o parcelamento, '
+        'o dia de vencimento do cartão e onde o dinheiro fica (CDB de '
+        'liquidez diária ou Tesouro Selic). A calculadora busca a taxa no '
+        'Banco Central, simula os dois caminhos dia útil a dia útil, com IR '
+        'e IOF em cada resgate, e mostra quanto você terá em caixa no fim em '
+        'cada um.',
+    assumptions: CashOrInstallmentsTexts.assumptions,
+    disclaimer:
+        'É só uma simulação: não cria lançamentos, não muda o dinheiro livre '
+        'e não é recomendação de investimento.',
+  ),
+);
+
 /// Ferramentas do app. Nova ferramenta: criar o próprio módulo (tela, regras
 /// e testes) e acrescentar a definição aqui; a tela não muda.
 final norteToolRegistry = ToolRegistry(const [
   reportsTool,
   compoundInterestTool,
+  cashOrInstallmentsTool,
 ]);
 
 final toolRegistryProvider = Provider<ToolRegistry>((_) => norteToolRegistry);

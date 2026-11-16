@@ -69,6 +69,8 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 - Aplicativo desktop nativo.
 - Relatórios avançados e exportação PDF/Excel.
 
+**Exceção aprovada em 14/11/2026:** a ferramenta de simulação "Calculadora à vista ou parcelado" (RF028) simula parcelamento no cartão e rendimento por % do CDI/Selic **só dentro de Ferramentas**, sem criar lançamentos, compras, parcelas ou faturas. Os itens acima continuam fora do MVP no restante do app. Especificação: `docs/ferramentas/a_vista_ou_parcelado.md`.
+
 ### 3.3 Observação sobre saldo inicial
 
 Não existe campo próprio de saldo inicial. Como as categorias de receitas são personalizáveis, o usuário pode criar uma categoria chamada “Saldo inicial” ou equivalente e registrar um valor como receita comum. O aplicativo não atribui tratamento especial a essa categoria, não a cria obrigatoriamente e não detecta se o valor já foi considerado em outro registro. O usuário é responsável por evitar lançamentos duplicados.
@@ -128,6 +130,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF025 | Disponibilizar cinco relatórios básicos (acesso pela aba Ferramentas → Relatórios) | Média | APROVADO; conteúdo definido na seção 13.7 |
 | RF026 | Seleção manual de tema claro ou escuro | Média | APROVADO |
 | RF027 | Cálculos locais e validação remota segundo as mesmas regras, com resultados equivalentes | Essencial | APROVADO |
+| RF028 | Ferramenta "Calculadora à vista ou parcelado": comparar pagar à vista × parcelar no cartão deixando a reserva no CDB liquidez diária ou Tesouro Selic, com IR/IOF e dias úteis; só simulação, sem lançamentos (`docs/ferramentas/a_vista_ou_parcelado.md`) | Média | APROVADO (14/11/2026; exceção à §3.2 e RN007 restrita à ferramenta) |
 
 ### 6.1 Critérios de aceitação
 

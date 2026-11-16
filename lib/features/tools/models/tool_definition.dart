@@ -98,6 +98,7 @@ class ToolDefinition {
     this.defaultPosition,
     this.featured = false,
     this.keywords = const [],
+    this.initialAlert,
   });
 
   /// ID único e estável, gravado nas preferências do usuário. Formato:
@@ -123,6 +124,11 @@ class ToolDefinition {
 
   /// Termos extras para a busca.
   final List<String> keywords;
+
+  /// Alerta inicial (opcional): aviso de atenção mostrado no topo da
+  /// apresentação antes do primeiro uso e do ícone de informação, antes de
+  /// qualquer outra explicação. `null` = sem alerta.
+  final String? initialAlert;
 
   bool get inDefaultSelection => defaultPosition != null;
 }

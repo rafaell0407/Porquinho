@@ -65,6 +65,24 @@ void main() {
       expect(toolMatches(tool, query: 'retirada'), isTrue);
     });
 
+    test('à vista ou parcelado: fora do padrão, em Compras e crédito, com '
+        'alerta inicial e explicação antes do primeiro uso', () {
+      final tool = norteToolRegistry.byId('cash_or_installments')!;
+      expect(tool.route, '/a-vista-ou-parcelado');
+      expect(tool.category, ToolCategories.purchasesAndCredit);
+      expect(tool.defaultPosition, isNull);
+      expect(tool.introMode, ToolIntroMode.beforeFirstUse);
+      expect(tool.initialAlert, contains('disciplina financeira'));
+      expect(tool.explanation.disclaimer, isNotNull);
+      expect(norteToolRegistry.defaultSelection, isNot(contains(tool.id)));
+      for (final q in ['parcelado', 'cartão', 'cdb', 'tesouro', 'a vista']) {
+        expect(toolMatches(tool, query: q), isTrue, reason: q);
+      }
+      // As outras ferramentas não ganham alerta.
+      expect(norteToolRegistry.byId('reports')!.initialAlert, isNull);
+      expect(norteToolRegistry.byId('compound_interest')!.initialAlert, isNull);
+    });
+
     test('padrão segue a posição definida, não a ordem de registro', () {
       final r = ToolRegistry([
         tool('a', defaultPosition: 2),

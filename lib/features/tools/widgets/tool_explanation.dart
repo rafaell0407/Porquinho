@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../app/theme/norte_theme.dart';
 import '../models/tool_definition.dart';
 import 'tool_cards.dart' show ToolIconBadge;
 
@@ -84,6 +85,47 @@ class ToolExplanationView extends StatelessWidget {
   }
 }
 
+/// Alerta inicial da ferramenta ([ToolDefinition.initialAlert]), em destaque
+/// de atenção. Não aparece se a ferramenta não tiver alerta.
+class ToolInitialAlert extends StatelessWidget {
+  const ToolInitialAlert({required this.tool, super.key});
+
+  final ToolDefinition tool;
+
+  @override
+  Widget build(BuildContext context) {
+    final alert = tool.initialAlert;
+    if (alert == null) return const SizedBox.shrink();
+    final colors = NorteColors.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      key: Key('ferramenta-alerta-${tool.id}'),
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colors.pendingBackground,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded, size: 20, color: colors.pending),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              alert,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Cabeçalho com ícone e nome, comum ao sheet e à tela de explicação.
 class _ToolTitle extends StatelessWidget {
   const _ToolTitle(this.tool);
@@ -143,6 +185,7 @@ Future<void> showToolInfoSheet(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _ToolTitle(tool),
+            ToolInitialAlert(tool: tool),
             ToolExplanationView(tool: tool),
             const SizedBox(height: 20),
             if (onOpen != null)
@@ -208,6 +251,7 @@ class _ToolIntroScreenState extends State<ToolIntroScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _ToolTitle(tool),
+                    ToolInitialAlert(tool: tool),
                     const SizedBox(height: 8),
                     Text(
                       tool.shortDescription,

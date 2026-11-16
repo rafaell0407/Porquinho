@@ -12,6 +12,7 @@ import '../features/auth/auth_providers.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/new_password_screen.dart';
 import '../features/attention/attention_screen.dart';
+import '../features/cash_or_installments/screens/cash_or_installments_screen.dart';
 import '../features/categories/categories_screen.dart';
 import '../features/compound_interest/screens/compound_interest_screen.dart';
 import '../features/compound_interest/screens/withdrawal_screen.dart';
@@ -34,8 +35,8 @@ import '../shared/main_shell.dart';
 
 /// Rotas: `/login` sem sessão; `/nova-senha` após o link de recuperação;
 /// com sessão, as quatro abas `/` (Dashboard), `/ferramentas`, `/lancamentos`
-/// e `/mais`. `/relatorios` e `/juros-compostos` (+ `/retiradas`) são
-/// ferramentas do catálogo.
+/// e `/mais`. `/relatorios`, `/juros-compostos` (+ `/retiradas`) e
+/// `/a-vista-ou-parcelado` são ferramentas do catálogo.
 final routerProvider = Provider<GoRouter>((ref) {
   final controller = ref.watch(sessionControllerProvider);
   final refresh = ValueNotifier<int>(0);
@@ -81,6 +82,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: CompoundInterestScreen.withdrawalsRoute,
         builder: (_, _) => const WithdrawalScreen(),
+      ),
+      GoRoute(
+        path: CashOrInstallmentsScreen.route,
+        builder: (_, _) => const CashOrInstallmentsScreen(),
       ),
       GoRoute(
         path: '/configuracao-inicial',

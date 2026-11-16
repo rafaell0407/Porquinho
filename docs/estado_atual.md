@@ -57,8 +57,15 @@ O menu do "+" virou bottom sheet com cartões (Despesa, Receita, Investimento), 
 - **Sem mudança** de banco, Drift, sincronização, preferências, regra financeira ou lançamentos. Rotas `/juros-compostos` e `/juros-compostos/retiradas`. Pontos a confirmar em `pendencias.md` F4.
 - **Testes:** `flutter analyze` sem problemas; suíte completa 1.168 passando (31 de integração pulados), com 26 de domínio, 11 de tela e 3 de catálogo novos; telas renderizadas conferidas em claro/escuro, celular e largura Web; no emulador (escuro): catálogo, explicação inicial e cálculo de R$ 8.000 a 12% a.a. por 2 anos = R$ 10.157,88.
 
+## Calculadora à vista ou parcelado (14/11/2026) — AP0–AP8 feitas, aguardando validação
+Planejamento aprovado e desenvolvimento autorizado pelo responsável em 14/11/2026, com validação de tudo no fim. Spec: `docs/ferramentas/a_vista_ou_parcelado.md`; RF028 (exceção à §3.2 e RN007 restrita à ferramenta).
+- **Para o usuário:** nova ferramenta "À vista ou parcelado" em Ferramentas → Outras ferramentas (Compras e crédito), com alerta e explicação antes do primeiro uso. Tela "Calculadora à vista ou parcelado": faixa de aviso fixa com "Ler mais"; A compra (valor à vista ou preço + desconto); No cartão (total ou valor da parcela, 1–24 parcelas, dia de vencimento, próxima/seguinte fatura com as datas, lista de vencimentos); Onde o dinheiro fica (CDB liquidez diária com % do CDI até 120% ou Tesouro Selic; taxa buscada no Banco Central, editável). Resultado: veredito (À VISTA / A PRAZO / DÁ NO MESMO abaixo de R$ 1), premissas, lado a lado com IR e IOF, gráfico do saldo e tabela fatura a fatura.
+- **Cálculo:** dias úteis com feriados nacionais (só nesta ferramenta), base 252, IR regressivo + IOF por resgate e por dentro, conta exata em `BigInt`, arredondamento só na exibição. Sem banco, Drift, sincronização ou lançamentos.
+- **Catálogo:** campo opcional novo `initialAlert` (alerta inicial no topo da apresentação e do ⓘ).
+- **Testes:** referência independente em Python (`tooling/a_vista_ou_parcelado_referencia.py`, 102 casos) bate ao centavo com o app em tudo (datas, linhas, impostos, veredito); propriedade de controle (a diferença não depende da reserva) em todos os casos; `flutter analyze` sem problemas; suíte completa 1.436 passando (31 de integração pulados). Telas renderizadas conferidas em claro e escuro. Caso do esboço (R$ 1.000 com 5% ou 10x, CDI 13,65%): à vista R$ 54,38 × a prazo R$ 46,53 → à vista, R$ 7,85. Pontos a confirmar: `pendencias.md` F5.
+
 ## Próximo passo
-Validar P2–P7 no emulador e na Web (P8; roteiro T7). Homologação só com autorização (R2). Fase 8 (76, D1/D5, 77) retoma depois.
+Validar a Calculadora à vista ou parcelado (F5) e a de juros compostos (F4). Validar P2–P7 no emulador e na Web (P8; roteiro T7). Homologação só com autorização (R2). Fase 8 (76, D1/D5, 77) retoma depois.
 
 ## Testar no Android (máquina do responsável)
 Emulador `Medium_Phone_API_37.0`, sem flags gráficas; app com `--dart-define=SUPABASE_URL=http://10.0.2.2:54321` e chave publicável local. Login Google exige `adb reverse tcp:54321 tcp:54321`.

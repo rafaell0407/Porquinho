@@ -4,7 +4,7 @@ Onde fica cada coisa no código, como está hoje. Ler só a linha do módulo que
 
 ## Telas e rotas (`lib/app/app.dart`)
 - Barra inferior (`lib/shared/main_shell.dart`, `NorteNavBar`), em pílula: Home (`/`) · Ferramentas (`/ferramentas`) · Adicionar + (abre `showNewEntryChooser`) · Lançamentos (`/lancamentos`) · Mais (`/mais`, com Categorias).
-- Ferramentas (`features/tools/`): `/ferramentas` (catálogo) · `/ferramentas/personalizar`. Relatórios é a ferramenta `reports` e abre `/relatorios`; Calculadora de juros compostos é `compound_interest` e abre `/juros-compostos` (+ `/juros-compostos/retiradas`). Ambas fora do shell; a barra mostra Ferramentas selecionada.
+- Ferramentas (`features/tools/`): `/ferramentas` (catálogo) · `/ferramentas/personalizar`. Relatórios é a ferramenta `reports` e abre `/relatorios`; Calculadora de juros compostos é `compound_interest` e abre `/juros-compostos` (+ `/juros-compostos/retiradas`); Calculadora à vista ou parcelado é `cash_or_installments` e abre `/a-vista-ou-parcelado`. Todas fora do shell; a barra mostra Ferramentas selecionada.
 - Mais (`features/more/more_screen.dart`): Sincronizar agora (celular) · `/atencao` Itens que precisam de atenção · `/categorias` · `/periodo` · `/configuracao-inicial` · `/tema` · `/recorrencias` · `/exportar` (CSV) · `/seguranca` (celular) · Excluir conta · Sair.
 - Fora das abas: `/login`, `/nova-senha`, `/bloqueio` (PIN).
 
@@ -37,8 +37,9 @@ Padrão por módulo: `*_models` · `*_repository` (interface) · `local_*` (Drif
 | `dashboard/` | dinheiro livre e composição do período | RF020 | — |
 | `totals/` | totais por período (intervalo de datas) para o Dashboard | RN005 | — |
 | `reports/` | relatórios e gráficos (`fl_chart`); somam por intervalo de datas (`PeriodRange`); aberto pela ferramenta Relatórios | RF025 | RPC `get_range_report` |
-| `tools/` | aba Ferramentas: `models/` (`ToolDefinition`, `ToolCategory`/`ToolCategories`, `ToolIntroMode`, `ToolPreferences`), `registry/tool_registry.dart` (catálogo único: Relatórios e Calculadora de juros compostos), `domain/tool_catalog.dart` (Suas/Outras, adicionar, remover, reordenar, busca, categorias), `tools_providers.dart` (estado e gravação), `tool_launcher.dart` (abre respeitando a explicação), `screens/` (catálogo e Personalizar), `widgets/` (cartões, informação, explicação inicial) | RF004, RF025 | `user_preferences.tools`; RPCs `set_tool_selection`, `dismiss_tool_intro` |
+| `tools/` | aba Ferramentas: `models/` (`ToolDefinition`, `ToolCategory`/`ToolCategories`, `ToolIntroMode`, `ToolPreferences`), `registry/tool_registry.dart` (catálogo único: Relatórios, Juros compostos e À vista ou parcelado; campo opcional `initialAlert` = alerta inicial no topo da apresentação e do ⓘ), `domain/tool_catalog.dart` (Suas/Outras, adicionar, remover, reordenar, busca, categorias), `tools_providers.dart` (estado e gravação), `tool_launcher.dart` (abre respeitando a explicação), `screens/` (catálogo e Personalizar), `widgets/` (cartões, informação, explicação inicial) | RF004, RF025 | `user_preferences.tools`; RPCs `set_tool_selection`, `dismiss_tool_intro` |
 | `compound_interest/` | Calculadora de juros compostos (ferramenta `compound_interest`, só simulação em memória, sem lançamentos nem gravação): `domain/` (`simulation_math.dart` taxa, leitura dos campos, limites e ponto fixo `BigInt`; `compound_interest.dart` evolução com aportes; `withdrawal_simulation.dart` retiradas), `application/simulation_controllers.dart` (Riverpod, estado descartado ao sair), `screens/` (`/juros-compostos`, `/juros-compostos/retiradas`), `widgets/` (campos, cartões, gráfico `fl_chart`, tabela) | — (ferramenta aprovada em 14/11/2026) | — |
+| `cash_or_installments/` | Calculadora à vista ou parcelado (ferramenta `cash_or_installments`, só simulação em memória, sem lançamentos; spec `docs/ferramentas/a_vista_ou_parcelado.md`): `domain/` (`business_calendar.dart` dias úteis com feriados nacionais só nesta ferramenta; `investment_taxes.dart` IR/IOF; `fixed_point.dart` ponto fixo `BigInt` e taxa diária; `cash_or_installments_engine.dart` os dois caminhos, tabela, veredito; `purchase_input.dart` campos, desconto, divisão, vencimentos), `data/reference_rates.dart` (taxa do Banco Central SGS + cache), `application/` (Riverpod), `screens/` (`/a-vista-ou-parcelado`), `widgets/`, `cash_or_installments_texts.dart` (textos em rascunho) | RF028 | — (cache da taxa no `SecureValueStore`) |
 | `alerts/` | notificação diária de vencimentos (Android) | RF023, RN018, RN041 | — |
 | `sync/` | fila, envio, download, agendador, indicador de status | RF021–022, RF027, RN031–033 | `sync_outbox`, `sync_cursors`, `applied_sync_operations` |
 | `attention/` | conflitos e recusas para o usuário decidir | RN033 | `sync_conflicts` |
@@ -50,6 +51,6 @@ Padrão por módulo: `*_models` · `*_repository` (interface) · `local_*` (Drif
 
 ## Fora de `lib/`
 - `supabase/migrations/` (25) e `supabase/tests/` — ver `banco_de_dados.md`.
-- `tooling/`: `test_postgres_schema.ps1`, `test_integration_local.ps1`, `test_integration_homolog.ps1`, `build_release.ps1`.
+- `tooling/`: `a_vista_ou_parcelado_referencia.py` (referência independente → `test/fixtures/cash_or_installments_cases.json`), `test_postgres_schema.ps1`, `test_integration_local.ps1`, `test_integration_homolog.ps1`, `build_release.ps1`.
 - `env/*.example.json` (config por ambiente), `drift_schemas/` (snapshots), `web/excluir-conta.html`.
 - `assets/fonts/inter/`: fonte Inter (licença OFL em `OFL-LICENSE.txt`), embutida no app.
