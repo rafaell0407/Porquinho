@@ -12,7 +12,7 @@ abstract final class CardBillsTexts {
 
   static const howItWorks =
       'Informe quanto tem reservado e cadastre só o que quiser: cartões, '
-      'compras parceladas, assinaturas ou apenas o total de uma fatura. A '
+      'compras parceladas, despesas recorrentes ou apenas o total de uma fatura. A '
       'ferramenta soma as faturas a pagar e mostra o saldo não comprometido '
       '(reservado − comprometido). Ao pagar uma fatura, diga se o dinheiro '
       'saiu da reserva ou de outras fontes.';
@@ -25,7 +25,7 @@ abstract final class CardBillsTexts {
         'para a 1ª parcela.',
     'Valor informado numa fatura substitui a soma dos itens (nunca soma os '
         'dois).',
-    'Assinaturas entram só na fatura atual de cada cartão.',
+    'Despesas recorrentes entram só na fatura atual de cada cartão.',
     'Só se paga a fatura inteira.',
   ];
 
@@ -37,5 +37,5 @@ abstract final class CardBillsTexts {
   static const emptyTitle = 'Comece pelo seu primeiro cartão';
   static const emptyBody =
       'Cadastre o cartão com os dias de fechamento e vencimento. Depois, '
-      'registre compras parceladas, assinaturas ou só o total da fatura.';
+      'registre compras parceladas, despesas recorrentes ou só o total da fatura.';
 }

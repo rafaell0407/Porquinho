@@ -280,7 +280,7 @@ class _InvoiceBody extends ConsumerWidget {
                               ? '${formatBrl(view.informedAmount!)} informados'
                               : '${formatBrl(view.informedAmount!)} informados, '
                                     'dos quais ${formatBrl(view.itemsTotal)} em '
-                                    'parcelas e assinaturas e '
+                                    'parcelas e despesas recorrentes e '
                                     '${formatBrl(view.otherSpending)} em outros '
                                     'gastos',
                           key: const Key('cb-fatura-detalhe-informado'),
@@ -365,7 +365,7 @@ class _InvoiceBody extends ConsumerWidget {
                       subtitle: p != null
                           ? null
                           : item.kind == InvoiceItemKind.charge
-                          ? 'Assinatura${item.manuallyEdited ? ' · ajustada' : ''}'
+                          ? 'Despesa recorrente${item.manuallyEdited ? ' · ajustada' : ''}'
                           : '${item.isSinglePurchase ? 'Compra' : 'Parcela'}'
                                 '${item.manuallyEdited ? ' · ajustada' : ''}',
                       onTap: p != null

@@ -45,7 +45,8 @@ YearMonth? currentMonthOf(
 }
 
 /// Fatura atual: a mais antiga fechada e **não paga** que tenha itens ou valor
-/// informado; sem nenhuma, a fatura cujo ciclo contém hoje.
+/// informado; sem nenhuma, a mais antiga fechada, não paga e não vencida; sem
+/// essa, a fatura cujo ciclo contém hoje.
 YearMonth currentInvoiceMonth(
   CreditCard card,
   CardBillsData data,
@@ -67,7 +68,14 @@ YearMonth currentInvoiceMonth(
     if (calendar.stored(m)?.isPaid ?? false) continue;
     if (oldest == null || m.isBefore(oldest)) oldest = m;
   }
-  return oldest ?? cycle;
+  if (oldest != null) return oldest;
+  // Sem itens: a mais antiga fechada, não paga e ainda não vencida (16/11/2026).
+  for (var back = 3; back > 0; back--) {
+    final month = cycle.add(-back);
+    if (calendar.stored(month)?.isPaid ?? false) continue;
+    if (!calendar.isPastDue(month, today)) return month;
+  }
+  return cycle;
 }
 
 /// Cobranças que faltam (spec §7): uma por fatura, só até a fatura atual

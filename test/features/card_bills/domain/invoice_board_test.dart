@@ -8,7 +8,7 @@ import 'card_bills_fixtures.dart';
 
 /// GF1.4 valor da fatura e indicador; GF1.9 faturas visíveis (spec §3, §5).
 void main() {
-  final today = d('2026-11-16');
+  final today = d('2026-11-18'); // Nov (vence 17/11) já venceu: a atual é Dez
 
   CardBillsData withPurchase(
     CardBillsData data, {
@@ -17,6 +17,7 @@ void main() {
     int count = 1,
     int amount = 10000,
     String? firstMonth,
+    String? on,
   }) {
     final plan = planNewPurchase(
       id: id,
@@ -30,7 +31,7 @@ void main() {
         firstMonth: firstMonth == null ? null : ym(firstMonth),
       ),
       data: data,
-      today: today,
+      today: on == null ? today : d(on),
     );
     return applyChange(data, plan.change);
   }
@@ -46,6 +47,16 @@ void main() {
     expect(board.pending.first.isOverdue, isFalse);
     expect(board.committed, BigInt.zero);
     expect(board.uncommitted, BigInt.zero);
+  });
+
+  test('cartão novo: fechada e ainda não vencida é a atual', () {
+    final board = CardBillsBoard.build(
+      const CardBillsData(cards: [nubank]),
+      d('2026-11-16'),
+    );
+    expect(board.pending.map((v) => v.month.toKey()), ['2026-11', '2026-12']);
+    expect(board.pending.first.isCurrent, isTrue);
+    expect(board.pending.first.isOverdue, isFalse);
   });
 
   test('fatura distante só aparece com parcelas ou valor informado', () {
@@ -96,8 +107,9 @@ void main() {
       const CardBillsData(cards: [nubank]),
       id: 'p1',
       date: '2026-11-09',
+      on: '2026-11-16',
     );
-    final onTime = CardBillsBoard.build(data, today).pending.first;
+    final onTime = CardBillsBoard.build(data, d('2026-11-16')).pending.first;
     expect(onTime.month.toKey(), '2026-11');
     expect(onTime.isClosed, isTrue);
     expect(onTime.isOverdue, isFalse);

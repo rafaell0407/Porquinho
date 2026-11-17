@@ -117,7 +117,7 @@ Future<void> _showAddMenu(
           key: const Key('cb-adicionar-assinatura'),
           enabled: hasCards,
           leading: const Icon(Icons.autorenew),
-          title: const Text('Assinatura'),
+          title: const Text('Despesa recorrente'),
           subtitle: hasCards ? null : const Text('Cadastre um cartão antes'),
           onTap: () {
             Navigator.pop(sheet);
@@ -287,7 +287,7 @@ class _Summary extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 4, bottom: 8),
               child: Text(
-                'Assinaturas ativas: '
+                'Despesas recorrentes ativas: '
                 '${formatBrl(board.activeSubscriptionsMonthly)} por mês',
                 key: const Key('cb-assinaturas-ativas'),
                 style: theme.textTheme.bodySmall?.copyWith(
@@ -529,9 +529,14 @@ class _SubscriptionsSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final data = snapshot.data;
     return CbSection(
-      title: 'Assinaturas',
+      title: 'Despesas recorrentes',
       children: [
-        for (final s in data.subscriptions) _tile(context, ref, data, s),
+        CbCollapsibleList<Subscription>(
+          items: data.subscriptions,
+          hint: 'Visualize as demais despesas recorrentes',
+          moreKey: const Key('cb-assinaturas-mais'),
+          rowBuilder: (s) => _tile(context, ref, data, s),
+        ),
       ],
     );
   }

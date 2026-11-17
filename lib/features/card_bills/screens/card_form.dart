@@ -84,7 +84,7 @@ class _CardFormState extends ConsumerState<_CardForm> {
       context,
       title: 'Apagar o cartão ${card.name}?',
       message:
-          'Compras, assinaturas e faturas pendentes deste cartão serão '
+          'Compras, despesas recorrentes e faturas pendentes deste cartão serão '
           'apagadas e ${formatBrl(value)} deixarão de contar no comprometido. '
           'Faturas já pagas continuam no histórico.',
       action: 'Apagar cartão',

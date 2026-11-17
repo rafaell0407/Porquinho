@@ -131,9 +131,9 @@ class _SubscriptionFormState extends ConsumerState<_SubscriptionForm> {
     if (charge == null) {
       final ok = await confirmDialog(
         context,
-        title: 'Cancelar a assinatura?',
+        title: 'Cancelar a despesa recorrente?',
         message: 'Ela deixa de gerar cobranças a partir da próxima fatura.',
-        action: 'Cancelar assinatura',
+        action: 'Cancelar despesa recorrente',
       );
       if (!ok) return;
       removeCurrent = false;
@@ -141,7 +141,7 @@ class _SubscriptionFormState extends ConsumerState<_SubscriptionForm> {
       removeCurrent = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Cancelar a assinatura?'),
+          title: const Text('Cancelar a despesa recorrente?'),
           content: Text(
             'O cancelamento vale a partir da próxima fatura. Remover também a '
             'cobrança de ${formatBrl(charge.amount)} da fatura atual?',
@@ -209,7 +209,7 @@ class _SubscriptionFormState extends ConsumerState<_SubscriptionForm> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              editing ? 'Editar assinatura' : 'Nova Despesa Recorrente',
+              editing ? 'Editar despesa recorrente' : 'Nova Despesa Recorrente',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 16),
@@ -286,7 +286,7 @@ class _SubscriptionFormState extends ConsumerState<_SubscriptionForm> {
             FilledButton(
               key: const Key('cb-assinatura-salvar'),
               onPressed: _busy ? null : _save,
-              child: Text(editing ? 'Salvar' : 'Salvar assinatura'),
+              child: const Text('Salvar'),
             ),
             if (editing) ...[
               const SizedBox(height: 8),
@@ -294,7 +294,7 @@ class _SubscriptionFormState extends ConsumerState<_SubscriptionForm> {
                 key: const Key('cb-assinatura-cancelar'),
                 onPressed: _busy ? null : _cancel,
                 icon: const Icon(Icons.cancel_outlined),
-                label: const Text('Cancelar assinatura'),
+                label: const Text('Cancelar despesa recorrente'),
               ),
             ],
           ],

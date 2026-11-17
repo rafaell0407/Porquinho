@@ -54,7 +54,7 @@ void main() {
   });
 
   group('pagamento', () {
-    final today = d('2026-11-16');
+    final today = d('2026-11-18');
     CardBillsData scenario() {
       const base = CardBillsData(cards: [nubank]);
       final plan = planNewPurchase(

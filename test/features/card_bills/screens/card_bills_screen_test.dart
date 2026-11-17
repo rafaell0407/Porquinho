@@ -260,7 +260,7 @@ void main() {
     expect(
       _text(tester, 'cb-fatura-detalhe-informado'),
       'R\$ 1.200,00 informados, dos quais R\$ 1.000,00 em parcelas e '
-      'assinaturas e R\$ 200,00 em outros gastos',
+      'despesas recorrentes e R\$ 200,00 em outros gastos',
     );
     await _tap(tester, 'cb-fatura-informar');
     await _type(tester, 'cb-informado-valor', '500');
@@ -296,7 +296,7 @@ void main() {
     await _tap(tester, 'cb-assinatura-salvar');
     expect(
       _text(tester, 'cb-assinaturas-ativas'),
-      'Assinaturas ativas: R\$ 39,90 por mês',
+      'Despesas recorrentes ativas: R\$ 39,90 por mês',
     );
     final s = await service.snapshot();
     expect(s.board.committed, c(3990));
