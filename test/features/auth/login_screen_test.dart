@@ -121,13 +121,30 @@ void main() {
 
   testWidgets('criar conta pede confirmação de e-mail', (tester) async {
     await _pump(tester);
-    await tester.tap(find.text('Não tenho conta. Criar conta'));
+    expect(find.text('Ainda não tem conta?'), findsOneWidget);
+    await tester.tap(find.widgetWithText(TextButton, 'Criar conta'));
     await tester.pumpAndSettle();
+    expect(find.text('Crie sua conta'), findsOneWidget);
+    expect(find.text('Já tem conta?'), findsOneWidget);
+    expect(find.text('Esqueci minha senha'), findsNothing);
     await _fill(tester, 'novo@b.com', 'senha-segura-123');
     await tester.tap(find.widgetWithText(FilledButton, 'Criar conta'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Enviamos um e-mail de confirmação'), findsOne);
     expect(find.text('Entrar com Google'), findsOneWidget);
+    // Depois do cadastro volta ao modo de entrar.
+    expect(find.text('Bem-vindo ao Norte'), findsOneWidget);
+  });
+
+  testWidgets('"Já tem conta? Entrar" volta ao modo de entrar', (tester) async {
+    await _pump(tester);
+    await tester.tap(find.widgetWithText(TextButton, 'Criar conta'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(TextButton, 'Entrar'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bem-vindo ao Norte'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'Entrar'), findsOneWidget);
+    expect(find.text('Esqueci minha senha'), findsOneWidget);
   });
 
   testWidgets('esqueci a senha exige e-mail e envia o pedido', (tester) async {

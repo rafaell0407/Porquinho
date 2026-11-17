@@ -26,7 +26,7 @@ Padrão por módulo: `*_models` · `*_repository` (interface) · `local_*` (Drif
 
 | Módulo | O que faz | RF / RN | Tabelas |
 |---|---|---|---|
-| `auth/` | login Google/e-mail, sessão, nova senha, logout com pendências, excluir conta, vínculo do banco ao usuário | RF001–002 | Auth, `deleted_accounts` |
+| `auth/` | login Google/e-mail, sessão, nova senha, logout com pendências, excluir conta, vínculo do banco ao usuário; layout do login em `auth/widgets/` (`login_hero.dart`: cena por tema e marca, adapta à altura; `login_panel.dart`; `norte_mark.dart`: símbolo do Norte; `google_g_icon.dart`), cena em `assets/login/` (gerada por `tooling/gerar_cena_login.py`) | RF001–002 | Auth, `deleted_accounts` |
 | `app_lock/` | PIN/biometria, tela de bloqueio e Segurança | RF003 | armazenamento seguro |
 | `periods/` | configuração única (`period_service`: primeiro acesso, troca na hora, período de uma data, limites); `period_gate`, `period_setup_screen`, `period_settings_screen` (troca com aviso), `period_navigation` (período calculado e setas limitadas do lançamento mais antigo ao mais distante) | RF019, RN001–004, RN036–037, RN042 | `period_settings`; RPCs `set_period_settings`, `get_entry_date_span` |
 | `categories/` | categorias, subcategorias, sugestões iniciais; ícone e cor por categoria (`category_appearance.dart`: conjunto fixo de ícones Material e 8 cores); `category_editor.dart` (criar/editar nome, ícone e cor); `category_picker.dart` (escolha da categoria/subcategoria no lançamento, com busca); `category_name_dialog.dart` (nome de subcategoria) | RF014–015, RN024–027, RN040, RN044 | `categories`, `subcategories` |

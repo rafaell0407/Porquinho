@@ -42,6 +42,10 @@ hooks:
 
 flutter:
   uses-material-design: true
+  # Cena do login (tema escuro e claro), recortada/derivada da referência
+  # visual; geradas por tooling/gerar_cena_login.py.
+  assets:
+    - assets/login/
   # Inter (licença OFL em assets/fonts/inter/OFL-LICENSE.txt), embutida para
   # funcionar offline e sem buscar nada de terceiros.
   fonts:

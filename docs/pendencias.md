@@ -52,7 +52,7 @@ Visual próprio do Norte (Menta + Inter), sem copiar elementos de outro app: sem
 |---|---|---|
 | V1–V5 | Tema, ícone/cor nas categorias (V2), Dashboard (V3), Lançamentos e formulário (V4), Categorias e Mais (V5) | Feitas em 12/11/2026; aguardam validação (R5). Ao validar, apagar estas linhas |
 | V6 | Subcategoria hoje herda ícone e cor da categoria (sem ícone próprio) | Aceito; ícone próprio por subcategoria só com aprovação |
-| V8 | Telas fora do escopo da V3–V5 mantêm o layout antigo, só com cores/fonte novas (Relatórios, Período, Recorrências, Exportar, Segurança, Tema, Configuração inicial, Itens de atenção, Login) | Aberto, sem aprovação para redesenhar |
+| V8 | Telas fora do escopo da V3–V5 mantêm o layout antigo, só com cores/fonte novas (Relatórios, Período, Recorrências, Exportar, Segurança, Tema, Configuração inicial, Itens de atenção) | Aberto, sem aprovação para redesenhar |
 
 ## T — Pendências técnicas
 | ID | Item |

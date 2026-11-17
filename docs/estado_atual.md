@@ -1,6 +1,6 @@
 # Estado atual — Norte
 
-**Atualizado em:** 16/11/2026.
+**Atualizado em:** 17/11/2026.
 
 ## Fase
 - Fases 1–7: CONCLUÍDAS e validadas (detalhe em `historico/`).
@@ -72,6 +72,17 @@ GF0.1 validada e GF0.2–GF6.2 autorizadas em sequência pelo responsável (vali
 - **Celular:** Drift v10 (migração testada); fila de envio sem auditoria; download da lista completa ao fim de cada sincronização (exclusões por comparação); pagamento duplicado em "Itens que precisam de atenção". Web: direto no servidor, pergunta na hora em caso de pagamento duplicado.
 - **Testes:** `flutter analyze` sem problemas; suíte completa 1.533 passando (34 de integração pulados), com 67 de domínio, 9 de dados, 4 de serviço, 12 de tela e 1 de catálogo novos; suíte SQL completa com o novo `rpc_card_bills_test.sql` e o catálogo de segurança (também no Supabase local); 34 testes de integração contra o Supabase local passando (3 novos: dois aparelhos e paridade, pagamento duplicado, isolamento). Emulador (escuro e claro), conferido pelo agente: catálogo, explicação, estado vazio, cadastro de cartão, calculadora (1.500 + 50 × 2 = 1.600,00), compra 3x (R$ 333,34 + 2 × R$ 333,33), pagamento pela reserva e servidor local igual ao aparelho. Web não roda neste ambiente (T9).
 - **Para validar:** decisões técnicas F7, textos F9, conferência na Web (F8).
+
+## Nova tela de login (17/11/2026) — validada pelo responsável em 17/11/2026
+Layout da imagem de referência aprovada pelo responsável (opção 2: cena recortada da própria imagem).
+- **Para o usuário:** no topo, símbolo do Norte, "Norte", "Suas finanças, na direção certa." e "Organize. Equilibre. Evolua." sobre a cena (aurora, montanha e arco da bússola com N). Painel com cantos arredondados e contorno verde: "Bem-vindo ao Norte", e-mail e senha com ícones e olho, "Entrar" (menta), "Entrar com Google" (G colorido), "Esqueci minha senha", "ou" e "Ainda não tem conta? Criar conta". No cadastro: "Crie sua conta", botão "Criar conta" e "Já tem conta? Entrar". Erros e avisos em caixas coloridas; carregamento no botão.
+- **Temas:** escuro usa a cena recortada da referência (textos removidos); claro usa versão clara da mesma composição (não é inversão). Imagens WebP em `assets/login/` (33 KB e 20 KB), geradas por `tooling/gerar_cena_login.py`; logo e G em vetor; sem dependência nova.
+- **Responsivo:** a cena se ajusta à altura (completa, marca em linha ou só a marca com teclado aberto/tela baixa); tudo rola; na Web vira cartão centralizado de 460 px.
+- **Sem mudança** de autenticação, Supabase, rotas, banco ou regras.
+- **Testes:** `flutter analyze` sem problemas; suíte completa 1.550 passando (34 de integração pulados), com 16 novos de layout (320×568, 360×640, 411×914 e 1280×800 em claro/escuro, teclado aberto, texto 1,6×, erro e carregamento, folga entre a marca e o "N" do arco) e 1 novo de "Já tem conta? Entrar". Emulador conferido em claro e escuro, login e cadastro; celular (Samsung S947B) conferido no escuro. Web não roda neste ambiente (T9).
+
+## Ícone do app no Android (17/11/2026) — validado pelo responsável no celular em 17/11/2026
+Arte enviada pelo responsável (arco + seta menta em fundo escuro). Ícone adaptável (fundo, símbolo e versão monocromática para ícones temáticos do Android 13+) em `android/app/src/main/res/mipmap-*` e `mipmap-anydpi-v26/ic_launcher.xml`, e ícone legado com cantos arredondados. Gerado por `tooling/gerar_icone_app.py` (a arte não fica no repositório). Conferido na tela inicial do emulador. Ícones da Web (`web/icons`, `favicon.png`) não foram trocados.
 
 ## Próximo passo
 Validar a Gestão de Faturas (F6–F9) e decidir a GF6.3 (homologação, F10). Validar P2–P7 no emulador e na Web (P8; roteiro T7). Homologação só com autorização (R2). Fase 8 (76, D1/D5, 77) retoma depois da Gestão de Faturas.
