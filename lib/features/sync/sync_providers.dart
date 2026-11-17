@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/domain/user_clock.dart';
 import '../../core/infra_providers.dart';
 import '../alerts/alert_providers.dart';
+import '../card_bills/data/card_bills_downloader.dart';
+import '../card_bills/data/remote_card_bills_repository.dart';
 import '../recurrence/local_recurrence_repository.dart';
 import 'download_service.dart';
 import 'remote_table_reader.dart';
@@ -51,7 +53,18 @@ final fullSyncProvider = Provider<Future<bool> Function(String ownerId)?>((
       ownerId,
       null,
     ).generateDue(const UserClock().today());
-    return download.completed;
+    // Gestão de Faturas: lista completa do servidor (exclusões por
+    // comparação, spec §12). Sem conexão, tenta de novo na próxima rodada.
+    var cardBillsCompleted = true;
+    try {
+      await CardBillsDownloader(
+        db,
+        SupabaseCardBillsSource(client),
+      ).replaceAll(ownerId);
+    } on SyncTransientError {
+      cardBillsCompleted = false;
+    }
+    return download.completed && cardBillsCompleted;
   };
 });
 

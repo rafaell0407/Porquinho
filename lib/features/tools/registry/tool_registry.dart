@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../card_bills/card_bills_texts.dart';
 import '../../cash_or_installments/cash_or_installments_texts.dart';
 import '../models/tool_definition.dart';
 import '../models/tool_preferences.dart';
@@ -179,12 +180,45 @@ const cashOrInstallmentsTool = ToolDefinition(
   ),
 );
 
+/// Gestão de Faturas de Cartões (`features/card_bills/`, RF029; spec
+/// `docs/ferramentas/gestao_de_faturas.md`): primeira ferramenta que grava
+/// dados (próprios, sem lançamentos nem efeito no dinheiro livre). Fora de
+/// "Suas ferramentas" por padrão (decisão de 16/11/2026).
+const cardBillsTool = ToolDefinition(
+  id: 'card_bills',
+  name: CardBillsTexts.catalogName,
+  shortDescription: CardBillsTexts.shortDescription,
+  icon: Icons.receipt_long_outlined,
+  category: ToolCategories.purchasesAndCredit,
+  route: '/gestao-de-faturas',
+  introMode: ToolIntroMode.beforeFirstUse,
+  keywords: [
+    'fatura',
+    'faturas',
+    'cartão',
+    'cartões',
+    'crédito',
+    'parcelas',
+    'parcelado',
+    'assinatura',
+    'reserva',
+    'comprometido',
+  ],
+  explanation: ToolExplanation(
+    purpose: CardBillsTexts.purpose,
+    howItWorks: CardBillsTexts.howItWorks,
+    assumptions: CardBillsTexts.assumptions,
+    disclaimer: CardBillsTexts.disclaimer,
+  ),
+);
+
 /// Ferramentas do app. Nova ferramenta: criar o próprio módulo (tela, regras
 /// e testes) e acrescentar a definição aqui; a tela não muda.
 final norteToolRegistry = ToolRegistry(const [
   reportsTool,
   compoundInterestTool,
   cashOrInstallmentsTool,
+  cardBillsTool,
 ]);
 
 final toolRegistryProvider = Provider<ToolRegistry>((_) => norteToolRegistry);

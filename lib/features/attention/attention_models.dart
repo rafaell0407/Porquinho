@@ -47,9 +47,14 @@ class AttentionItem {
   /// do servidor (o servidor recusa reaplicar uma criação).
   bool get canKeepLocal =>
       kind == AttentionKind.conflict &&
-      _reapplicable.contains(entityType) &&
-      action != null &&
-      action != 'create';
+      (isCardBillPayment ||
+          (_reapplicable.contains(entityType) &&
+              action != null &&
+              action != 'create'));
+
+  /// Pagamento duplicado da Gestão de Faturas: qualquer um dos dois pode ser
+  /// mantido (spec §12).
+  bool get isCardBillPayment => entityType == 'card_bill_invoice';
 
   bool get canEdit =>
       canKeepLocal &&
@@ -96,6 +101,8 @@ String entityLabel(String entityType) => switch (entityType) {
   'expense_recurrence_template' => 'Despesa recorrente',
   'investment_recurrence_template' => 'Investimento recorrente',
   'user_preferences' => 'Preferência da conta',
+  'card_bills' => 'Gestão de faturas',
+  'card_bill_invoice' => 'Fatura de cartão (Gestão de faturas)',
   _ => 'Item',
 };
 
@@ -164,6 +171,14 @@ String describeRequest(String entityType, Map<String, dynamic> request) {
       return parts.isEmpty ? verb : '$verb: ${parts.join(' · ')}';
     case 'period_settings':
       return 'Mudar para ${_periodConfig(request)}';
+    case 'card_bills':
+    case 'card_bill_invoice':
+      final invoice = request['invoice'];
+      if (invoice is Map && invoice['status'] == 'paid') {
+        return 'Pagar ${_amount(invoice['paid_amount_centavos'])} em '
+            '${_date(invoice['paid_on'])}';
+      }
+      return '${request['summary'] ?? 'Alterar'}';
     default:
       return switch (action) {
         'create' => 'Criar',
@@ -197,6 +212,11 @@ String describeRecord(String entityType, Map<String, dynamic> record) {
           '${_date(record['allocated_on'])}$cancelled';
     case 'period_settings':
       return _periodConfig(record);
+    case 'card_bill_invoice':
+      return record['status'] == 'paid'
+          ? 'Paga: ${_amount(record['paid_amount_centavos'])} em '
+                '${_date(record['paid_on'])}'
+          : 'Pendente';
     default:
       return 'Versão ${record['version']}';
   }

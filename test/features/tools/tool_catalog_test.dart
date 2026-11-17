@@ -83,6 +83,22 @@ void main() {
       expect(norteToolRegistry.byId('compound_interest')!.initialAlert, isNull);
     });
 
+    test('gestão de faturas: fora do padrão, em Compras e crédito, com '
+        'explicação antes do primeiro uso (GF6.1)', () {
+      final tool = norteToolRegistry.byId('card_bills')!;
+      expect(tool.name, 'Gestão de faturas');
+      expect(tool.route, '/gestao-de-faturas');
+      expect(tool.category, ToolCategories.purchasesAndCredit);
+      expect(tool.defaultPosition, isNull);
+      expect(tool.introMode, ToolIntroMode.beforeFirstUse);
+      expect(tool.initialAlert, isNull);
+      expect(tool.explanation.disclaimer, contains('não cria lançamentos'));
+      expect(norteToolRegistry.defaultSelection, ['reports']);
+      for (final q in ['fatura', 'cartao', 'assinatura', 'parcelas']) {
+        expect(toolMatches(tool, query: q), isTrue, reason: q);
+      }
+    });
+
     test('padrão segue a posição definida, não a ordem de registro', () {
       final r = ToolRegistry([
         tool('a', defaultPosition: 2),

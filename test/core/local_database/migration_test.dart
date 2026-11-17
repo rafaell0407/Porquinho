@@ -490,4 +490,95 @@ void main() {
       await db.close();
     });
   });
+
+  group('v9 -> v10 (Gestão de Faturas de Cartões)', () {
+    test('produz o esquema do snapshot v10 e preserva os dados', () async {
+      final schema = await verifier.schemaAt(9);
+      schema.rawDatabase.execute(
+        "INSERT INTO user_preferences (owner_id, theme, time_zone_id, "
+        "version, updated_at, onboarding, tools) VALUES ('u1', 'dark', "
+        "'America/Sao_Paulo', 4, 'x', '{}', '{\"selected\":[\"reports\"]}')",
+      );
+      schema.rawDatabase.execute(
+        "INSERT INTO expense_entries (id, owner_id, version, created_at, "
+        "updated_at, amount_centavos, status, competence_on) VALUES "
+        "('e1', 'u1', 2, 'x', 'x', '500', 'pending', '2026-11-06')",
+      );
+      schema.rawDatabase.execute(
+        "INSERT INTO sync_outbox (owner_id, idempotency_key, entity_type, "
+        "entity_id, expected_version, payload_json, state, attempts) VALUES "
+        "('u1', 'k1', 'expense_entry', 'e1', 1, '{}', 'pending', 0)",
+      );
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 10);
+      final prefs = await db
+          .customSelect('SELECT * FROM user_preferences')
+          .getSingle();
+      expect(prefs.data['tools'], '{"selected":["reports"]}');
+      expect(prefs.data['version'], 4);
+      final e = await db
+          .customSelect('SELECT * FROM expense_entries')
+          .getSingle();
+      expect(e.data['amount_centavos'], '500');
+      expect(
+        (await db.customSelect('SELECT * FROM sync_outbox').get()).length,
+        1,
+      );
+      for (final t in [
+        'card_bill_cards',
+        'card_bill_purchases',
+        'card_bill_installments',
+        'card_bill_subscriptions',
+        'card_bill_charges',
+        'card_bill_invoices',
+        'card_bill_reserve_events',
+      ]) {
+        expect(await db.customSelect('SELECT * FROM $t').get(), isEmpty);
+      }
+      await db.close();
+    });
+
+    test('apagar o cartão apaga compras e parcelas em cascata', () async {
+      final schema = await verifier.schemaAt(9);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 10);
+      await db.customStatement('PRAGMA foreign_keys = ON');
+      await db.customStatement(
+        "INSERT INTO card_bill_cards (id, owner_id, created_at, updated_at, "
+        "name, closing_day, due_day) VALUES ('c1', 'u1', 'x', 'x', 'N', 10, 17)",
+      );
+      await db.customStatement(
+        "INSERT INTO card_bill_purchases (id, owner_id, created_at, "
+        "updated_at, card_id, description, purchased_on, installment_count, "
+        "amount_mode) VALUES ('p1', 'u1', 'x', 'x', 'c1', 'TV', "
+        "'2026-11-16', 1, 'total')",
+      );
+      await db.customStatement(
+        "INSERT INTO card_bill_installments (id, owner_id, created_at, "
+        "updated_at, purchase_id, number, card_id, invoice_month, "
+        "amount_centavos) VALUES ('i1', 'u1', 'x', 'x', 'p1', 1, 'c1', "
+        "'2026-12', '100')",
+      );
+      await db.customStatement("DELETE FROM card_bill_cards WHERE id = 'c1'");
+      expect(
+        await db.customSelect('SELECT * FROM card_bill_installments').get(),
+        isEmpty,
+      );
+      await db.close();
+    });
+
+    test('criação direta na v10 equivale ao snapshot v10', () async {
+      final schema = await verifier.schemaAt(10);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 10);
+      await db.close();
+    });
+
+    test('v1 -> v10 (todos os passos)', () async {
+      final schema = await verifier.schemaAt(1);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 10);
+      await db.close();
+    });
+  });
 }

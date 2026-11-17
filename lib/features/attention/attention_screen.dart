@@ -111,8 +111,11 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
   Future<void> _keepRemote() async {
     final ok = await _confirm(
       'Manter a versão do servidor?',
-      'A sua alteração será substituída. As duas versões ficam registradas '
-          'no histórico.',
+      item.isCardBillPayment
+          ? 'O pagamento feito neste aparelho será descartado; vale o do '
+                'outro aparelho, e a reserva é descontada uma vez só.'
+          : 'A sua alteração será substituída. As duas versões ficam '
+                'registradas no histórico.',
       'Manter a do servidor',
     );
     if (ok) {
@@ -155,7 +158,9 @@ class _ItemCardState extends ConsumerState<_ItemCard> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isConflict
+              item.isCardBillPayment
+                  ? '${item.title}: paga em dois aparelhos'
+                  : isConflict
                   ? '${item.title}: alterada em dois lugares'
                   : '${item.title}: alteração recusada',
               style: theme.textTheme.titleMedium,

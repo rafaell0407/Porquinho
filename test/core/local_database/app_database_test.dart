@@ -43,6 +43,13 @@ void main() {
         'sync_conflicts',
         'sync_outbox',
         'sync_cursors',
+        'card_bill_cards',
+        'card_bill_purchases',
+        'card_bill_installments',
+        'card_bill_subscriptions',
+        'card_bill_charges',
+        'card_bill_invoices',
+        'card_bill_reserve_events',
       ]),
     );
 
@@ -53,7 +60,7 @@ void main() {
     final schemaVersion = await database
         .customSelect('PRAGMA user_version')
         .getSingle();
-    expect(schemaVersion.read<int>('user_version'), 9);
+    expect(schemaVersion.read<int>('user_version'), 10);
   });
 
   test('grava e lê centavos exatos no SQLite', () async {

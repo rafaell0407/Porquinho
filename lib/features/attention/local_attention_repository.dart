@@ -1,4 +1,5 @@
 import '../../core/local_database/app_database.dart';
+import '../card_bills/data/card_bills_conflicts.dart';
 import '../sync/download_service.dart';
 import '../sync/sync_models.dart';
 import '../sync/sync_service.dart';
@@ -47,6 +48,15 @@ class LocalAttentionRepository implements AttentionRepository {
     ConflictResolution resolution, {
     Map<String, dynamic>? editedRequest,
   }) async {
+    if (CardBillsConflictResolver.handles(item.entityType)) {
+      // Pagamento duplicado da Gestão de Faturas: decidido no aparelho e
+      // enviado pela fila (spec §12).
+      await CardBillsConflictResolver(
+        _db,
+        _ownerId,
+      ).resolve(item.id, resolution);
+      return;
+    }
     final response = await _sync.resolveConflict(
       _ownerId,
       item.id,

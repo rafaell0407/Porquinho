@@ -355,6 +355,140 @@ class SyncCursors extends Table {
   Set<Column<Object>> get primaryKey => {ownerId, sourceTable};
 }
 
+// --- Gestão de Faturas de Cartões (v10; spec docs/ferramentas/
+// gestao_de_faturas.md). Mesmas colunas do servidor; sem versão nem auditoria
+// (última gravação vence, decisão de 16/11/2026). Valores em centavos texto.
+
+abstract class CardBillRecord extends Table {
+  TextColumn get id => text()();
+  TextColumn get ownerId => text()();
+  TextColumn get createdAt => text()();
+  TextColumn get updatedAt => text()();
+
+  @override
+  Set<Column<Object>> get primaryKey => {ownerId, id};
+}
+
+class CardBillCards extends CardBillRecord {
+  TextColumn get name => text()();
+  IntColumn get closingDay => integer()();
+  IntColumn get dueDay => integer()();
+
+  @override
+  List<String> get customConstraints => [
+    'CHECK (closing_day BETWEEN 1 AND 31)',
+    'CHECK (due_day BETWEEN 1 AND 31)',
+  ];
+}
+
+class CardBillPurchases extends CardBillRecord {
+  TextColumn get cardId => text()();
+  TextColumn get description => text()();
+  TextColumn get purchasedOn => text()();
+  IntColumn get installmentCount => integer()();
+  TextColumn get amountMode => text()();
+
+  @override
+  List<String> get customConstraints => [
+    'FOREIGN KEY (owner_id, card_id) '
+        'REFERENCES card_bill_cards (owner_id, id) ON DELETE CASCADE',
+    'CHECK (installment_count BETWEEN 1 AND 24)',
+    "CHECK (amount_mode IN ('total', 'installment'))",
+  ];
+}
+
+class CardBillInstallments extends CardBillRecord {
+  TextColumn get purchaseId => text()();
+  IntColumn get number => integer()();
+  TextColumn get cardId => text()();
+  TextColumn get invoiceMonth => text()();
+  TextColumn get amountCentavos => text().map(const BigIntTextConverter())();
+  BoolColumn get manuallyEdited =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get paidOutside => boolean().withDefault(const Constant(false))();
+
+  @override
+  List<String> get customConstraints => [
+    'FOREIGN KEY (owner_id, purchase_id) '
+        'REFERENCES card_bill_purchases (owner_id, id) ON DELETE CASCADE',
+    'UNIQUE (owner_id, purchase_id, number)',
+  ];
+}
+
+class CardBillSubscriptions extends CardBillRecord {
+  TextColumn get cardId => text()();
+  TextColumn get description => text()();
+  TextColumn get monthlyAmountCentavos =>
+      text().map(const BigIntTextConverter())();
+  TextColumn get startMonth => text()();
+
+  @override
+  List<String> get customConstraints => [
+    'FOREIGN KEY (owner_id, card_id) '
+        'REFERENCES card_bill_cards (owner_id, id) ON DELETE CASCADE',
+  ];
+}
+
+class CardBillCharges extends CardBillRecord {
+  TextColumn get subscriptionId => text()();
+  TextColumn get cardId => text()();
+  TextColumn get invoiceMonth => text()();
+  TextColumn get description => text()();
+  TextColumn get amountCentavos => text().map(const BigIntTextConverter())();
+  BoolColumn get manuallyEdited =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get removed => boolean().withDefault(const Constant(false))();
+
+  @override
+  List<String> get customConstraints => [
+    'UNIQUE (owner_id, subscription_id, invoice_month)',
+  ];
+}
+
+class CardBillInvoices extends CardBillRecord {
+  TextColumn get cardId => text()();
+  TextColumn get invoiceMonth => text()();
+  TextColumn get closingOn => text()();
+  TextColumn get dueOn => text()();
+  BoolColumn get datesManual => boolean().withDefault(const Constant(false))();
+  TextColumn get informedAmountCentavos =>
+      text().map(const BigIntTextConverter()).nullable()();
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+  TextColumn get paymentId => text().nullable()();
+  TextColumn get paidAmountCentavos =>
+      text().map(const BigIntTextConverter()).nullable()();
+  TextColumn get paidOn => text().nullable()();
+  TextColumn get paymentSource => text().nullable()();
+  TextColumn get reserveUsedCentavos =>
+      text().map(const BigIntTextConverter()).nullable()();
+  TextColumn get expectedAmountCentavos =>
+      text().map(const BigIntTextConverter()).nullable()();
+  TextColumn get cardName => text().nullable()();
+  TextColumn get itemsSnapshot => text().nullable()();
+
+  @override
+  List<String> get customConstraints => [
+    'UNIQUE (owner_id, card_id, invoice_month)',
+    "CHECK (status IN ('pending', 'paid'))",
+    "CHECK (status <> 'paid' OR payment_id IS NOT NULL)",
+  ];
+}
+
+class CardBillReserveEvents extends CardBillRecord {
+  TextColumn get kind => text()();
+  TextColumn get direction => text()();
+  TextColumn get amountCentavos => text().map(const BigIntTextConverter())();
+  TextColumn get invoiceId => text().nullable()();
+  TextColumn get label => text().nullable()();
+  TextColumn get occurredAt => text()();
+
+  @override
+  List<String> get customConstraints => [
+    "CHECK (kind IN ('adjustment', 'payment', 'payment_undo'))",
+    "CHECK (direction IN ('in', 'out'))",
+  ];
+}
+
 @DriftDatabase(
   tables: [
     UserPreferences,
@@ -372,6 +506,13 @@ class SyncCursors extends Table {
     SyncConflicts,
     SyncOutbox,
     SyncCursors,
+    CardBillCards,
+    CardBillPurchases,
+    CardBillInstallments,
+    CardBillSubscriptions,
+    CardBillCharges,
+    CardBillInvoices,
+    CardBillReserveEvents,
   ],
 )
 class PorquinhoDatabase extends _$PorquinhoDatabase {
@@ -380,7 +521,7 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
   PorquinhoDatabase(super.executor);
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -511,6 +652,17 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
           schema.userPreferences,
           schema.userPreferences.tools,
         );
+      },
+      // v10 (Gestão de Faturas de Cartões): tabelas próprias da ferramenta,
+      // vazias; nada existente muda.
+      from9To10: (migrator, schema) async {
+        await migrator.create(schema.cardBillCards);
+        await migrator.create(schema.cardBillPurchases);
+        await migrator.create(schema.cardBillInstallments);
+        await migrator.create(schema.cardBillSubscriptions);
+        await migrator.create(schema.cardBillCharges);
+        await migrator.create(schema.cardBillInvoices);
+        await migrator.create(schema.cardBillReserveEvents);
       },
     ),
     beforeOpen: (_) async => customStatement('PRAGMA foreign_keys = ON'),
