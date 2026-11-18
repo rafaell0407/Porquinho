@@ -73,6 +73,8 @@ O produto não fará controle de saldos bancários, não manterá módulo de con
 
 **Exceção aprovada em 16/11/2026 (desenvolvimento ainda não autorizado):** a ferramenta "Gestão de Faturas de Cartões" (RF029) tem, **só dentro dela**, reserva para os cartões, compromissos, o indicador "Saldo não comprometido", cadastro de cartões, compras parceladas, assinaturas, fechamento e faturas calculadas a partir de compras. É separada e opcional: não cria lançamentos nem altera o dinheiro livre. Os itens acima continuam fora do MVP no restante do app. Especificação: `docs/ferramentas/gestao_de_faturas.md`.
 
+**Exceção aprovada em 18/11/2026 (desenvolvimento ainda não autorizado):** a importação de dados por **CSV** (RF030), só na Web, um arquivo por importação, gravando lançamentos comuns pelas regras de sempre (RN046–RN055). Importação de outros formatos (planilhas .xlsx, OFX etc.) continua fora do MVP. Especificação: `docs/importacao.md`.
+
 ### 3.3 Observação sobre saldo inicial
 
 Não existe campo próprio de saldo inicial. Como as categorias de receitas são personalizáveis, o usuário pode criar uma categoria chamada “Saldo inicial” ou equivalente e registrar um valor como receita comum. O aplicativo não atribui tratamento especial a essa categoria, não a cria obrigatoriamente e não detecta se o valor já foi considerado em outro registro. O usuário é responsável por evitar lançamentos duplicados.
@@ -134,6 +136,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF027 | Cálculos locais e validação remota segundo as mesmas regras, com resultados equivalentes | Essencial | APROVADO |
 | RF028 | Ferramenta "Calculadora à vista ou parcelado": comparar pagar à vista × parcelar no cartão deixando a reserva no CDB liquidez diária ou Tesouro Selic, com IR/IOF e dias úteis; só simulação, sem lançamentos (`docs/ferramentas/a_vista_ou_parcelado.md`) | Média | APROVADO (14/11/2026; exceção à §3.2 e RN007 restrita à ferramenta) |
 | RF029 | Ferramenta "Gestão de Faturas de Cartões": dinheiro reservado para os cartões, faturas por cartão (parcelas, assinaturas ou valor informado), pagamento da fatura inteira pela reserva ou outras fontes e "Saldo não comprometido = reservado − comprometido"; separada, sem lançamentos (`docs/ferramentas/gestao_de_faturas.md`) | Média | APROVADO como produto (16/11/2026; exceções à §3.2, RN020, RN029/RN030 e RN033 restritas à ferramenta); desenvolvimento PENDENTE de autorização |
+| RF030 | Importar dados por CSV (somente Web; Mais → Importar dados): **um único arquivo CSV por importação**, de um tipo só ou misto, inclusive os exportados pelo Norte; associação de colunas; classificação explícita; categorias existentes, novas ou nenhuma; sugestão de recorrências mensais com confirmação e âncora no último lançamento da série; revisão de duplicidades; prévia e confirmação antes de gravar; processamento idempotente em blocos com retomada; histórico e desfazer condicional (só registros inalterados) (`docs/importacao.md`) | Média | APROVADO como produto (18/11/2026; exceção à §3.2; RN046–RN055); desenvolvimento PENDENTE de autorização (depois de validar RL, GF e P8 — D31) |
 
 ### 6.1 Critérios de aceitação
 
@@ -195,6 +198,12 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 - Divergências são identificadas e apresentadas, sem sobrescrita silenciosa.
 - A política aprovada detecta conflitos por versão, preserva as versões concorrentes, apresenta o conflito ao usuário e registra a resolução em nova versão consolidada.
 
+**RF030 — Importação de dados (CSV)** (detalhe em `docs/importacao.md` §16)
+- Um arquivo por importação; nada é gravado antes da confirmação explícita; falha no meio não deixa bloco pela metade.
+- Valor ou data ambíguos nunca são interpretados sem escolha do usuário; nenhum valor passa por ponto flutuante.
+- Recorrências e duplicidades só com decisão do usuário; reenviar não duplica.
+- Desfazer cancela só o que não foi alterado depois e informa o que foi preservado.
+
 **RF023 — Alertas**
 - Alertas móveis previstos: três dias antes do vencimento, no dia e diariamente após o vencimento enquanto a despesa estiver pendente.
 - Os alertas continuam após o fim do período enquanto a despesa estiver pendente e cessam quando paga ou cancelada.
@@ -239,7 +248,7 @@ As regras funcionais desta baseline estão aprovadas. Não há decisão pendente
 - Gestão de carteira e acompanhamento de ativos.
 - Estimativas automáticas de rendimentos.
 - Compartilhamento familiar.
-- Importação de planilhas, exportação avançada e relatórios avançados.
+- Importação de outros formatos (planilhas .xlsx, OFX etc.; CSV aprovado no RF030), exportação avançada e relatórios avançados.
 
 
 ## 13. Complementos aprovados (v0.5)

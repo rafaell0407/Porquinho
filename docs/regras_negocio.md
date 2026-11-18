@@ -84,7 +84,7 @@ O MVP não possui campo próprio, fotografia bancária, entidade ou lançamento 
 - entra no dinheiro livre como qualquer receita;
 - o sistema não identifica a categoria como especial e não detecta duplicidade.
 
-O usuário é responsável por não registrar duas vezes o mesmo recurso.
+O usuário é responsável por não registrar duas vezes o mesmo recurso. (Exceção restrita à importação de CSV: lá, possíveis duplicidades são mostradas para decisão do usuário — RN053.)
 
 **Status:** APROVADO.
 
@@ -318,6 +318,7 @@ Alertas do MVP serão enviados a dispositivos móveis Android (iOS fora do MVP �
 | RN031–RN033 | Offline, paridade, idempotência e conflitos | APROVADO; detalhes de protocolo e retentativa são técnicos |
 | RN034–RN035 | Segurança e notificações | APROVADO |
 | RN036–RN039, RN041–RN043, RN045 | Intervalos semiabertos, meses curtos, recorrências idempotentes, pagamento integral, alertas, períodos sem encerramento manual, metas e moeda | APROVADO; pagamento parcial e encerramento manual: FORA DO MVP |
+| RN046–RN055 | Importação de dados por CSV (RF030) | APROVADO (18/11/2026); desenvolvimento PENDENTE de autorização |
 
 ## 13. Detalhamentos pendentes
 
@@ -416,3 +417,71 @@ Todos os valores financeiros do MVP são denominados em BRL e representados em c
 | Segurança, backup, recuperação e CSV | APROVADO como requisito; desenho técnico detalhado |
 
 O quadro-resumo anterior, que repetia os status das RN036–RN045, está em `docs/historico/decisoes.md`.
+
+## 15. Importação de dados por CSV (RN046–RN055)
+
+**Data:** 18/11/2026. Regras do RF030, aprovadas pelo responsável em 18/11/2026 com as decisões D16–D31 (`docs/importacao.md` §18). Desenvolvimento PENDENTE de autorização. A importação não cria regra financeira nova: cada linha vira um lançamento comum, sujeito às RN001–RN045.
+
+### RN046 — Escopo da importação
+
+Somente na Web e somente CSV, **um único arquivo por importação** (o arquivo pode ser de um tipo só ou misto). Arquivos exportados pelo Norte são importados um por vez. Todo o histórico do arquivo pode ser importado. Nenhum dado financeiro é gravado antes da confirmação explícita do usuário. O arquivo não é guardado: ficam o nome, o hash, o tamanho, o número de linhas e as decisões do usuário. Não há limite fixo de linhas; arquivo grande mostra aviso antes da confirmação, e nada é cortado em silêncio.
+
+**Status:** APROVADO — responsável, 18/11/2026.
+
+### RN047 — Leitura e classificação
+
+Encoding UTF-8 (com ou sem BOM); Windows-1252 só por escolha explícita do usuário quando o UTF-8 falhar. Separador vírgula ou ponto e vírgula; aspas conforme RFC 4180. O tipo de cada linha (receita, despesa, investimento ou categoria) vem do tipo declarado para o arquivo inteiro ou de uma coluna de tipo cujos valores o usuário associa. O tipo nunca é deduzido sozinho pelo sinal do valor. Valores negativos são recusados (RN045), salvo se o usuário declarar para o arquivo a regra explícita "negativos são despesas", que usa o valor absoluto.
+
+**Status:** APROVADO — responsável, 18/11/2026.
+
+### RN048 — Valores e datas
+
+Vale a RN045 integralmente: centavos inteiros, até duas casas, zero permitido, sem arredondamento e sem ponto flutuante. O formato do valor e o da data são declarados por coluna; qualquer ambiguidade (ex.: "1.234", coluna inteira que serve como DD/MM e MM/DD) bloqueia até o usuário escolher. Os centavos dos arquivos do Norte são lidos exatos. Data inexistente ou com ano de 2 dígitos é rejeitada; data com hora usa só a data, com aviso, sem conversão de fuso.
+
+**Status:** APROVADO — responsável, 18/11/2026.
+
+### RN049 — Status por tipo
+
+- **Receita** avulsa entra recebida, na data de recebimento do arquivo (passada ou futura).
+- **Despesa** entra pendente (RN015). O usuário pode escolher explicitamente "marcar como pagas", com data de pagamento igual a uma coluna escolhida ou à data do lançamento; linha marcada como paga exige data de pagamento válida. Vencimento só se a coluna for associada. Sem pagamento parcial (RN039). Data de pagamento futura ou anterior à competência é aceita com aviso; o pagamento não muda a competência.
+- **Investimento** só com valor e data; demais colunas são ignoradas com aviso.
+- **Receita pendente e despesa variável sem valor** só entram como âncora de uma série confirmada (RN051); fora disso, são rejeitadas com motivo.
+- **Linhas canceladas** no arquivo não são importadas e são contadas no resultado.
+
+**Status:** APROVADO — responsável, 18/11/2026.
+
+### RN050 — Categorias
+
+Cada nome de categoria (e subcategoria) do arquivo é associado pelo usuário a uma categoria existente ativa do mesmo tipo, a uma nova ou a nenhuma (RN044). Categoria desativada nunca é reativada (RN040): o usuário escolhe outra, nenhuma ou cria uma nova com o mesmo nome. Investimento nunca tem categoria (RN027). Categoria nova usa ícone e cor padrão. A associação é feita pelo nome, então o arquivo de categorias do Norte é opcional.
+
+**Status:** APROVADO — responsável, 18/11/2026.
+
+### RN051 — Recorrências sugeridas
+
+Padrões mensais encontrados no arquivo são só sugestões e exigem confirmação por série (nenhuma vem marcada). Critério: pelo menos 3 meses seguidos, uma ocorrência por mês, mesmo tipo, descrição e categoria, dia do mês com tolerância de até 3 dias e ajuste de fim de mês e dia útil. A âncora é o lançamento mais recente da série; os anteriores ficam avulsos. A recorrência começa na âncora e usa o dia da âncora como dia de referência (RN038), com aviso quando ele difere do dia habitual da série. Fixa se todos os valores forem iguais, variável se não; investimento sempre fixo, com o valor da âncora. A gravação usa o mecanismo existente de transformar o lançamento na primeira ocorrência.
+
+**Status:** APROVADO — responsável, 18/11/2026.
+
+### RN052 — Ocorrências atrasadas
+
+Antes da confirmação, a importação mostra as ocorrências que serão geradas entre a âncora e hoje, com datas, valores e o efeito no dinheiro livre de cada período. A geração segue a RN038, pelo mecanismo existente, uma única vez ao final: receitas geradas ficam pendentes e só contam após confirmação; despesas fixas e investimentos contam ao gerar; despesas variáveis contam ao receber valor. Âncora futura não gera atrasadas.
+
+**Status:** APROVADO — responsável, 18/11/2026.
+
+### RN053 — Duplicidades
+
+Possíveis duplicidades dentro do arquivo, contra os lançamentos já existentes e por arquivo já importado (mesmo hash) são mostradas em grupos para o usuário decidir: importar mesmo assim ou ignorar. Nada é ignorado automaticamente e nenhuma opção vem pré-marcada; ações em massa só por clique explícito. Fora da importação, vale a RN006.
+
+**Status:** APROVADO — responsável, 18/11/2026.
+
+### RN054 — Gravação em blocos e idempotência
+
+A gravação é feita em blocos atômicos, com identificadores e operações determinísticos: reenviar não duplica. Se um item falha, o bloco inteiro volta e a importação fica interrompida, com a linha indicada; o usuário pode retomar escolhendo o mesmo arquivo ou desfazer o que entrou. Uma importação em processamento por vez. Cada lançamento passa pelas mesmas validações, auditoria e versionamento de qualquer gravação (RN028, RN033).
+
+**Status:** APROVADO — responsável, 18/11/2026.
+
+### RN055 — Desfazer condicional
+
+O usuário pode desfazer uma importação a qualquer tempo, sem prazo. São cancelados os lançamentos e as ocorrências geradas, e desativados os modelos de recorrência e as categorias criados por ela, **somente se não foram alterados depois** (categorias, também só se não estiverem em uso). Modelo alterado é preservado com todas as suas ocorrências. Nada é apagado (RN029); pagamentos, recebimentos, edições e cancelamentos posteriores são preservados. A tela informa antes e depois o que foi cancelado e o que foi preservado. O desfazer não gera conflito falso e não pode ser desfeito.
+
+**Status:** APROVADO — responsável, 18/11/2026.

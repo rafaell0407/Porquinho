@@ -1,6 +1,6 @@
 # Estado atual — Norte
 
-**Atualizado em:** 17/11/2026.
+**Atualizado em:** 18/11/2026.
 
 ## Fase
 - Fases 1–7: CONCLUÍDAS e validadas (detalhe em `historico/`).
@@ -90,6 +90,9 @@ Planejamento aprovado (RL0) e RL1–RL7 autorizadas em sequência pelo responsá
 - **Servidor:** migration `20261117000100_report_preferences.sql` (coluna `user_preferences.reports`, RPCs `set_report_selection` e `complete_report_setup`, idempotentes e auditadas). Aplicada **só no Supabase local** (via psql direto no banco local; o CLI está vinculado à homologação); homologação pendente de autorização (RL8).
 - **Celular:** Drift v11 (coluna `reports`, migração testada com dados); gravação local + fila; download traz a coluna (servidor sem ela → padrão). Web: RPC direta. Lista: última gravação vence; configuração feita não volta.
 - **Testes:** `flutter analyze` sem problemas; suíte completa 1.602 passando (37 de integração pulados sem Supabase), incluindo 14 testes antigos de valores dos relatórios adaptados para a tela completa (mesmas conferências), 11 de catálogo/registro/diferença, 13 de preferências e 22 de tela da central; suíte SQL completa com o novo `rpc_report_preferences_test.sql` e catálogo de segurança; 37 testes de integração contra o Supabase local passando (3 novos: dois aparelhos com última lista vencendo e configuração somada, Web × aparelho, isolamento). Emulador (escuro e claro), conferido pelo agente: configuração guiada, Concluir, cartões vazios e com dados (R$ 500.000 de receitas × R$ 120.000 de despesas → livre R$ 380.000 nos cartões, no catálogo e na tela completa), expandir, catálogo com prévia, tela completa e gravação no servidor local. Na conferência foi achado e corrigido um defeito (barra dividida sem altura no aparelho), agora coberto por teste. Web não roda neste ambiente (T9).
+
+## Importação de dados CSV (18/11/2026) — IM0 feita, aguardando validação
+Planejamento aceito e RN046–RN055 aprovadas pelo responsável em 18/11/2026, com **um único CSV por importação** (pode ser misto). IM0 = só documentação: RF030 e exceção na §3.2 (`requisitos.md`), RN046–RN055 (`regras_negocio.md` §15, nota na RN006), spec `docs/importacao.md` (decisões D16–D31 na §18) e `pendencias.md` §IM (+ M8). Nada de código, banco ou migration. Desenvolvimento (IM1–IM10) só depois de validar RL, GF e P8 (D31) e com autorização.
 
 ## Próximo passo
 Validar a Reformulação de Relatórios (RL1–RL7; pontos em `pendencias.md` §RL) e decidir a RL8 (homologação). Validar a Gestão de Faturas (F6–F9) e decidir a GF6.3 (homologação, F10). Validar P2–P7 no emulador e na Web (P8; roteiro T7). Homologação só com autorização (R2). Fase 8 (76, D1/D5, 77) retoma depois da Gestão de Faturas.

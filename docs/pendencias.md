@@ -1,6 +1,6 @@
 # Pendências, ajustes e melhorias — Norte
 
-Lista-mestra única do que falta. **Atualizado em:** 17/11/2026.
+Lista-mestra única do que falta. **Atualizado em:** 18/11/2026.
 Regras: cada item tem ID fixo (não reaproveitar). Concluiu → apagar a linha e registrar na entrega da fase. Achou algo fora da entrega em curso → registrar aqui, não resolver sozinho. Melhorias (M) só com aprovação.
 
 ## D — Decisões abertas (responsável)
@@ -62,6 +62,24 @@ Spec: `docs/ferramentas/relatorios.md` (8 decisões na §10; RF025 sem mudança 
 
 Para validar (RL1–RL7): textos novos (frase da configuração guiada, benefícios, "Igual ao período anterior" quando a diferença do relatório 4 é zero, frases de vazio dos relatórios 3–5, "Recebido no período"/"Despesas do período"), nomes curtos nos cartões ("Evolução do dinheiro livre", "Comparativo por período"); cores do comparativo e do gráfico agrupado passaram a ser as da Home (receitas/despesas/investimentos); conferência na Web (T9). Na tela completa com 11–12 períodos, os rótulos do eixo dos gráficos (já existentes) ficam apertados no celular — ajuste visual a decidir (A).
 
+## IM — Importação de dados CSV (aprovada em 18/11/2026)
+Spec: `docs/importacao.md`. RF030 e RN046–RN055 aprovados pelo responsável em 18/11/2026, com as decisões D16–D31 aceitas (registradas na spec §18; IDs D16–D31 usados, não reaproveitar). Um único CSV por importação. Desenvolvimento só depois de validar RL, GF (F6–F9) e P8 (D31) e com autorização; uma entrega por vez.
+| ID | Entrega | Situação |
+|---|---|---|
+| IM0 | Documentação: RF030, exceção na §3.2, RN046–RN055, spec, este registro | Feita 18/11/2026, aguardando validação |
+| IM1 | Domínio: leitura (encoding, separador, RFC 4180) e formatos do Norte | Aguarda autorização |
+| IM2 | Domínio: colunas, valores, datas, classificação, regras e linhas rejeitadas | Aguarda autorização |
+| IM3 | Domínio: categorias e duplicidades | Aguarda autorização |
+| IM4 | Domínio: séries, âncora, prévia das atrasadas e plano (ids e blocos) | Aguarda autorização |
+| IM5 | Servidor: migration, `begin/apply_chunk/finish`, testes SQL (só Supabase local) | Aguarda autorização |
+| IM6 | Servidor: `undo_preview/undo_batch`, testes SQL | Aguarda autorização |
+| IM7 | Dados e aplicação na Web: escolha do arquivo, repositório, blocos, retomada, integração local | Aguarda autorização |
+| IM8 | Telas das etapas 1–9 | Aguarda autorização |
+| IM9 | Processamento, resultado, histórico e desfazer; item em Mais; conferência no navegador | Aguarda autorização |
+| IM10 | Homologação | Só com autorização (R2) |
+
+Observação: cada linha importada gera auditoria e registro de repetição (ex.: 50 mil linhas ≈ 100 mil registros técnicos); considerar na D15.
+
 ## V — Renovação visual (aprovada em 12/11/2026; uma entrega por vez)
 Visual próprio do Norte (Menta + Inter), sem copiar elementos de outro app: sem mascote, sem barra de assistente, abas só as da barra inferior (RF004), ícones do Material do Flutter, lista de categorias própria.
 | ID | Entrega | Situação |
@@ -102,7 +120,8 @@ Visual próprio do Norte (Menta + Inter), sem copiar elementos de outro app: sem
 | M5 | Criar subcategoria direto no formulário de lançamento ("+ Nova subcategoria", mostrando o campo mesmo sem subcategorias). Aguarda aprovação | 12/11/2026, pedido de criação de categoria no lançamento |
 | M6 | Novas ferramentas propostas na referência visual da aba Ferramentas: Gasto por dia, E se eu gastar?, Comparar períodos, Nova conta fixa. Cada uma precisa de regra aprovada (ex.: contar hoje ou não, usar receitas pendentes ou não) e módulo próprio | 13/11/2026, referência visual "Norte Ferramentas" |
 | M7 | Levar Itens de atenção, Recorrências e Exportar também para o catálogo de Ferramentas (hoje só em Mais) | 13/11/2026, mesma referência |
-| M4 | Itens de `requisitos.md` §12 (contas, cartão detalhado, carteira, compartilhamento, importação) | baseline v0.5 |
+| M8 | Exportação fiel para ida e volta: id da série de recorrência, ícone e cor das categorias e opção de arquivo único combinado (permitiria importar a conta inteira numa importação só) | 18/11/2026, D30 (planejamento da importação CSV) |
+| M4 | Itens de `requisitos.md` §12 (contas, cartão detalhado, carteira, compartilhamento, importação de outros formatos; CSV aprovado no RF030) | baseline v0.5 |
 
 Novas ideias: acrescentar linha com data e origem.
 
