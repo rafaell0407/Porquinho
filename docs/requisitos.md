@@ -129,7 +129,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF022 | Sincronizar operações pendentes com idempotência e detecção de conflitos | Essencial | APROVADO |
 | RF023 | Alertas móveis de vencimento de despesas | Alta | APROVADO |
 | RF024 | Assistente de configuração inicial com etapas opcionais | Média | APROVADO |
-| RF025 | Disponibilizar cinco relatórios básicos (acesso pela aba Ferramentas → Relatórios) | Média | APROVADO; conteúdo definido na seção 13.7 |
+| RF025 | Disponibilizar cinco relatórios básicos (acesso pela aba Ferramentas → Relatórios) | Média | APROVADO; conteúdo definido na seção 13.7. Apresentação modular e personalizável (configuração guiada, Meus relatórios, catálogo, personalização) aprovada em 17/11/2026, sem mudança de cálculo (`docs/ferramentas/relatorios.md`); desenvolvimento PENDENTE de autorização |
 | RF026 | Seleção manual de tema claro ou escuro | Média | APROVADO |
 | RF027 | Cálculos locais e validação remota segundo as mesmas regras, com resultados equivalentes | Essencial | APROVADO |
 | RF028 | Ferramenta "Calculadora à vista ou parcelado": comparar pagar à vista × parcelar no cartão deixando a reserva no CDB liquidez diária ou Tesouro Selic, com IR/IOF e dias úteis; só simulação, sem lançamentos (`docs/ferramentas/a_vista_ou_parcelado.md`) | Média | APROVADO (14/11/2026; exceção à §3.2 e RN007 restrita à ferramenta) |

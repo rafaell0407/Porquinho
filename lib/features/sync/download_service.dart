@@ -4,6 +4,7 @@ import 'package:drift/drift.dart';
 
 import '../../core/local_database/app_database.dart';
 import '../preferences/preferences_repository.dart';
+import '../reports/models/report_preferences.dart';
 import '../tools/models/tool_preferences.dart';
 import 'sync_models.dart';
 
@@ -428,10 +429,11 @@ class DownloadService {
     final before = await _changes();
     await _db.customStatement(
       'INSERT INTO user_preferences (owner_id, theme, time_zone_id, onboarding, '
-      'tools, version, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?) '
+      'tools, reports, version, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) '
       'ON CONFLICT (owner_id) DO UPDATE SET theme = excluded.theme, '
       'time_zone_id = excluded.time_zone_id, '
       'onboarding = excluded.onboarding, tools = excluded.tools, '
+      'reports = excluded.reports, '
       'version = excluded.version, updated_at = excluded.updated_at '
       'WHERE excluded.version > user_preferences.version',
       [
@@ -441,6 +443,7 @@ class DownloadService {
         jsonEncode(decodeOnboarding(row['onboarding'])),
         // Servidor ainda sem a coluna (sem a migration): padrão do app.
         ToolPreferences.decode(row['tools']).encode(),
+        ReportPreferences.decode(row['reports']).encode(),
         row['version'],
         row['updated_at'],
       ],

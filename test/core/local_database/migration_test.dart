@@ -581,4 +581,53 @@ void main() {
       await db.close();
     });
   });
+
+  group('v10 -> v11 (Reformulação de Relatórios)', () {
+    test(
+      'produz o esquema do snapshot v11 e preserva as preferências',
+      () async {
+        final schema = await verifier.schemaAt(10);
+        schema.rawDatabase.execute(
+          "INSERT INTO user_preferences (owner_id, theme, time_zone_id, "
+          "version, updated_at, onboarding, tools) VALUES ('u1', 'dark', "
+          "'America/Sao_Paulo', 7, 'x', '{\"intro\":\"done\"}', "
+          "'{\"selected\":[\"reports\"]}')",
+        );
+        schema.rawDatabase.execute(
+          "INSERT INTO sync_outbox (owner_id, idempotency_key, entity_type, "
+          "entity_id, expected_version, payload_json, state, attempts) VALUES "
+          "('u1', 'k1', 'user_preferences', 'u1', 6, '{}', 'pending', 0)",
+        );
+        final db = PorquinhoDatabase(schema.newConnection());
+        await verifier.migrateAndValidate(db, 11);
+        final row = await db
+            .customSelect('SELECT * FROM user_preferences')
+            .getSingle();
+        expect(row.data['theme'], 'dark');
+        expect(row.data['version'], 7);
+        expect(row.data['onboarding'], '{"intro":"done"}');
+        expect(row.data['tools'], '{"selected":["reports"]}');
+        expect(row.data['reports'], '{}');
+        expect(
+          (await db.customSelect('SELECT * FROM sync_outbox').get()).length,
+          1,
+        );
+        await db.close();
+      },
+    );
+
+    test('criação direta na v11 equivale ao snapshot v11', () async {
+      final schema = await verifier.schemaAt(11);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 11);
+      await db.close();
+    });
+
+    test('v1 -> v11 (todos os passos)', () async {
+      final schema = await verifier.schemaAt(1);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 11);
+      await db.close();
+    });
+  });
 }

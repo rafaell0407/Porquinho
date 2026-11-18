@@ -20,12 +20,12 @@ import '../features/compound_interest/screens/withdrawal_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
 import '../features/more/more_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
+import '../features/reports/report_routes.dart';
 import '../features/periods/period_gate.dart';
 import '../features/preferences/preferences_providers.dart';
 import '../features/preferences/theme_screen.dart';
 import '../features/periods/period_settings_screen.dart';
 import '../features/export/export_screen.dart';
-import '../features/reports/reports_screen.dart';
 import '../features/recurrence/recurrences_screen.dart';
 import 'theme/norte_theme.dart';
 import '../features/tools/screens/manage_tools_screen.dart';
@@ -36,7 +36,8 @@ import '../shared/main_shell.dart';
 
 /// Rotas: `/login` sem sessão; `/nova-senha` após o link de recuperação;
 /// com sessão, as quatro abas `/` (Dashboard), `/ferramentas`, `/lancamentos`
-/// e `/mais`. `/relatorios`, `/juros-compostos` (+ `/retiradas`) e
+/// e `/mais`. `/relatorios` (+ `/catalogo`, `/personalizar`, `/<id>`),
+/// `/juros-compostos` (+ `/retiradas`) e
 /// `/a-vista-ou-parcelado` e `/gestao-de-faturas` são ferramentas do
 /// catálogo.
 final routerProvider = Provider<GoRouter>((ref) {
@@ -76,7 +77,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/periodo',
         builder: (_, _) => const PeriodSettingsScreen(),
       ),
-      GoRoute(path: '/relatorios', builder: (_, _) => const ReportsScreen()),
+      reportsRoute(),
       GoRoute(
         path: CompoundInterestScreen.route,
         builder: (_, _) => const CompoundInterestScreen(),

@@ -86,6 +86,18 @@ class $UserPreferencesTable extends UserPreferences
     requiredDuringInsert: false,
     defaultValue: const Constant('{}'),
   );
+  static const VerificationMeta _reportsMeta = const VerificationMeta(
+    'reports',
+  );
+  @override
+  late final GeneratedColumn<String> reports = GeneratedColumn<String>(
+    'reports',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('{}'),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     ownerId,
@@ -95,6 +107,7 @@ class $UserPreferencesTable extends UserPreferences
     updatedAt,
     onboarding,
     tools,
+    reports,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -157,6 +170,12 @@ class $UserPreferencesTable extends UserPreferences
         tools.isAcceptableOrUnknown(data['tools']!, _toolsMeta),
       );
     }
+    if (data.containsKey('reports')) {
+      context.handle(
+        _reportsMeta,
+        reports.isAcceptableOrUnknown(data['reports']!, _reportsMeta),
+      );
+    }
     return context;
   }
 
@@ -194,6 +213,10 @@ class $UserPreferencesTable extends UserPreferences
         DriftSqlType.string,
         data['${effectivePrefix}tools'],
       )!,
+      reports: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}reports'],
+      )!,
     );
   }
 
@@ -216,6 +239,11 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
   /// Aba Ferramentas: JSON `{selected?: [ids], dismissed_intros?: [ids]}`.
   /// Sem `selected` = configuração padrão do app.
   final String tools;
+
+  /// Ferramenta Relatórios: JSON `{setup?: done|skipped, selected?: [ids],
+  /// options?: {}}`. Sem `selected` = lista sugerida; sem `setup` =
+  /// configuração guiada ainda não feita.
+  final String reports;
   const UserPreference({
     required this.ownerId,
     this.theme,
@@ -224,6 +252,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
     required this.updatedAt,
     required this.onboarding,
     required this.tools,
+    required this.reports,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -237,6 +266,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
     map['updated_at'] = Variable<String>(updatedAt);
     map['onboarding'] = Variable<String>(onboarding);
     map['tools'] = Variable<String>(tools);
+    map['reports'] = Variable<String>(reports);
     return map;
   }
 
@@ -251,6 +281,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
       updatedAt: Value(updatedAt),
       onboarding: Value(onboarding),
       tools: Value(tools),
+      reports: Value(reports),
     );
   }
 
@@ -267,6 +298,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
       updatedAt: serializer.fromJson<String>(json['updatedAt']),
       onboarding: serializer.fromJson<String>(json['onboarding']),
       tools: serializer.fromJson<String>(json['tools']),
+      reports: serializer.fromJson<String>(json['reports']),
     );
   }
   @override
@@ -280,6 +312,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
       'updatedAt': serializer.toJson<String>(updatedAt),
       'onboarding': serializer.toJson<String>(onboarding),
       'tools': serializer.toJson<String>(tools),
+      'reports': serializer.toJson<String>(reports),
     };
   }
 
@@ -291,6 +324,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
     String? updatedAt,
     String? onboarding,
     String? tools,
+    String? reports,
   }) => UserPreference(
     ownerId: ownerId ?? this.ownerId,
     theme: theme.present ? theme.value : this.theme,
@@ -299,6 +333,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
     updatedAt: updatedAt ?? this.updatedAt,
     onboarding: onboarding ?? this.onboarding,
     tools: tools ?? this.tools,
+    reports: reports ?? this.reports,
   );
   UserPreference copyWithCompanion(UserPreferencesCompanion data) {
     return UserPreference(
@@ -313,6 +348,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
           ? data.onboarding.value
           : this.onboarding,
       tools: data.tools.present ? data.tools.value : this.tools,
+      reports: data.reports.present ? data.reports.value : this.reports,
     );
   }
 
@@ -325,7 +361,8 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
           ..write('version: $version, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('onboarding: $onboarding, ')
-          ..write('tools: $tools')
+          ..write('tools: $tools, ')
+          ..write('reports: $reports')
           ..write(')'))
         .toString();
   }
@@ -339,6 +376,7 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
     updatedAt,
     onboarding,
     tools,
+    reports,
   );
   @override
   bool operator ==(Object other) =>
@@ -350,7 +388,8 @@ class UserPreference extends DataClass implements Insertable<UserPreference> {
           other.version == this.version &&
           other.updatedAt == this.updatedAt &&
           other.onboarding == this.onboarding &&
-          other.tools == this.tools);
+          other.tools == this.tools &&
+          other.reports == this.reports);
 }
 
 class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
@@ -361,6 +400,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
   final Value<String> updatedAt;
   final Value<String> onboarding;
   final Value<String> tools;
+  final Value<String> reports;
   final Value<int> rowid;
   const UserPreferencesCompanion({
     this.ownerId = const Value.absent(),
@@ -370,6 +410,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
     this.updatedAt = const Value.absent(),
     this.onboarding = const Value.absent(),
     this.tools = const Value.absent(),
+    this.reports = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   UserPreferencesCompanion.insert({
@@ -380,6 +421,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
     required String updatedAt,
     this.onboarding = const Value.absent(),
     this.tools = const Value.absent(),
+    this.reports = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : ownerId = Value(ownerId),
        updatedAt = Value(updatedAt);
@@ -391,6 +433,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
     Expression<String>? updatedAt,
     Expression<String>? onboarding,
     Expression<String>? tools,
+    Expression<String>? reports,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -401,6 +444,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (onboarding != null) 'onboarding': onboarding,
       if (tools != null) 'tools': tools,
+      if (reports != null) 'reports': reports,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -413,6 +457,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
     Value<String>? updatedAt,
     Value<String>? onboarding,
     Value<String>? tools,
+    Value<String>? reports,
     Value<int>? rowid,
   }) {
     return UserPreferencesCompanion(
@@ -423,6 +468,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
       updatedAt: updatedAt ?? this.updatedAt,
       onboarding: onboarding ?? this.onboarding,
       tools: tools ?? this.tools,
+      reports: reports ?? this.reports,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -451,6 +497,9 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
     if (tools.present) {
       map['tools'] = Variable<String>(tools.value);
     }
+    if (reports.present) {
+      map['reports'] = Variable<String>(reports.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -467,6 +516,7 @@ class UserPreferencesCompanion extends UpdateCompanion<UserPreference> {
           ..write('updatedAt: $updatedAt, ')
           ..write('onboarding: $onboarding, ')
           ..write('tools: $tools, ')
+          ..write('reports: $reports, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -14445,6 +14495,7 @@ typedef $$UserPreferencesTableCreateCompanionBuilder =
       required String updatedAt,
       Value<String> onboarding,
       Value<String> tools,
+      Value<String> reports,
       Value<int> rowid,
     });
 typedef $$UserPreferencesTableUpdateCompanionBuilder =
@@ -14456,6 +14507,7 @@ typedef $$UserPreferencesTableUpdateCompanionBuilder =
       Value<String> updatedAt,
       Value<String> onboarding,
       Value<String> tools,
+      Value<String> reports,
       Value<int> rowid,
     });
 
@@ -14500,6 +14552,11 @@ class $$UserPreferencesTableFilterComposer
 
   ColumnFilters<String> get tools => $composableBuilder(
     column: $table.tools,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get reports => $composableBuilder(
+    column: $table.reports,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -14547,6 +14604,11 @@ class $$UserPreferencesTableOrderingComposer
     column: $table.tools,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<String> get reports => $composableBuilder(
+    column: $table.reports,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$UserPreferencesTableAnnotationComposer
@@ -14582,6 +14644,9 @@ class $$UserPreferencesTableAnnotationComposer
 
   GeneratedColumn<String> get tools =>
       $composableBuilder(column: $table.tools, builder: (column) => column);
+
+  GeneratedColumn<String> get reports =>
+      $composableBuilder(column: $table.reports, builder: (column) => column);
 }
 
 class $$UserPreferencesTableTableManager
@@ -14628,6 +14693,7 @@ class $$UserPreferencesTableTableManager
                 Value<String> updatedAt = const Value.absent(),
                 Value<String> onboarding = const Value.absent(),
                 Value<String> tools = const Value.absent(),
+                Value<String> reports = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UserPreferencesCompanion(
                 ownerId: ownerId,
@@ -14637,6 +14703,7 @@ class $$UserPreferencesTableTableManager
                 updatedAt: updatedAt,
                 onboarding: onboarding,
                 tools: tools,
+                reports: reports,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -14648,6 +14715,7 @@ class $$UserPreferencesTableTableManager
                 required String updatedAt,
                 Value<String> onboarding = const Value.absent(),
                 Value<String> tools = const Value.absent(),
+                Value<String> reports = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => UserPreferencesCompanion.insert(
                 ownerId: ownerId,
@@ -14657,6 +14725,7 @@ class $$UserPreferencesTableTableManager
                 updatedAt: updatedAt,
                 onboarding: onboarding,
                 tools: tools,
+                reports: reports,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

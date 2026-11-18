@@ -24,11 +24,17 @@ import 'package:porquinho/features/periods/local_period_repository.dart';
 import 'package:porquinho/features/periods/period_navigation.dart';
 import 'package:porquinho/features/periods/period_providers.dart';
 import 'package:porquinho/features/periods/period_service.dart';
+import 'package:porquinho/features/preferences/preferences_providers.dart';
+import 'package:porquinho/features/reports/models/report_preferences.dart';
+import 'package:porquinho/features/reports/report_routes.dart';
 import 'package:porquinho/features/reports/reports_providers.dart';
 import 'package:porquinho/features/reports/reports_repository.dart';
-import 'package:porquinho/features/reports/reports_screen.dart';
 import 'package:porquinho/features/sync/local_change_recorder.dart';
+import 'package:porquinho/features/tools/models/tool_preferences.dart';
 import 'package:porquinho/features/totals/totals_repository.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../support/fake_preferences_repository.dart';
 
 CalendarDate d(int y, int m, int day) => CalendarDate(y, m, day);
 BigInt c(int v) => BigInt.from(v);
@@ -59,10 +65,19 @@ void main() {
   });
   tearDown(() => db.close());
 
-  Future<ProviderContainer> pump(WidgetTester tester) async {
+  /// Abre a tela completa do relatório [id] (como "Ver tudo"); os valores
+  /// conferidos são os mesmos da tela antiga.
+  Future<ProviderContainer> pump(
+    WidgetTester tester, [
+    String id = 'income_by_category',
+  ]) async {
     tester.view.physicalSize = const Size(800, 3000);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+    final router = GoRouter(
+      initialLocation: '/relatorios/$id',
+      routes: [reportsRoute()],
+    );
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -77,20 +92,23 @@ void main() {
           totalsRepositoryProvider.overrideWith(
             (ref) async => LocalTotalsRepository(db, 'u1'),
           ),
+          preferencesRepositoryProvider.overrideWith(
+            (ref) async => FakePreferencesRepository(
+              ToolPreferences.empty,
+              const ReportPreferences(setup: ReportSetupStatus.done),
+            ),
+          ),
         ],
-        child: const MaterialApp(home: ReportsScreen()),
+        child: MaterialApp.router(routerConfig: router),
       ),
     );
     await tester.pumpAndSettle();
-    return ProviderScope.containerOf(
-      tester.element(find.byType(ReportsScreen)),
-    );
+    return ProviderScope.containerOf(tester.element(find.byType(Scaffold)));
   }
 
-  Future<void> choose(WidgetTester tester, ReportKind kind) async {
-    await tester.tap(find.byKey(const Key('seletor-relatorio')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text(kind.title).last);
+  /// Troca para a tela completa de outro relatório.
+  Future<void> choose(WidgetTester tester, String id) async {
+    GoRouter.of(tester.element(find.byType(Scaffold))).go('/relatorios/$id');
     await tester.pumpAndSettle();
   }
 
@@ -165,7 +183,7 @@ void main() {
         d(2026, 11, 9),
       );
       await pump(tester);
-      await choose(tester, ReportKind.expenseByCategory);
+      await choose(tester, 'expense_by_category');
       expect(text(tester, 'total-relatorio'), 'R\$ 1.600,00');
       expect(find.text('Moradia'), findsOneWidget);
       expect(find.text('R\$ 1.500,00'), findsOneWidget);
@@ -182,7 +200,7 @@ void main() {
         data.categories.firstWhere((x) => x.id == cat),
       );
       await pump(tester);
-      await choose(tester, ReportKind.expenseByCategory);
+      await choose(tester, 'expense_by_category');
       expect(find.text('Lazer'), findsOneWidget);
       data = await categories.load();
       await categories.renameCategory(
@@ -190,7 +208,7 @@ void main() {
         'Diversão',
       );
       final container = ProviderScope.containerOf(
-        tester.element(find.byType(ReportsScreen)),
+        tester.element(find.byType(Scaffold)),
       );
       refresh(container);
       await tester.pumpAndSettle();
@@ -214,7 +232,7 @@ void main() {
         )).firstWhere((i) => i.id == second),
       );
       await pump(tester);
-      await choose(tester, ReportKind.investments);
+      await choose(tester, 'investments_total');
       expect(text(tester, 'total-investimentos'), 'R\$ 300,00');
     });
 
@@ -222,7 +240,7 @@ void main() {
       await pump(tester);
       expect(find.byKey(const Key('relatorio-vazio')), findsOneWidget);
       expect(text(tester, 'total-relatorio'), 'R\$ 0,00');
-      await choose(tester, ReportKind.investments);
+      await choose(tester, 'investments_total');
       expect(text(tester, 'total-investimentos'), 'R\$ 0,00');
     });
 
@@ -269,9 +287,9 @@ void main() {
       final period = (await periods.periodFor(d(2026, 11, 1)));
       final totals = await LocalTotalsRepository(db, 'u1').totalsFor(period);
       expect(text(tester, 'total-relatorio'), 'R\$ ${_money(totals.income)}');
-      await choose(tester, ReportKind.expenseByCategory);
+      await choose(tester, 'expense_by_category');
       expect(text(tester, 'total-relatorio'), 'R\$ ${_money(totals.expense)}');
-      await choose(tester, ReportKind.investments);
+      await choose(tester, 'investments_total');
       expect(
         text(tester, 'total-investimentos'),
         'R\$ ${_money(totals.investment)}',
@@ -287,7 +305,7 @@ void main() {
       await tester.tap(find.byKey(const Key('periodo-proximo')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('pergunta-periodos')), findsNothing);
-      expect(find.text('01/12/2026 a 31/12/2026'), findsOneWidget);
+      expect(find.text('Dezembro 2026'), findsOneWidget);
       // Relatório do período (receitas por categoria): calculado, vazio.
       expect(find.byKey(const Key('relatorio-receitas')), findsOneWidget);
     });
@@ -302,7 +320,7 @@ void main() {
       await add(EntryKind.expense, 50000, d(2026, 10, 6));
       await add(EntryKind.expense, 30000, d(2026, 11, 6)); // negativo
       await pump(tester);
-      await choose(tester, ReportKind.evolution);
+      await choose(tester, 'free_money_evolution');
       for (final start in ['2026-09-01', '2026-10-01', '2026-11-01']) {
         expect(find.byKey(Key('evolucao-$start')), findsOneWidget);
       }
@@ -335,7 +353,7 @@ void main() {
       // Lançamento em set/2025: 15 períodos navegáveis até nov/2026.
       await add(EntryKind.income, 1000, d(2025, 9, 5));
       await pump(tester);
-      await choose(tester, ReportKind.evolution);
+      await choose(tester, 'free_money_evolution');
       expect(find.textContaining('Últimos 12 períodos'), findsOneWidget);
       expect(find.byKey(const Key('evolucao-2025-12-01')), findsOneWidget);
       expect(find.byKey(const Key('evolucao-2025-11-01')), findsNothing);
@@ -353,7 +371,7 @@ void main() {
       await add(EntryKind.income, 20000, d(2026, 11, 5));
       await periods.change(PeriodConfig.customCycle(20));
       await pump(tester);
-      await choose(tester, ReportKind.comparison);
+      await choose(tester, 'period_comparison');
       // Todos os períodos, inclusive os antigos, já são ciclos do dia 20: os
       // dois lançamentos caem no mesmo período [20/10, 20/11).
       expect(find.text('20/10/2026 a 19/11/2026'), findsWidgets);
@@ -370,7 +388,7 @@ void main() {
         InvestmentDraft(amount: c(30000), date: d(2026, 11, 3)),
       );
       await pump(tester);
-      await choose(tester, ReportKind.comparison);
+      await choose(tester, 'period_comparison');
       expect(text(tester, 'comp-receitas-2026-11-01'), 'R\$ 5.000,00');
       expect(text(tester, 'comp-despesas-2026-11-01'), 'R\$ 1.200,00');
       expect(text(tester, 'comp-invest-2026-11-01'), 'R\$ 300,00');
@@ -384,7 +402,7 @@ void main() {
       await pump(tester);
       await tester.tap(find.byKey(const Key('periodo-proximo')));
       await tester.pumpAndSettle();
-      await choose(tester, ReportKind.comparison);
+      await choose(tester, 'period_comparison');
       expect(text(tester, 'comp-livre-2026-12-01'), 'R\$ 0,00');
       expect(text(tester, 'comp-receitas-2026-12-01'), 'R\$ 0,00');
     });

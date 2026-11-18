@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../../app/theme/norte_theme.dart';
 import '../../core/domain/money.dart';
 import 'reports_providers.dart';
 
@@ -33,19 +34,29 @@ FlTitlesData _titles(List<SeriesItem> items, TextStyle? style) => FlTitlesData(
   ),
 );
 
-/// Evolução do dinheiro livre: uma barra por período (mais antigo à esquerda).
-class EvolutionChart extends StatelessWidget {
-  const EvolutionChart({super.key, required this.items});
+/// Uma barra por período (mais antigo à esquerda) com o valor de [valueOf].
+/// Negativos na cor de erro.
+class SeriesBarChart extends StatelessWidget {
+  const SeriesBarChart({
+    super.key,
+    required this.items,
+    required this.valueOf,
+    this.color,
+    this.height = 200,
+  });
 
   /// Em ordem cronológica.
   final List<SeriesItem> items;
+  final BigInt Function(SeriesItem item) valueOf;
+  final Color? color;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final small = Theme.of(context).textTheme.labelSmall;
     return SizedBox(
-      height: 200,
+      height: height,
       child: BarChart(
         BarChartData(
           titlesData: _titles(items, small),
@@ -54,7 +65,7 @@ class EvolutionChart extends StatelessWidget {
           barTouchData: BarTouchData(
             touchTooltipData: BarTouchTooltipData(
               getTooltipItem: (group, _, rod, _) => BarTooltipItem(
-                formatBrl(items[group.x].totals.surplus),
+                formatBrl(valueOf(items[group.x])),
                 TextStyle(color: scheme.onInverseSurface),
               ),
             ),
@@ -65,10 +76,10 @@ class EvolutionChart extends StatelessWidget {
                 x: i,
                 barRods: [
                   BarChartRodData(
-                    toY: _reais(items[i].totals.surplus),
-                    color: items[i].totals.surplus.isNegative
+                    toY: _reais(valueOf(items[i])),
+                    color: valueOf(items[i]).isNegative
                         ? scheme.error
-                        : scheme.primary,
+                        : color ?? scheme.primary,
                     width: 14,
                     borderRadius: BorderRadius.circular(3),
                   ),
@@ -79,6 +90,22 @@ class EvolutionChart extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Evolução do dinheiro livre: uma barra por período (mais antigo à esquerda).
+class EvolutionChart extends StatelessWidget {
+  const EvolutionChart({super.key, required this.items, this.height = 200});
+
+  /// Em ordem cronológica.
+  final List<SeriesItem> items;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => SeriesBarChart(
+    items: items,
+    height: height,
+    valueOf: (i) => i.totals.surplus,
+  );
 }
 
 /// Comparativo: receitas, despesas e investimentos lado a lado por período.
@@ -92,7 +119,8 @@ class ComparisonChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final small = Theme.of(context).textTheme.labelSmall;
-    final colors = [scheme.primary, scheme.error, scheme.tertiary];
+    final flow = NorteColors.of(context);
+    final colors = [flow.income, flow.expense, flow.investment];
     const names = ['Receitas', 'Despesas', 'Investimentos'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

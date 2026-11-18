@@ -73,8 +73,9 @@ const reportsTool = ToolDefinition(
     howItWorks:
         'Cinco relatórios: receitas por categoria, despesas por categoria, '
         'total destinado a investimentos, evolução do dinheiro livre e '
-        'comparativo de receitas, despesas e investimentos. Escolha o '
-        'relatório e navegue entre os períodos.',
+        'comparativo de receitas, despesas e investimentos. Escolha quais '
+        'aparecem em Meus relatórios, toque num resumo para ver mais e em '
+        '"Ver tudo" para a tela completa. Navegue entre os períodos no topo.',
     assumptions: [
       'Usa a sua configuração de período.',
       'Soma pelas mesmas regras do dinheiro livre: receita só depois de '

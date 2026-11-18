@@ -1,6 +1,6 @@
 # Pendências, ajustes e melhorias — Norte
 
-Lista-mestra única do que falta. **Atualizado em:** 16/11/2026.
+Lista-mestra única do que falta. **Atualizado em:** 17/11/2026.
 Regras: cada item tem ID fixo (não reaproveitar). Concluiu → apagar a linha e registrar na entrega da fase. Achou algo fora da entrega em curso → registrar aqui, não resolver sozinho. Melhorias (M) só com aprovação.
 
 ## D — Decisões abertas (responsável)
@@ -46,13 +46,29 @@ Ordem revista em 13/11/2026: o app continua funcionando entre as entregas e nada
 | F9 | Textos da explicação, do ⓘ e da tela (`lib/features/card_bills/card_bills_texts.dart`) são rascunho do agente; ícone do catálogo `receipt_long` | Aguardando ajuste do responsável |
 | F10 | GF6.3: aplicar a migration `20261116000100_card_bills.sql` em `norte-homologacao` e rodar `tooling/test_integration_homolog.ps1` | Só com autorização (R2) |
 
+## RL — Reformulação de Relatórios (aprovada em 17/11/2026)
+Spec: `docs/ferramentas/relatorios.md` (8 decisões na §10; RF025 sem mudança de cálculo). Plano RL0–RL7 aprovado; RL1–RL7 autorizadas em sequência em 17/11/2026, com validação de tudo no fim. O redesenho de Relatórios saiu da V8 (passa a ser este plano).
+| ID | Entrega | Situação |
+|---|---|---|
+| RL0 | Especificação, nota no RF025, registro aqui | Feita 17/11/2026, aguardando validação |
+| RL1 | Preferências: coluna `user_preferences.reports`, RPCs `set_report_selection`/`complete_report_setup`, Drift v11, download, repositório (só Supabase local) | Feita 17/11/2026, aguardando validação |
+| RL2 | `ReportDefinition`, registro dos 5, catálogo puro, controller | Feita 17/11/2026, aguardando validação |
+| RL3 | Tela Meus relatórios, cartão em três níveis, rota `/relatorios/<id>`, relatórios 1 e 2 | Feita 17/11/2026, aguardando validação |
+| RL4 | Relatórios 3–5 nos três níveis + "a mais/a menos que o período anterior" | Feita 17/11/2026, aguardando validação |
+| RL5 | Configuração guiada | Feita 17/11/2026, aguardando validação |
+| RL6 | Catálogo e Personalizar | Feita 17/11/2026, aguardando validação |
+| RL7 | Integração dois aparelhos, emulador, docs; homologação só com autorização (R2) | Feita 17/11/2026, aguardando validação |
+| RL8 | Homologação: aplicar `20261117000100_report_preferences.sql` em `norte-homologacao` | Aguarda autorização (R2) |
+
+Para validar (RL1–RL7): textos novos (frase da configuração guiada, benefícios, "Igual ao período anterior" quando a diferença do relatório 4 é zero, frases de vazio dos relatórios 3–5, "Recebido no período"/"Despesas do período"), nomes curtos nos cartões ("Evolução do dinheiro livre", "Comparativo por período"); cores do comparativo e do gráfico agrupado passaram a ser as da Home (receitas/despesas/investimentos); conferência na Web (T9). Na tela completa com 11–12 períodos, os rótulos do eixo dos gráficos (já existentes) ficam apertados no celular — ajuste visual a decidir (A).
+
 ## V — Renovação visual (aprovada em 12/11/2026; uma entrega por vez)
 Visual próprio do Norte (Menta + Inter), sem copiar elementos de outro app: sem mascote, sem barra de assistente, abas só as da barra inferior (RF004), ícones do Material do Flutter, lista de categorias própria.
 | ID | Entrega | Situação |
 |---|---|---|
 | V1–V5 | Tema, ícone/cor nas categorias (V2), Dashboard (V3), Lançamentos e formulário (V4), Categorias e Mais (V5) | Feitas em 12/11/2026; aguardam validação (R5). Ao validar, apagar estas linhas |
 | V6 | Subcategoria hoje herda ícone e cor da categoria (sem ícone próprio) | Aceito; ícone próprio por subcategoria só com aprovação |
-| V8 | Telas fora do escopo da V3–V5 mantêm o layout antigo, só com cores/fonte novas (Relatórios, Período, Recorrências, Exportar, Segurança, Tema, Configuração inicial, Itens de atenção) | Aberto, sem aprovação para redesenhar |
+| V8 | Telas fora do escopo da V3–V5 mantêm o layout antigo, só com cores/fonte novas (Período, Recorrências, Exportar, Segurança, Tema, Configuração inicial, Itens de atenção) | Aberto, sem aprovação para redesenhar |
 
 ## T — Pendências técnicas
 | ID | Item |

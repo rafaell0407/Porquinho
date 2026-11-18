@@ -3,13 +3,14 @@ import 'dart:convert';
 import 'package:drift/drift.dart';
 
 import '../../core/local_database/app_database.dart';
+import '../reports/models/report_preferences.dart';
 import '../tools/models/tool_preferences.dart';
 import '../sync/local_change_recorder.dart';
 import '../sync/remote_table_reader.dart';
 import '../sync/sync_models.dart';
 
 /// Preferências da conta (`user_preferences`): tema (RF026), progresso do
-/// assistente inicial e escolhas da aba Ferramentas.
+/// assistente inicial e escolhas da aba Ferramentas e da ferramenta Relatórios.
 /// Celular: banco local + fila de envio. Web: servidor.
 abstract interface class PreferencesRepository {
   /// `'light'`, `'dark'` ou `null` (sem escolha: segue o aparelho, D4).
@@ -35,6 +36,17 @@ abstract interface class PreferencesRepository {
 
   /// "Não mostrar novamente" da explicação inicial. Aparelhos se somam.
   Future<void> dismissToolIntro(String toolId);
+
+  /// Escolhas da ferramenta Relatórios (coluna própria `reports`).
+  Future<ReportPreferences> reports();
+
+  /// Grava a lista ordenada de "Meus relatórios"; `null` = lista sugerida.
+  /// Decisão de 17/11/2026: vale a última lista enviada.
+  Future<void> setReportSelection(List<String>? reportIds);
+
+  /// Configuração guiada vista (feita ou pulada). Feita em qualquer aparelho,
+  /// não volta.
+  Future<void> completeReportSetup(ReportSetupStatus status);
 }
 
 Map<String, String> decodeOnboarding(Object? raw) {
@@ -54,6 +66,8 @@ const setThemeRpc = 'set_user_theme';
 const setOnboardingStepRpc = 'set_onboarding_step';
 const setToolSelectionRpc = 'set_tool_selection';
 const dismissToolIntroRpc = 'dismiss_tool_intro';
+const setReportSelectionRpc = 'set_report_selection';
+const completeReportSetupRpc = 'complete_report_setup';
 
 /// Celular: grava primeiro no banco local (registro, auditoria e fila na mesma
 /// transação), funcionando sem conexão.
@@ -231,6 +245,76 @@ class LocalPreferencesRepository implements PreferencesRepository {
       },
     );
   }
+
+  @override
+  Future<ReportPreferences> reports() async =>
+      ReportPreferences.decode((await _row())?['reports']);
+
+  @override
+  Future<void> setReportSelection(List<String>? reportIds) async {
+    final old = await _row();
+    final next = ReportPreferences.decode(
+      old?['reports'],
+    ).withSelected(reportIds);
+    await _recordReports(
+      old,
+      next,
+      rpc: setReportSelectionRpc,
+      params: {'p_report_ids': reportIds},
+    );
+  }
+
+  @override
+  Future<void> completeReportSetup(ReportSetupStatus status) async {
+    final old = await _row();
+    final next = ReportPreferences.decode(old?['reports']).withSetup(status);
+    await _recordReports(
+      old,
+      next,
+      rpc: completeReportSetupRpc,
+      params: {'p_status': status.code},
+    );
+  }
+
+  Future<void> _recordReports(
+    Map<String, dynamic>? old,
+    ReportPreferences next, {
+    required String rpc,
+    required Map<String, dynamic> params,
+  }) async {
+    final previousVersion = (old?['version'] as int?) ?? 0;
+    final now = _clock().toUtc().toIso8601String();
+    await _recorder.record(
+      ownerId: _ownerId,
+      entityType: 'user_preferences',
+      entityId: _ownerId,
+      operation: old == null ? 'create' : 'update',
+      expectedVersion: previousVersion,
+      rpc: rpc,
+      params: params,
+      oldSnapshot: old == null
+          ? null
+          : {
+              'owner_id': _ownerId,
+              'reports': ReportPreferences.decode(old['reports']).toJson(),
+              'version': previousVersion,
+            },
+      newSnapshot: {
+        'owner_id': _ownerId,
+        'reports': next.toJson(),
+        'version': previousVersion + 1,
+      },
+      apply: () async {
+        await _db.customStatement(
+          'INSERT INTO user_preferences (owner_id, reports, version, '
+          'updated_at) VALUES (?, ?, ?, ?) '
+          'ON CONFLICT (owner_id) DO UPDATE SET reports = excluded.reports, '
+          'version = excluded.version, updated_at = excluded.updated_at',
+          [_ownerId, next.encode(), previousVersion + 1, now],
+        );
+      },
+    );
+  }
 }
 
 /// Web: lê e grava direto no servidor (somente online).
@@ -307,6 +391,36 @@ class RemotePreferencesRepository implements PreferencesRepository {
     });
     if (response['status'] != 'applied') {
       throw const SyncRejectedError('Não foi possível salvar a preferência.');
+    }
+  }
+
+  @override
+  Future<ReportPreferences> reports() async {
+    final rows = await _reader.select('user_preferences');
+    return rows.isEmpty
+        ? ReportPreferences.empty
+        : ReportPreferences.decode(rows.first['reports']);
+  }
+
+  @override
+  Future<void> setReportSelection(List<String>? reportIds) async {
+    final response = await _gateway.call(setReportSelectionRpc, {
+      'p_operation_id': _newId(),
+      'p_report_ids': reportIds,
+    });
+    if (response['status'] != 'applied') {
+      throw const SyncRejectedError('Não foi possível salvar os relatórios.');
+    }
+  }
+
+  @override
+  Future<void> completeReportSetup(ReportSetupStatus status) async {
+    final response = await _gateway.call(completeReportSetupRpc, {
+      'p_operation_id': _newId(),
+      'p_status': status.code,
+    });
+    if (response['status'] != 'applied') {
+      throw const SyncRejectedError('Não foi possível salvar a configuração.');
     }
   }
 }

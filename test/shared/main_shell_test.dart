@@ -12,7 +12,7 @@ import 'package:porquinho/features/auth/auth_providers.dart';
 import 'package:porquinho/features/auth/auth_repository.dart';
 import 'package:porquinho/features/auth/session_controller.dart';
 import 'package:porquinho/features/preferences/preferences_providers.dart';
-import 'package:porquinho/features/reports/reports_screen.dart';
+import 'package:porquinho/features/reports/screens/reports_home_screen.dart';
 import 'package:porquinho/shared/main_shell.dart';
 
 const _user = AuthUser(id: 'u1', email: 'a@b.com');
@@ -115,11 +115,11 @@ void main() {
 
     await tester.tap(find.byKey(const Key('ferramenta-reports')));
     await tester.pumpAndSettle();
-    expect(find.byType(ReportsScreen), findsOneWidget);
+    expect(find.byType(ReportsHomeScreen), findsOneWidget);
     // Na tela de relatórios, a barra continua com Ferramentas selecionada.
     final bar = tester.widget<NorteNavBar>(
       find.descendant(
-        of: find.byType(ReportsScreen),
+        of: find.byType(ReportsHomeScreen),
         matching: find.byType(NorteNavBar),
       ),
     );
@@ -128,7 +128,7 @@ void main() {
     // A rota antiga continua abrindo os relatórios.
     await tester.tap(
       find.descendant(
-        of: find.byType(ReportsScreen),
+        of: find.byType(ReportsHomeScreen),
         matching: find.byKey(const Key('nav-home')),
       ),
     );
@@ -136,6 +136,6 @@ void main() {
     expect(find.text('Dinheiro livre do período'), findsOneWidget);
     GoRouter.of(tester.element(find.byType(MainShell))).push('/relatorios');
     await tester.pumpAndSettle();
-    expect(find.byType(ReportsScreen), findsOneWidget);
+    expect(find.byType(ReportsHomeScreen), findsOneWidget);
   });
 }

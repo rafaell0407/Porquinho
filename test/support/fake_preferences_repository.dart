@@ -1,11 +1,16 @@
 import 'package:porquinho/features/preferences/preferences_repository.dart';
+import 'package:porquinho/features/reports/models/report_preferences.dart';
 import 'package:porquinho/features/tools/models/tool_preferences.dart';
 
 /// Preferências em memória, para testes de tela.
 class FakePreferencesRepository implements PreferencesRepository {
-  FakePreferencesRepository([this.tools_ = ToolPreferences.empty]);
+  FakePreferencesRepository([
+    this.tools_ = ToolPreferences.empty,
+    this.reports_ = ReportPreferences.empty,
+  ]);
 
   ToolPreferences tools_;
+  ReportPreferences reports_;
   int writes = 0;
 
   @override
@@ -33,5 +38,20 @@ class FakePreferencesRepository implements PreferencesRepository {
   Future<void> dismissToolIntro(String toolId) async {
     writes++;
     tools_ = tools_.withDismissed(toolId);
+  }
+
+  @override
+  Future<ReportPreferences> reports() async => reports_;
+
+  @override
+  Future<void> setReportSelection(List<String>? reportIds) async {
+    writes++;
+    reports_ = reports_.withSelected(reportIds);
+  }
+
+  @override
+  Future<void> completeReportSetup(ReportSetupStatus status) async {
+    writes++;
+    reports_ = reports_.withSetup(status);
   }
 }

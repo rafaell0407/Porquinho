@@ -59,6 +59,11 @@ class UserPreferences extends Table {
   /// Sem `selected` = configuração padrão do app.
   TextColumn get tools => text().withDefault(const Constant('{}'))();
 
+  /// Ferramenta Relatórios: JSON `{setup?: done|skipped, selected?: [ids],
+  /// options?: {}}`. Sem `selected` = lista sugerida; sem `setup` =
+  /// configuração guiada ainda não feita.
+  TextColumn get reports => text().withDefault(const Constant('{}'))();
+
   @override
   Set<Column<Object>> get primaryKey => {ownerId};
 }
@@ -521,7 +526,7 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
   PorquinhoDatabase(super.executor);
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 11;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -663,6 +668,14 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
         await migrator.create(schema.cardBillCharges);
         await migrator.create(schema.cardBillInvoices);
         await migrator.create(schema.cardBillReserveEvents);
+      },
+      // v11 (Reformulação de Relatórios RL1): escolhas da central de
+      // relatórios na conta, em coluna própria (separada de `tools`).
+      from10To11: (migrator, schema) async {
+        await migrator.addColumn(
+          schema.userPreferences,
+          schema.userPreferences.reports,
+        );
       },
     ),
     beforeOpen: (_) async => customStatement('PRAGMA foreign_keys = ON'),

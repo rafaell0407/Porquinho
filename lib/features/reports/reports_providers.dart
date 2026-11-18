@@ -27,11 +27,24 @@ final reportsRepositoryProvider = FutureProvider<ReportsRepository>((
   return LocalReportsRepository(db, ref.watch(ownerIdProvider));
 });
 
-/// Nomes de categorias (ativas e inativas; renomear vale em todos os períodos,
-/// RN040).
-final categoryNamesProvider = FutureProvider<Map<String, String>>((ref) async {
+/// Nome e visual de uma categoria nos relatórios.
+class CategoryLook {
+  const CategoryLook(this.name, this.iconKey, this.colorKey);
+  final String name;
+  final String iconKey;
+  final String colorKey;
+}
+
+/// Categorias por ID (ativas e inativas; renomear vale em todos os períodos,
+/// RN040), com ícone e cor.
+final categoryLooksProvider = FutureProvider<Map<String, CategoryLook>>((
+  ref,
+) async {
   final data = await ref.watch(categoryDataProvider.future);
-  return {for (final c in data.categories) c.id: c.name};
+  return {
+    for (final c in data.categories)
+      c.id: CategoryLook(c.name, c.iconKey, c.colorKey),
+  };
 });
 
 /// Relatórios 1 a 3: dados do período selecionado; `null` se ele não existe.
