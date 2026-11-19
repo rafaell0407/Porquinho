@@ -21,7 +21,7 @@ Só o schema vigente. Modelo conceitual, justificativas e status históricos: `h
 | `income_entries` | `amount_centavos`, `status` (`pending`/`received`/`cancelled`), `received_on` nulo enquanto pendente; `recurrence_template_id`, `scheduled_for_date` se recorrente. Sem vínculo com período (P7): o período é o que contém a data |
 | `expense_entries` | `competence_on`, `due_on`, `paid_on`, `status` (`pending`/`paid`/`cancelled`); campos de recorrência iguais |
 | `investment_allocations` | `amount_centavos`, `allocated_on`, `cancelled_at`; campos de recorrência |
-| `audit_events` | entidade, operação, ator, instante, snapshots antes/depois (JSONB), `operation_id`; só inclusão (apagado só pela retenção de 12 meses) |
+| `audit_events` | entidade, operação, ator, instante, snapshots antes/depois (JSONB), `operation_id`; só inclusão (apagado só pela retenção de 12 meses); índice em `actor_id` (`20261119000200`, T10: a exclusão de conta confere essa chave estrangeira) |
 | `applied_sync_operations` | `(owner_id, idempotency_key)` único + hash e resposta guardada |
 | `sync_conflicts` | snapshots local/remoto, `open`/`resolved`, resolução |
 | `deleted_accounts` | só id + data (não ressuscitar na restauração) |

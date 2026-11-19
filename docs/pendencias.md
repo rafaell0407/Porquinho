@@ -114,7 +114,7 @@ RF031, RN056. Plano e as 5 recomendações aceitos pelo responsável em 19/11/20
 | AT1 | Servidor: migration `20261119000100_wipe_entries.sql` (`wipe_entries_preview`, `wipe_entries_run`) e `rpc_wipe_entries_test.sql`. Aplicada **só no Supabase local** (`supabase migration up --local`) | Feita 19/11/2026, validada pelo responsável em 19/11/2026 |
 | AT2 | App: item em Mais, fluxo com as duas confirmações, progresso, sincronização em seguida no celular (`features/wipe_entries/`) | Feita 19/11/2026, validada pelo responsável em 19/11/2026 |
 | AT3 | Testes: execução em partes, leitura das respostas, 9 testes de tela, integração com dois aparelhos (`test/integration/wipe_entries_test.dart`) | Feita 19/11/2026, validada pelo responsável em 19/11/2026 |
-| AT4 | Homologação: aplicar `20261119000100_wipe_entries.sql` em `norte-homologacao` (ação do responsável) e rodar `tooling/test_integration_homolog.ps1` | Pendente do responsável |
+| AT4 | Homologação: `20261119000100_wipe_entries.sql` aplicada em `norte-homologacao` pelo responsável em 19/11/2026 (`supabase db push --remote`). `wipe_entries_test.dart`, `security_isolation_test.dart` e `parity_test.dart` (4min32) passaram em homologação rodando separados. Na suíte completa, 4 testes estouraram tempo enquanto a importação de 20 mil linhas rodava junto (ver T10 e T11) | Concluída |
 
 Pontos para a validação:
 - **AT-A, o que bloqueia:** qualquer conflito aberto bloqueia, mesmo de categoria ou período (mais simples e seguro). No celular, também qualquer item na fila ou conflito local.
@@ -134,6 +134,8 @@ Pontos para a validação:
 | T7 | Testar no app: ciclos dias 29–31, ano bissexto, repetição com dia útil anterior, troca de configuração, alertas após o fim do período, cinco relatórios (junto da P8) |
 | T8 | Paridade BRL/datas no Flutter Web × Drift/PostgreSQL |
 | T9 | `flutter test --platform chrome` não carrega nenhum teste nesta máquina (inclusive os antigos: "Connection closed before test suite loaded"); investigar o ambiente |
+| T10 | `delete_my_account` em homologação estourava o tempo do servidor (`57014`, `account_deletion_test.dart`, 19/11/2026): `audit_events.actor_id` não tinha índice, e a auditoria cresceu com as contas dos testes. Feito em 19/11/2026 (autorizado pelo responsável): migration `20261119000200_audit_actor_index.sql` (índice, aplicada **só no Supabase local**), teste `foreign_key_index_test.sql` (toda chave estrangeira para `auth.users` com índice) e limpeza das contas de teste `tooling/cleanup_test_accounts.ps1` (it-/f4-/f5-N@teste.local, pela própria exclusão de conta; plano B `cleanup_test_accounts.sql` no SQL Editor), chamada no fim de `test_integration_homolog.ps1` (`-KeepTestData` pula). Em homologação (19/11/2026): limpeza das contas de teste feita pelo responsável (87 pelo script, o resto pelo SQL Editor após o limite de logins do servidor, `429`; o script agora espera e tenta de novo) e `account_deletion_test.dart` passou (20 s). `20261119000200` aplicada em `norte-homologacao` (conferido pelo responsável com `supabase db push --remote --dry-run`: "Remote database is up to date"). **Concluída** |
+| T11 | A suíte de integração completa em homologação roda os arquivos ao mesmo tempo; com a importação de 20 mil linhas junto, testes curtos passam de 30 s. Opção: rodar a importação e o volume separados (ou `-j 1`) |
 
 ## A — Ajustes e lacunas conhecidas (comportamento atual a corrigir ou aceito)
 | ID | Item | Situação |
