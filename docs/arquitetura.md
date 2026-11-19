@@ -29,7 +29,7 @@ Nova dependência: avaliar manutenção, licença, segurança e custo antes.
 
 ## 3. Celular × Web
 - **Celular (Android):** offline primeiro. Lê do Drift; grava registro + auditoria + operação da fila na mesma transação; só então diz "salvo". PIN/biometria opcional.
-- **Web:** somente online; sem banco local, fila ou PIN; lê e grava direto nas RPCs; sessão não persiste (novo login a cada sessão do navegador). Listas limitadas a 1.000 linhas por consulta (aceito, D13). CSV só na Web.
+- **Web:** somente online; sem banco local, fila ou PIN; lê e grava direto nas RPCs; sessão não persiste (novo login a cada sessão do navegador). Listas limitadas a 1.000 linhas por consulta (aceito, D13). CSV só na Web: exportação e importação (RF030; arquivo lido só no navegador, gravação em blocos atômicos pelas RPCs `import_*`, que chamam as RPCs de sempre; sem mudança no Drift nem na sincronização — o celular recebe o que foi importado pelo download normal).
 
 ## 4. Sincronização e conflitos
 - Toda gravação remota passa por RPC autenticada, transacional, idempotente (chave por operação), versionada e auditada. DML direto bloqueado; RLS só de leitura própria.
@@ -37,6 +37,12 @@ Nova dependência: avaliar manutenção, licença, segurança e custo antes.
 - Rodada: envia configuração/modelos → `generate_due_recurrence_occurrences` no servidor → baixa (incremental, sem sobrescrever pendência) → gera localmente o que faltar. "Sincronizado" só se o download terminou. Offline: nova tentativa a cada 15 s.
 - Conflito: versão esperada divergente → servidor guarda as duas versões em `sync_conflicts`. Usuário escolhe (a) aparelho, (b) servidor, (c) editar; (a)/(c) geram nova versão consolidada; sempre auditado (`conflict_resolved`). Criação duplicada só aceita (b); a configuração de período aceita (a) e (b). Cancelamento × edição = conflito. Web resolve conflitos no servidor na mesma tela "Itens que precisam de atenção". Conflito antigo após reinstalar aparece só na Web (D7). Gestão de Faturas: cadastros com última gravação vence, reserva = soma de eventos, e o único conflito é o pagamento duplicado (o servidor responde `conflict`; no celular vai para "Itens que precisam de atenção" e é resolvido no aparelho, mantendo qualquer um dos dois; na Web a pergunta aparece na hora). Tema, lista de Ferramentas e lista de Meus relatórios: última gravação vence (exceções aprovadas: D5 e decisões de 13/11/2026 e 17/11/2026); a configuração guiada de Relatórios, feita em qualquer aparelho, não volta; "Não mostrar novamente" das ferramentas e etapas do assistente se somam entre aparelhos.
 - Ocorrência recorrente tem ID determinístico (modelo + data programada), igual no app e no servidor → gerar em dois lugares não duplica.
+- **Retenção (D15, RN029/RN030):** a mesma regra roda nos dois lados, sem marcador de exclusão. Servidor: `purge_expired_records` (diária pelo `pg_cron` quando o banco tem a extensão). Celular: ao terminar cada sincronização. Apaga:
+  - avulsos cancelados sem alteração há 12 meses, sem pendência na fila e sem conflito aberto; ocorrências de recorrência ficam enquanto o modelo existir;
+  - auditoria e conflitos resolvidos com mais de 12 meses;
+  - no servidor, o conteúdo das respostas guardadas das operações (a chave fica, e o reenvio antigo é recusado).
+
+  O aparelho guarda o instante do último download completo. Se passou de 11 meses, ou na primeira vez após a atualização, refaz o download dos três tipos de lançamento desde o início. Assim, apaga localmente o que sumiu do servidor e não tem pendência nem alteração recente. Isso impede que um aparelho parado por mais de um ano mantenha vivo um lançamento que outro aparelho apagou. Uma alteração feita offline num lançamento que já sumiu do servidor é recusada e aparece em "Itens que precisam de atenção". Ao descartá-la, o registro sai do aparelho.
 
 ## 5. Segurança
 - Isolamento por usuário: RLS + filtro `auth.uid()` em toda RPC (`SECURITY DEFINER`, dono `postgres`, `search_path` vazio, `EXECUTE` só para `authenticated`; nada para `anon`). Teste de catálogo e teste A×B cobrem isso.

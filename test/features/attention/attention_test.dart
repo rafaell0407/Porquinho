@@ -184,8 +184,8 @@ void main() {
           'cancelled_at': '2026-11-10T00:00:00Z',
         },
       );
-      expect(cancel.mineSummary, 'Cancelar o investimento');
-      expect(cancel.serverSummary, 'R\$ 25,00 · 09/11/2026 (cancelado)');
+      expect(cancel.mineSummary, 'Apagar o investimento');
+      expect(cancel.serverSummary, 'R\$ 25,00 · 09/11/2026 (apagado)');
       expect(cancel.canEdit, isFalse);
       final create = AttentionItem(
         kind: AttentionKind.conflict,

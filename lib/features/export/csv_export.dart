@@ -2,8 +2,8 @@
 ///
 /// Regras:
 /// - valores em centavos inteiros e exatos (`valor_centavos`), nunca decimais;
-/// - lançamentos cancelados também saem, com `status = cancelled` (a auditoria
-///   é preservada);
+/// - lançamentos apagados (cancelados) não saem: o usuário não os vê mais
+///   (D15, decisão do responsável em 19/11/2026); a coluna `status` continua;
 /// - UTF-8 com BOM, separador vírgula, campos entre aspas quando necessário
 ///   (RFC 4180); quebras de linha `\r\n`.
 enum CsvKind {
@@ -58,6 +58,13 @@ String _status(Object? s) => s?.toString() ?? '';
 
 String _yesNo(Object? templateId) => templateId == null ? 'nao' : 'sim';
 
+/// Sem os apagados: status `cancelled` (receitas e despesas) ou
+/// `cancelled_at` preenchido (investimentos).
+List<Map<String, dynamic>> _active(List<Map<String, dynamic>> rows) => [
+  for (final r in rows)
+    if (r['status'] != 'cancelled' && r['cancelled_at'] == null) r,
+];
+
 /// Gera o conteúdo (com BOM) do CSV de [kind].
 String buildCsv(CsvKind kind, ExportData data) {
   final categoryName = {
@@ -87,7 +94,7 @@ String buildCsv(CsvKind kind, ExportData data) {
           'atualizado_em',
         ]),
       );
-      for (final r in _byDate(data.incomes, 'received_on')) {
+      for (final r in _byDate(_active(data.incomes), 'received_on')) {
         out.write(
           _row([
             csvField(r['id']),
@@ -122,7 +129,7 @@ String buildCsv(CsvKind kind, ExportData data) {
           'atualizado_em',
         ]),
       );
-      for (final r in _byDate(data.expenses, 'competence_on')) {
+      for (final r in _byDate(_active(data.expenses), 'competence_on')) {
         out.write(
           _row([
             csvField(r['id']),
@@ -154,7 +161,7 @@ String buildCsv(CsvKind kind, ExportData data) {
           'atualizado_em',
         ]),
       );
-      for (final r in _byDate(data.investments, 'allocated_on')) {
+      for (final r in _byDate(_active(data.investments), 'allocated_on')) {
         out.write(
           _row([
             csvField(r['id']),

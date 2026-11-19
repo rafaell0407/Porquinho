@@ -50,7 +50,7 @@ Fonte de verdade: `requisitos.md` (escopo) e `regras_negocio.md` (financeiro) pr
 6. **Investimentos:** só valor e data, sem descrição/categoria/ativo; deduz ao lançar; sem status; pode ser recorrente (conta sem confirmação); sem resgate (desfazer = cancelar). Rendimento recebido = receita comum.
 7. **Períodos:** mês-calendário ou ciclo com dia inicial; mudança vale do próximo período; históricos preservam a configuração; sem lacuna/sobreposição; intervalos [início, fim); dia inexistente usa o último dia do mês.
 8. **Categorias:** receita ou despesa (tipo imutável), subcategorias opcionais, nunca apagadas — só desativadas; investimentos não usam categorias.
-9. **Edição/cancelamento:** qualquer lançamento, em qualquer status; cancelado sai do cálculo mas não é apagado; auditoria com valores antigo/novo, operação, data/hora e usuário; recalcular períodos afetados.
+9. **Edição/cancelamento:** qualquer lançamento, em qualquer status; cancelado ("Apagar" na interface) sai do cálculo e da vista na hora, fica guardado 12 meses e só então é apagado fisicamente (ocorrência de recorrência: enquanto o modelo existir) — D15/RN029; auditoria com valores antigo/novo, operação, data/hora e usuário, guardada 12 meses; recalcular períodos afetados.
 10. **Nome:** Norte (12/11/2026); não reintroduz o módulo "Porquinho virtual".
 
 ## 5. Padrões técnicos

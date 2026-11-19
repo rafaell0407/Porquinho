@@ -597,7 +597,7 @@ class _InvestmentTile extends ConsumerWidget {
       strike: investment.cancelled,
       subtitle: [
         investment.date.toBr(),
-        if (investment.cancelled) 'Cancelado',
+        if (investment.cancelled) 'Apagado',
         if (investment.isRecurring) 'Recorrente',
       ].join(' · '),
       amountText: '- ${formatBrl(investment.amount)}',
@@ -671,8 +671,8 @@ class _InvestmentTile extends ConsumerWidget {
               ],
               ListTile(
                 key: const Key('acao-cancelar'),
-                leading: const Icon(Icons.cancel_outlined),
-                title: const Text('Cancelar investimento'),
+                leading: const Icon(Icons.delete_outline),
+                title: const Text('Apagar investimento'),
                 onTap: () {
                   Navigator.pop(sheet);
                   _cancel(context, ref);
@@ -680,10 +680,8 @@ class _InvestmentTile extends ConsumerWidget {
               ),
             ] else
               const ListTile(
-                title: Text('Investimento cancelado'),
-                subtitle: Text(
-                  'Fica no histórico e não entra no dinheiro livre.',
-                ),
+                title: Text('Investimento apagado'),
+                subtitle: Text('Não entra no dinheiro livre.'),
               ),
           ],
         ),
@@ -712,10 +710,10 @@ class _InvestmentTile extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cancelar este investimento?'),
+        title: const Text('Apagar este investimento?'),
         content: const Text(
           'O valor volta para o dinheiro livre do período em que foi investido e o '
-          'registro some da lista. Não é possível desfazer.',
+          'investimento some da lista. Não é possível desfazer.',
         ),
         actions: [
           TextButton(
@@ -725,7 +723,7 @@ class _InvestmentTile extends ConsumerWidget {
           FilledButton(
             key: const Key('confirmar-cancelar'),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cancelar investimento'),
+            child: const Text('Apagar investimento'),
           ),
         ],
       ),
@@ -748,7 +746,7 @@ class _InvestmentTile extends ConsumerWidget {
 }
 
 String entryStatusLabel(EntryRecord e) {
-  if (e.isCancelled) return 'Cancelado';
+  if (e.isCancelled) return 'Apagado';
   if (e.kind == EntryKind.income) {
     return e.status == 'pending' ? 'A receber' : 'Recebida';
   }
@@ -916,8 +914,8 @@ class _EntryTile extends ConsumerWidget {
               ],
               ListTile(
                 key: const Key('acao-cancelar'),
-                leading: const Icon(Icons.cancel_outlined),
-                title: const Text('Cancelar lançamento'),
+                leading: const Icon(Icons.delete_outline),
+                title: const Text('Apagar lançamento'),
                 onTap: () {
                   Navigator.pop(sheet);
                   _cancel(context, ref);
@@ -925,10 +923,8 @@ class _EntryTile extends ConsumerWidget {
               ),
             ] else
               const ListTile(
-                title: Text('Lançamento cancelado'),
-                subtitle: Text(
-                  'Fica no histórico e não entra no dinheiro livre.',
-                ),
+                title: Text('Lançamento apagado'),
+                subtitle: Text('Não entra no dinheiro livre.'),
               ),
           ],
         ),
@@ -1044,9 +1040,9 @@ class _EntryTile extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Cancelar este lançamento?'),
+        title: const Text('Apagar este lançamento?'),
         content: const Text(
-          'Ele deixa de entrar no dinheiro livre e some da lista. '
+          'Ele sai do dinheiro livre e some da lista na hora. '
           'Não é possível desfazer.',
         ),
         actions: [
@@ -1057,7 +1053,7 @@ class _EntryTile extends ConsumerWidget {
           FilledButton(
             key: const Key('confirmar-cancelar'),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cancelar lançamento'),
+            child: const Text('Apagar lançamento'),
           ),
         ],
       ),

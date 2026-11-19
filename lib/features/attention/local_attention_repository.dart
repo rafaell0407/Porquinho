@@ -37,7 +37,7 @@ class LocalAttentionRepository implements AttentionRepository {
           entityType: o.entityType,
           entityId: o.entityId,
           request: normalizeRequest(o.params),
-          reason: o.lastError,
+          reason: rejectionReasonText(o.lastError),
         ),
     ];
   }

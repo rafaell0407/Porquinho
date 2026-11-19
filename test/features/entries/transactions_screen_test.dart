@@ -138,7 +138,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('acao-cancelar')));
     await tester.pumpAndSettle();
-    expect(find.text('Cancelar este lançamento?'), findsOneWidget);
+    expect(find.text('Apagar este lançamento?'), findsOneWidget);
     await tester.tap(find.byKey(const Key('confirmar-cancelar')));
     await tester.pumpAndSettle();
     expect(find.text('Luz'), findsNothing);
@@ -289,7 +289,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('acao-cancelar')));
     await tester.pumpAndSettle();
-    expect(find.text('Cancelar este investimento?'), findsOneWidget);
+    expect(find.text('Apagar este investimento?'), findsOneWidget);
     await tester.tap(find.byKey(const Key('confirmar-cancelar')));
     await tester.pumpAndSettle();
     expect(find.text('Investimento'), findsNothing);

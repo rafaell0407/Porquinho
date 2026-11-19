@@ -14,7 +14,7 @@
 6. Despesas são contabilizadas no cadastro ou geração da ocorrência, não no pagamento.
 7. O pagamento de despesa não cria uma segunda dedução.
 8. Investimentos são lançamentos simples de valor total destinado e reduzem o dinheiro livre no momento do lançamento.
-9. Cancelamentos e correções preservam histórico suficiente para auditoria.
+9. Cancelamentos e correções preservam histórico suficiente para auditoria, por 12 meses (RN029, RN030).
 
 ## 2. Períodos de apuração
 
@@ -259,15 +259,23 @@ O usuário pode editar qualquer lançamento a qualquer momento, independentement
 
 ### RN029 — Cancelamento de qualquer lançamento
 
-O usuário pode cancelar qualquer lançamento a qualquer momento, independentemente do status. Lançamentos cancelados deixam de participar do dinheiro livre, mas permanecem no histórico como cancelados. Não apagar fisicamente o registro.
+O usuário pode cancelar qualquer lançamento a qualquer momento, independentemente do status. Na interface a ação se chama **Apagar**; internamente o registro fica cancelado (`status = cancelled` ou `cancelled_at`). Na hora, o lançamento sai do dinheiro livre, das listas, dos relatórios e dos alertas, e o usuário não o vê mais nem o recupera.
 
-**Status:** APROVADO.
+**Retenção (D15, 18/11/2026):** o registro cancelado fica guardado, invisível, por **12 meses contados da última alteração** e depois é apagado fisicamente, no servidor e no aparelho. Exceções, que esperam:
+- **ocorrência de recorrência** (tem modelo): fica guardada enquanto o modelo existir, porque é ela que impede o app de gerar de novo aquele mês (o gerador preenche os meses vazios desde o início do modelo);
+- registro com **conflito de sincronização em aberto** ou com **alteração ainda não enviada** pelo aparelho: espera a resolução.
+
+Excluir a conta apaga tudo na hora (`delete_my_account`). A limpeza não muda nenhum total: o cancelado já não conta.
+
+**Status:** APROVADO (retenção de 12 meses autorizada em 18/11/2026; implementação e exceção da recorrência validadas pelo responsável em 19/11/2026).
 
 ### RN030 — Recalcular períodos afetados
 
 Após editar ou cancelar um lançamento, o sistema recalcula o dinheiro livre dos períodos afetados. Alterações não devem gerar uma segunda contabilização. O histórico deve registrar os valores anteriores e novos, operação, usuário e data/hora.
 
-**Status:** APROVADO.
+**Retenção do histórico (D15, 18/11/2026):** cada evento de auditoria é guardado por 12 meses e depois apagado, no servidor e no aparelho. O mesmo prazo vale para as cópias técnicas que repetem dados do lançamento: conflitos já resolvidos e respostas guardadas de operações de sincronização (estas perdem o conteúdo, mas a chave fica para que um reenvio antigo seja recusado, nunca reaplicado).
+
+**Status:** APROVADO (prazo de 12 meses para a auditoria validado pelo responsável em 19/11/2026).
 
 ## 10. Operação offline e integridade
 
@@ -430,15 +438,15 @@ Somente na Web e somente CSV, **um único arquivo por importação** (o arquivo 
 
 ### RN047 — Leitura e classificação
 
-Encoding UTF-8 (com ou sem BOM); Windows-1252 só por escolha explícita do usuário quando o UTF-8 falhar. Separador vírgula ou ponto e vírgula; aspas conforme RFC 4180. O tipo de cada linha (receita, despesa, investimento ou categoria) vem do tipo declarado para o arquivo inteiro ou de uma coluna de tipo cujos valores o usuário associa. O tipo nunca é deduzido sozinho pelo sinal do valor. Valores negativos são recusados (RN045), salvo se o usuário declarar para o arquivo a regra explícita "negativos são despesas", que usa o valor absoluto.
+Encoding UTF-8 (com ou sem BOM); Windows-1252 só por escolha explícita do usuário quando o UTF-8 falhar. Separador vírgula ou ponto e vírgula; aspas conforme RFC 4180. O tipo de cada linha (receita, despesa, investimento ou categoria) vem do tipo declarado para o arquivo inteiro ou de uma coluna de tipo cujos valores o usuário associa. O tipo nunca é deduzido sozinho pelo sinal do valor. Valores negativos são recusados (RN045), salvo se o usuário ligar para o arquivo a regra explícita e opcional "pelo sinal": negativo = despesa (valor absoluto) e positivo = receita. Com essa regra, valor zero é rejeitado com motivo; sem ela, valores negativos continuam recusados.
 
-**Status:** APROVADO — responsável, 18/11/2026.
+**Status:** APROVADO — responsável, 18/11/2026; regra "pelo sinal" (positivo = receita) ajustada e aceita em 18/11/2026 (revisão antes da implementação).
 
 ### RN048 — Valores e datas
 
-Vale a RN045 integralmente: centavos inteiros, até duas casas, zero permitido, sem arredondamento e sem ponto flutuante. O formato do valor e o da data são declarados por coluna; qualquer ambiguidade (ex.: "1.234", coluna inteira que serve como DD/MM e MM/DD) bloqueia até o usuário escolher. Os centavos dos arquivos do Norte são lidos exatos. Data inexistente ou com ano de 2 dígitos é rejeitada; data com hora usa só a data, com aviso, sem conversão de fuso.
+Vale a RN045 integralmente: centavos inteiros, até duas casas, zero permitido, sem arredondamento e sem ponto flutuante. O formato do valor e o da data são declarados por coluna; qualquer ambiguidade (ex.: "1.234", coluna inteira que serve como DD/MM e MM/DD) bloqueia até o usuário escolher. Os centavos dos arquivos do Norte são lidos exatos. Data inexistente ou com ano de 2 dígitos é rejeitada; data com hora usa só a data, com aviso, sem conversão de fuso. **Limites** (linha rejeitada com motivo; nunca cortar ou ajustar em silêncio): descrição até 120 caracteres e nome de categoria/subcategoria até 60 (mesmos limites do app); data entre 01/01/2000 e 5 anos à frente de hoje; valor até R$ 10.000.000,00.
 
-**Status:** APROVADO — responsável, 18/11/2026.
+**Status:** APROVADO — responsável, 18/11/2026; limites aceitos em 18/11/2026 (revisão antes da implementação).
 
 ### RN049 — Status por tipo
 
@@ -452,19 +460,22 @@ Vale a RN045 integralmente: centavos inteiros, até duas casas, zero permitido, 
 
 ### RN050 — Categorias
 
-Cada nome de categoria (e subcategoria) do arquivo é associado pelo usuário a uma categoria existente ativa do mesmo tipo, a uma nova ou a nenhuma (RN044). Categoria desativada nunca é reativada (RN040): o usuário escolhe outra, nenhuma ou cria uma nova com o mesmo nome. Investimento nunca tem categoria (RN027). Categoria nova usa ícone e cor padrão. A associação é feita pelo nome, então o arquivo de categorias do Norte é opcional.
+Cada nome de categoria (e subcategoria) do arquivo é associado pelo usuário a uma categoria existente ativa do mesmo tipo, a uma nova ou a nenhuma (RN044). Categoria desativada nunca é reativada (RN040): o usuário escolhe outra, nenhuma ou cria uma nova com o mesmo nome. Investimento nunca tem categoria (RN027). Categoria nova usa ícone e cor padrão. A associação é feita pelo nome, então o arquivo de categorias do Norte é opcional. Categorias e subcategorias marcadas como inativas no arquivo (`ativa = nao`) são ignoradas: não são criadas; se algum lançamento as citar, o usuário escolhe como para qualquer nome (existente ativa, nova ativa com o mesmo nome ou nenhuma).
 
-**Status:** APROVADO — responsável, 18/11/2026.
+**Status:** APROVADO — responsável, 18/11/2026; tratamento de inativas aceito em 18/11/2026 (revisão antes da implementação).
 
 ### RN051 — Recorrências sugeridas
 
-Padrões mensais encontrados no arquivo são só sugestões e exigem confirmação por série (nenhuma vem marcada). Critério: pelo menos 3 meses seguidos, uma ocorrência por mês, mesmo tipo, descrição e categoria, dia do mês com tolerância de até 3 dias e ajuste de fim de mês e dia útil. A âncora é o lançamento mais recente da série; os anteriores ficam avulsos. A recorrência começa na âncora e usa o dia da âncora como dia de referência (RN038), com aviso quando ele difere do dia habitual da série. Fixa se todos os valores forem iguais, variável se não; investimento sempre fixo, com o valor da âncora. A gravação usa o mecanismo existente de transformar o lançamento na primeira ocorrência.
+Padrões mensais encontrados no arquivo são só sugestões e exigem confirmação por série (nenhuma vem marcada). Critério: pelo menos 3 meses seguidos, uma ocorrência por mês, mesmo tipo, descrição e categoria, dia do mês com tolerância de até 3 dias e ajuste de fim de mês e dia útil. A âncora é o lançamento mais recente da série; os anteriores ficam avulsos. A recorrência começa na âncora e usa o dia da âncora como dia de referência (RN038), com aviso quando ele difere do dia habitual da série. Fixa se todos os valores forem iguais, variável se não; investimento sempre fixo, com o valor da âncora. A gravação usa o mecanismo existente de transformar o lançamento na primeira ocorrência. Só se sugerem séries com descrição preenchida (investimento, que não tem descrição, agrupa por valor igual). Três travas, para a recorrência não inventar nem repetir lançamentos:
+- **Série encerrada:** só é sugerida se a âncora estiver no mês atual ou no anterior. Série mais antiga aparece como "parece encerrada" e seus lançamentos entram só como avulsos.
+- **Colisão com o que já existe:** se houver modelo ativo parecido (mesmo tipo, descrição e categoria) ou lançamento já existente do mesmo modelo/descrição nos meses que a recorrência geraria, a recorrência não é oferecida; os lançamentos entram só como avulsos, com aviso.
+- **Mais de uma importação:** vale a mesma trava, pois a série da importação anterior é um modelo existente.
 
-**Status:** APROVADO — responsável, 18/11/2026.
+**Status:** APROVADO — responsável, 18/11/2026; travas (série encerrada e colisão) aceitas em 18/11/2026 (revisão antes da implementação).
 
 ### RN052 — Ocorrências atrasadas
 
-Antes da confirmação, a importação mostra as ocorrências que serão geradas entre a âncora e hoje, com datas, valores e o efeito no dinheiro livre de cada período. A geração segue a RN038, pelo mecanismo existente, uma única vez ao final: receitas geradas ficam pendentes e só contam após confirmação; despesas fixas e investimentos contam ao gerar; despesas variáveis contam ao receber valor. Âncora futura não gera atrasadas.
+Antes da confirmação, a importação mostra as ocorrências que serão geradas entre a âncora e hoje, com datas, valores e o efeito no dinheiro livre de cada período. A geração segue a RN038, pelo mecanismo existente, uma única vez ao final: receitas geradas ficam pendentes e só contam após confirmação; despesas fixas e investimentos contam ao gerar; despesas variáveis contam ao receber valor. Âncora futura não gera atrasadas. A prévia também informa quantas despesas nascerão pendentes e vencidas (com alerta diário, RF023) e quantas receitas ficarão pendentes.
 
 **Status:** APROVADO — responsável, 18/11/2026.
 
@@ -482,6 +493,6 @@ A gravação é feita em blocos atômicos, com identificadores e operações det
 
 ### RN055 — Desfazer condicional
 
-O usuário pode desfazer uma importação a qualquer tempo, sem prazo. São cancelados os lançamentos e as ocorrências geradas, e desativados os modelos de recorrência e as categorias criados por ela, **somente se não foram alterados depois** (categorias, também só se não estiverem em uso). Modelo alterado é preservado com todas as suas ocorrências. Nada é apagado (RN029); pagamentos, recebimentos, edições e cancelamentos posteriores são preservados. A tela informa antes e depois o que foi cancelado e o que foi preservado. O desfazer não gera conflito falso e não pode ser desfeito.
+O usuário pode desfazer uma importação a qualquer tempo, sem prazo. São cancelados os lançamentos e as ocorrências geradas, e desativados os modelos de recorrência e as categorias criados por ela, **somente se não foram alterados depois** (categorias, também só se não estiverem em uso). Modelo alterado é preservado com todas as suas ocorrências. Modelo inalterado desativado tem canceladas também as suas ocorrências inalteradas geradas depois da importação (confirmado pelo responsável em 18/11/2026). Nada é apagado na hora (o cancelado segue a retenção da RN029); pagamentos, recebimentos, edições e cancelamentos posteriores são preservados. A tela informa antes e depois o que foi cancelado e o que foi preservado. O desfazer não gera conflito falso e não pode ser desfeito.
 
 **Status:** APROVADO — responsável, 18/11/2026.

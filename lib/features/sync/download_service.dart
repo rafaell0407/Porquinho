@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:drift/drift.dart';
 
+import '../../core/domain/retention.dart';
 import '../../core/local_database/app_database.dart';
 import '../preferences/preferences_repository.dart';
 import '../reports/models/report_preferences.dart';
@@ -146,6 +147,19 @@ const _specs = [
 
 const _auditTable = 'audit_events';
 
+/// Lançamentos: as únicas tabelas em que o servidor apaga linhas (limpeza de
+/// retenção, D15). Num download desde o início, o aparelho apaga o que não
+/// veio do servidor (ver [DownloadService._removeMissing]).
+const _reconciledTables = {
+  'income_entries',
+  'expense_entries',
+  'investment_allocations',
+};
+
+/// Linha de `sync_cursors` que guarda o instante (relógio do aparelho) do
+/// último download concluído. Não é uma tabela.
+const lastCompleteDownloadKey = '_retention_last_complete_download';
+
 /// Resultado de uma rodada de download.
 class DownloadResult {
   const DownloadResult({
@@ -177,33 +191,55 @@ class DownloadResult {
 ///   no servidor por transações que terminaram depois de outras.
 /// - O histórico de auditoria é baixado sem duplicar eventos já criados neste
 ///   aparelho (mesma operação, registro e tipo).
+/// - Retenção (D15): sem download concluído há 11 meses ou mais (ou nunca
+///   registrado), os lançamentos são baixados desde o início, e o que sumiu
+///   do servidor sai do aparelho. Assim, um aparelho parado por mais de um ano
+///   não mantém vivo um lançamento que outro aparelho apagou.
 class DownloadService {
   DownloadService(
     this._db,
     this._reader, {
     this.pageSize = 500,
     this.overlap = const Duration(minutes: 2),
-  });
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now;
 
   final PorquinhoDatabase _db;
   final SyncRemoteReader _reader;
   final int pageSize;
   final Duration overlap;
+  final DateTime Function() _clock;
 
   /// Baixa tudo o que mudou. Falhas de rede interrompem a rodada sem erro
   /// (volta a tentar na próxima); o cursor só avança em páginas já gravadas.
   Future<DownloadResult> downloadAll(String ownerId) async {
     var applied = 0;
     var skipped = 0;
+    final startedAt = _clock();
+    final last = await _cursor(ownerId, lastCompleteDownloadKey);
+    final fromScratch = Retention.needsFullDownload(
+      last == null ? null : DateTime.tryParse(last.order),
+      startedAt,
+    );
     try {
       final prefs = await _reader.fetchPreferences(ownerId);
       if (prefs != null) applied += await _applyPreferences(ownerId, prefs);
       for (final spec in _specs) {
-        final r = await _downloadTable(ownerId, spec);
+        final r = await _downloadTable(
+          ownerId,
+          spec,
+          fromScratch: fromScratch && _reconciledTables.contains(spec.table),
+        );
         applied += r.$1;
         skipped += r.$2;
       }
       applied += await _downloadAudit(ownerId);
+      await _saveCursor(
+        ownerId,
+        lastCompleteDownloadKey,
+        startedAt.toUtc().toIso8601String(),
+        null,
+      );
     } on SyncTransientError {
       return DownloadResult(
         applied: applied,
@@ -313,8 +349,17 @@ class DownloadService {
 
   // --- tabelas comuns ---------------------------------------------------
 
-  Future<(int, int)> _downloadTable(String ownerId, _TableSpec spec) async {
-    var cursor = await _cursor(ownerId, spec.table);
+  Future<(int, int)> _downloadTable(
+    String ownerId,
+    _TableSpec spec, {
+    bool fromScratch = false,
+  }) async {
+    var cursor = fromScratch ? null : await _cursor(ownerId, spec.table);
+    // Download desde o início de um lançamento: guarda o que veio para apagar
+    // depois o que o servidor já não tem.
+    final seen = cursor == null && _reconciledTables.contains(spec.table)
+        ? <String>{}
+        : null;
     var afterOrder = _startFor(cursor);
     String? afterId;
     var applied = 0;
@@ -337,6 +382,7 @@ class DownloadService {
         var a = 0;
         var s = 0;
         for (final row in page) {
+          seen?.add(row['id'] as String);
           if (pending.contains(row['id'])) {
             s++;
             continue;
@@ -355,7 +401,44 @@ class DownloadService {
       afterOrder = lastOrder;
       afterId = lastId;
     }
+    if (seen != null) await _removeMissing(ownerId, spec, seen);
     return (applied, skipped);
+  }
+
+  /// Apaga do aparelho o lançamento que não veio no download desde o início:
+  /// o servidor o apagou pela retenção (D15). Só sai o que não tem operação
+  /// na fila e que, no aparelho, ou espera ser restaurado pelo servidor
+  /// (versão 0, alteração recusada e descartada) ou não muda há 12 meses.
+  /// Lançamento recém-criado ou recém-gerado no aparelho nunca sai.
+  Future<void> _removeMissing(
+    String ownerId,
+    _TableSpec spec,
+    Set<String> seen,
+  ) async {
+    final cutoff = Retention.cutoff(_clock()).toIso8601String();
+    await _db.transaction(() async {
+      final rows = await _db
+          .customSelect(
+            'SELECT id FROM ${spec.table} WHERE owner_id = ?1 '
+            'AND (version = 0 OR julianday(updated_at) < julianday(?2)) '
+            'AND id NOT IN (SELECT entity_id FROM sync_outbox '
+            'WHERE owner_id = ?1 AND entity_type = ?3)',
+            variables: [
+              Variable.withString(ownerId),
+              Variable.withString(cutoff),
+              Variable.withString(spec.entityType),
+            ],
+          )
+          .get();
+      for (final row in rows) {
+        final id = row.read<String>('id');
+        if (seen.contains(id)) continue;
+        await _db.customStatement(
+          'DELETE FROM ${spec.table} WHERE owner_id = ? AND id = ?',
+          [ownerId, id],
+        );
+      }
+    });
   }
 
   Future<Set<String>> _pendingIds(String ownerId, String entityType) async {

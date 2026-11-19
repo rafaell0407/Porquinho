@@ -85,22 +85,60 @@ List<String> _lines(String csv) =>
     csv.substring(1).split('\r\n')..removeWhere((l) => l.isEmpty);
 
 void main() {
-  test('receitas: centavos exatos, escape, fórmula neutralizada, ordem', () {
+  test('receitas: centavos exatos, escape, sem as apagadas', () {
     final csv = buildCsv(CsvKind.incomes, _data());
     expect(csv.startsWith(csvBom), isTrue);
     final lines = _lines(csv);
     expect(lines.first, startsWith('id,descricao,valor_centavos,status'));
-    // Ordenado por data: a de outubro (cancelada) vem primeiro.
+    // A de outubro foi apagada (cancelada): não sai (D15, 19/11/2026).
     expect(
       lines[1],
-      "i1,'=SOMA(A1),1,cancelled,2026-10-01,Salário,Extra,sim,2026-10-01,x,y",
-    );
-    expect(
-      lines[2],
       'i2,"Salário, novembro",9000000000000000123,received,2026-11-05,'
       'Salário,,nao,,2026-11-05T10:00:00+00:00,2026-11-05T10:00:00+00:00',
     );
-    expect(lines, hasLength(3));
+    expect(lines, hasLength(2));
+  });
+
+  test('receitas: fórmula neutralizada e ordem por data', () {
+    final data = _data();
+    final csv = buildCsv(
+      CsvKind.incomes,
+      ExportData(
+        incomes: [
+          for (final r in data.incomes) {...r, 'status': 'received'},
+        ],
+        expenses: data.expenses,
+        investments: data.investments,
+        categories: data.categories,
+        subcategories: data.subcategories,
+      ),
+    );
+    final lines = _lines(csv);
+    expect(
+      lines[1],
+      "i1,'=SOMA(A1),1,received,2026-10-01,Salário,Extra,sim,2026-10-01,x,y",
+    );
+    expect(lines[2], startsWith('i2,'));
+  });
+
+  test('despesas: apagada não sai', () {
+    final data = _data();
+    final csv = buildCsv(
+      CsvKind.expenses,
+      ExportData(
+        incomes: data.incomes,
+        expenses: [
+          ...data.expenses,
+          {...data.expenses.single, 'id': 'e2', 'status': 'cancelled'},
+        ],
+        investments: data.investments,
+        categories: data.categories,
+        subcategories: data.subcategories,
+      ),
+    );
+    final lines = _lines(csv);
+    expect(lines, hasLength(2));
+    expect(lines[1], startsWith('e1,'));
   });
 
   test('despesas: aspas duplicadas e datas', () {
@@ -112,11 +150,11 @@ void main() {
     );
   });
 
-  test('investimentos: ativo e cancelado, sem descrição', () {
+  test('investimentos: só os ativos, sem descrição', () {
     final lines = _lines(buildCsv(CsvKind.investments, _data()));
     expect(lines.first, contains('valor_centavos,data,status'));
     expect(lines[1], 'v1,30000,2026-11-05,active,nao,,x,y');
-    expect(lines[2], startsWith('v2,100,2026-11-06,cancelled,nao'));
+    expect(lines, hasLength(2), reason: 'o investimento apagado não sai');
   });
 
   test('categorias: inclui inativas e subcategorias com a categoria pai', () {

@@ -5,6 +5,27 @@ import '../../core/domain/money.dart';
 
 enum AttentionKind { conflict, rejected }
 
+/// Motivo da recusa em linguagem do usuário, para os casos da retenção (D15):
+/// o lançamento já foi apagado do servidor, ou a alteração é antiga demais
+/// para ser aplicada. Os demais motivos seguem como vieram.
+String? rejectionReasonText(String? serverMessage) {
+  if (serverMessage == null) return null;
+  final m = serverMessage.toLowerCase();
+  if (m.contains('was not found') &&
+      (m.contains('income') ||
+          m.contains('expense') ||
+          m.contains('investment allocation') ||
+          m.startsWith('entry '))) {
+    return 'Este lançamento foi apagado (em outro aparelho ou há mais de '
+        '12 meses) e não existe mais no servidor. Descarte a alteração.';
+  }
+  if (m.contains('idempotency key reused')) {
+    return 'Esta alteração é antiga demais para ser aplicada. '
+        'Descarte e faça de novo, se ainda precisar.';
+  }
+  return serverMessage;
+}
+
 /// Item que precisa de decisão do usuário (Entrega 22): conflito entre a
 /// versão do aparelho e a do servidor, ou alteração recusada pelo servidor.
 class AttentionItem {
@@ -146,7 +167,7 @@ String describeRequest(String entityType, Map<String, dynamic> request) {
       };
     case 'income_entry':
     case 'expense_entry':
-      if (action == 'cancel') return 'Cancelar o lançamento';
+      if (action == 'cancel') return 'Apagar o lançamento';
       if (action == 'pay') return 'Marcar como paga';
       final payload = Map<String, dynamic>.from(
         (request['payload'] as Map?) ?? const {},
@@ -161,7 +182,7 @@ String describeRequest(String entityType, Map<String, dynamic> request) {
       final verb = action == 'create' ? 'Criar' : 'Alterar';
       return parts.isEmpty ? verb : '$verb: ${parts.join(' · ')}';
     case 'investment_allocation':
-      if (action == 'cancel') return 'Cancelar o investimento';
+      if (action == 'cancel') return 'Apagar o investimento';
       final parts = <String>[
         if (request['amount_centavos'] != null)
           _amount(request['amount_centavos']),
@@ -182,7 +203,7 @@ String describeRequest(String entityType, Map<String, dynamic> request) {
     default:
       return switch (action) {
         'create' => 'Criar',
-        'cancel' => 'Cancelar',
+        'cancel' => 'Apagar',
         _ => 'Alterar',
       };
   }
@@ -198,7 +219,7 @@ String describeRecord(String entityType, Map<String, dynamic> record) {
       return '"${record['name']}"$inactive';
     case 'income_entry':
     case 'expense_entry':
-      final cancelled = record['status'] == 'cancelled' ? ' (cancelado)' : '';
+      final cancelled = record['status'] == 'cancelled' ? ' (apagado)' : '';
       final date = record['received_on'] ?? record['competence_on'];
       final parts = <String>[
         _amount(record['amount_centavos']),
@@ -207,7 +228,7 @@ String describeRecord(String entityType, Map<String, dynamic> record) {
       ];
       return '${parts.join(' · ')}$cancelled';
     case 'investment_allocation':
-      final cancelled = record['cancelled_at'] != null ? ' (cancelado)' : '';
+      final cancelled = record['cancelled_at'] != null ? ' (apagado)' : '';
       return '${_amount(record['amount_centavos'])} · '
           '${_date(record['allocated_on'])}$cancelled';
     case 'period_settings':

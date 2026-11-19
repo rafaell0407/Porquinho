@@ -99,8 +99,7 @@ class _ExportScreenState extends ConsumerState<ExportScreen> {
               children: [
                 const Text(
                   'Cada arquivo traz os valores em centavos (coluna '
-                  'valor_centavos) e inclui os lançamentos cancelados, com o '
-                  'status.',
+                  'valor_centavos). Lançamentos apagados não entram.',
                 ),
                 const SizedBox(height: 16),
                 for (final kind in CsvKind.values)

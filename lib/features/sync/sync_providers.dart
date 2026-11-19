@@ -7,6 +7,7 @@ import '../card_bills/data/card_bills_downloader.dart';
 import '../card_bills/data/remote_card_bills_repository.dart';
 import '../recurrence/local_recurrence_repository.dart';
 import 'download_service.dart';
+import 'local_retention.dart';
 import 'remote_table_reader.dart';
 import 'supabase_sync_gateway.dart';
 import 'supabase_sync_reader.dart';
@@ -64,6 +65,9 @@ final fullSyncProvider = Provider<Future<bool> Function(String ownerId)?>((
     } on SyncTransientError {
       cardBillsCompleted = false;
     }
+    // Retenção (D15): apaga no aparelho, pela mesma regra do servidor, o
+    // cancelado e a auditoria com mais de 12 meses.
+    await LocalRetention(db).purge(ownerId);
     return download.completed && cardBillsCompleted;
   };
 });

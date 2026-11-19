@@ -178,7 +178,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 **RF018 — Edição e cancelamento**
 - Todo lançamento pode ser editado ou cancelado a qualquer momento, independentemente de estar pendente, pago ou recebido.
 - Edição atualiza o resultado do período correspondente; alteração de data pode alterar o período ao qual o lançamento pertence.
-- Cancelamento exclui o lançamento dos cálculos, mas preserva o registro histórico e o evento de auditoria.
+- Cancelamento (na interface, "Apagar") exclui o lançamento dos cálculos e da vista do usuário; o registro e a auditoria ficam guardados por 12 meses e depois são apagados (RN029, RN030; D15).
 - O sistema não apaga fisicamente o histórico financeiro.
 
 **RF019–RF020 — Períodos e dinheiro livre**
@@ -227,6 +227,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 - Proteção dos dados financeiros armazenados localmente conforme a tecnologia aprovada.
 - Bloqueio móvel por PIN/biometria é camada adicional, não substitui autenticação/autorização.
 - Retenção, exportação e exclusão de dados devem ser detalhadas antes da produção.
+- Retenção definida (D15, 18/11/2026): lançamento apagado pelo usuário e histórico de auditoria são guardados por 12 meses e depois apagados no servidor e no aparelho (ocorrência de recorrência apagada: enquanto o modelo existir); excluir a conta apaga tudo na hora. A política de privacidade (D12, Entrega 80) deve informar esses prazos e o dos backups (Entrega 77).
 
 ## 9. Restrições e exclusões
 
