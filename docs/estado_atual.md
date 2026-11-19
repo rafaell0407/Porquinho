@@ -1,6 +1,6 @@
 # Estado atual — Norte
 
-**Atualizado em:** 19/11/2026 (retenção de 12 meses, D15 X0–X4 validada).
+**Atualizado em:** 19/11/2026 (Apagar todos os lançamentos, AT0–AT3 validadas).
 
 ## Fase
 - Fases 1–7: CONCLUÍDAS e validadas (detalhe em `historico/`).
@@ -125,6 +125,14 @@ Autorizada pelo responsável em 18/11/2026 ("implementa da x0 a x4, valido td no
   - Suíte SQL completa com o novo `retention_purge_test.sql` (também no Supabase local) e o catálogo de segurança.
   - 42 testes de integração contra o Supabase local passando. O novo usa dois aparelhos: A apaga, o servidor limpa, B parado edita offline, recebe o aviso, baixa desde o início e fica igual ao servidor.
   - Não conferido no emulador.
+
+## Apagar todos os lançamentos (AT0–AT3, 19/11/2026) — validada pelo responsável em 19/11/2026
+Autorizada pelo responsável em 19/11/2026, com as recomendações aceitas; acompanhamento em `pendencias.md` §AT; RF031, RN056.
+- **Para o usuário:** em Mais, o item vermelho "Apagar todos os lançamentos" (Android e Web). O app confere a conexão, o que falta enviar e os conflitos. Mostra quantas receitas, despesas, investimentos e recorrências saem e o que continua; na Web, oferece exportar o CSV antes. Depois pede para digitar APAGAR. Apaga com indicador de progresso e avisa "N lançamentos apagados.". No celular sincroniza em seguida.
+- **Regra:** igual ao "Apagar" de um lançamento (12 meses guardado, auditado). As recorrências são desativadas. Categorias, período, preferências, Faturas e importações continuam. Não pode ser desfeito.
+- **Servidor:** migration `20261119000100_wipe_entries.sql` (`wipe_entries_preview`, `wipe_entries_run` em partes repetíveis), aplicada **só no Supabase local**.
+- **Testes:** `flutter analyze` sem problemas; suíte completa com 1.730 passando (43 de integração pulados sem Supabase), incluindo 4 de unidade e 9 de tela novos; suíte SQL completa com o novo `rpc_wipe_entries_test.sql`; 43 testes de integração contra o Supabase local passando, incluindo o novo com dois aparelhos (apaga, baixa tudo cancelado, recorrência desativada, edição offline vira conflito e conflito aberto bloqueia). Compilação Web conferida. Não conferido no navegador nem no emulador.
+- **Falta:** AT4 (aplicar a migration em `norte-homologacao`, ação do responsável).
 
 ## Próximo passo
 Retenção (D15) concluída também em `norte-homologacao` (agendamento diário conferido; 42 testes de integração passando em 19/11/2026). Em 18/11/2026 o responsável aplicou em `norte-homologacao` (`supabase db push --remote`) as migrations de GF6.3/F10, RL8 e IM10; os testes de integração em homologação passaram em 19/11/2026 (o de volume, 1.005 lançamentos, levou 4min18 do limite de 5min; 1ª tentativa estourou por rede). Importação CSV validada (19/11/2026). Próximo: retomar a Fase 8 (75 final/D1, 76 com SMTP/D5, 77 backup).

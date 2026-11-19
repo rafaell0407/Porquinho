@@ -277,6 +277,19 @@ Após editar ou cancelar um lançamento, o sistema recalcula o dinheiro livre do
 
 **Status:** APROVADO (prazo de 12 meses para a auditoria validado pelo responsável em 19/11/2026).
 
+### RN056 — Apagar todos os lançamentos
+
+O usuário pode apagar de uma vez todos os seus lançamentos (Mais → Apagar todos os lançamentos, RF031). Decisões aprovadas pelo responsável em 19/11/2026:
+- **Alcance:** todas as receitas, despesas e investimentos não cancelados, de todos os períodos, inclusive ocorrências de recorrência pagas ou recebidas. Não há escolha por tipo nem por período. Só entra o que existia no momento da confirmação (corte devolvido pelo servidor); o que for criado depois fica.
+- **Como apaga:** igual ao "Apagar" de um lançamento (RN029): cada um fica cancelado, sai na hora do dinheiro livre, das listas, dos relatórios e dos alertas, tem auditoria própria e segue a retenção de 12 meses. Nada é apagado fisicamente na hora.
+- **Recorrências:** todos os modelos ativos (receita, despesa e investimento) são desativados antes, para não gerarem lançamentos novos. As ocorrências apagadas ficam guardadas como na exceção da RN029.
+- **O que continua:** categorias e subcategorias, configuração do período, preferências, Gestão de Faturas (RF029) e o histórico de importações (desfazer depois mostra os itens como preservados).
+- **Condições:** exige conexão, também no celular; no celular, nada pendente de envio e nenhum conflito local; no servidor, nenhum conflito de sincronização aberto. Um aparelho que tenha editado offline um lançamento apagado recebe conflito (apagar × editar, RN033).
+- **Confirmação dupla:** resumo com as contagens e o que continua; depois, digitar APAGAR. Não pode ser desfeito.
+- **Execução:** no servidor, em partes e repetível com a mesma operação, sem efeito duplicado; uma falha no meio deixa apagado o que já foi e permite tentar de novo para terminar.
+
+**Status:** APROVADO — responsável, 19/11/2026.
+
 ## 10. Operação offline e integridade
 
 ### RN031 — Operação offline
@@ -327,6 +340,7 @@ Alertas do MVP serão enviados a dispositivos móveis Android (iOS fora do MVP �
 | RN034–RN035 | Segurança e notificações | APROVADO |
 | RN036–RN039, RN041–RN043, RN045 | Intervalos semiabertos, meses curtos, recorrências idempotentes, pagamento integral, alertas, períodos sem encerramento manual, metas e moeda | APROVADO; pagamento parcial e encerramento manual: FORA DO MVP |
 | RN046–RN055 | Importação de dados por CSV (RF030) | APROVADO (18/11/2026); desenvolvimento PENDENTE de autorização |
+| RN056 | Apagar todos os lançamentos (RF031) | APROVADO (19/11/2026) |
 
 ## 13. Detalhamentos pendentes
 

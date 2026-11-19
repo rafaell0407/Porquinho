@@ -30,6 +30,7 @@ Nova dependência: avaliar manutenção, licença, segurança e custo antes.
 ## 3. Celular × Web
 - **Celular (Android):** offline primeiro. Lê do Drift; grava registro + auditoria + operação da fila na mesma transação; só então diz "salvo". PIN/biometria opcional.
 - **Web:** somente online; sem banco local, fila ou PIN; lê e grava direto nas RPCs; sessão não persiste (novo login a cada sessão do navegador). Listas limitadas a 1.000 linhas por consulta (aceito, D13). CSV só na Web: exportação e importação (RF030; arquivo lido só no navegador, gravação em blocos atômicos pelas RPCs `import_*`, que chamam as RPCs de sempre; sem mudança no Drift nem na sincronização — o celular recebe o que foi importado pelo download normal).
+- **Exceções online também no celular:** "Excluir conta" e "Apagar todos os lançamentos" (RF031, RN056). As duas exigem fila vazia e conexão e rodam no servidor; o apagar-tudo roda em partes repetíveis (`wipe_entries_run`) pelas RPCs de sempre, e o celular recebe o resultado na sincronização completa logo em seguida (nada de milhares de operações na fila).
 
 ## 4. Sincronização e conflitos
 - Toda gravação remota passa por RPC autenticada, transacional, idempotente (chave por operação), versionada e auditada. DML direto bloqueado; RLS só de leitura própria.

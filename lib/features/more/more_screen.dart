@@ -8,9 +8,11 @@ import '../auth/delete_account_flow.dart';
 import '../auth/logout_flow.dart';
 import '../sync/sync_indicator.dart';
 import '../sync/sync_providers.dart';
+import '../wipe_entries/wipe_entries_flow.dart';
 
 /// Aba "Mais": atalhos para categorias, período, tema, recorrências,
-/// exportação, importação, segurança, exclusão de conta e saída. Relatórios ficam na aba
+/// exportação, importação, segurança, apagar todos os lançamentos, exclusão
+/// de conta e saída. Relatórios ficam na aba
 /// Ferramentas.
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -75,6 +77,13 @@ class MoreScreen extends ConsumerWidget {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Divider(),
+          ),
+          _MoreTile(
+            tileKey: const Key('mais-apagar-todos'),
+            icon: Icons.delete_sweep_outlined,
+            iconColor: colors.expense,
+            title: 'Apagar todos os lançamentos',
+            onTap: () => wipeEntriesFlow(context, ref),
           ),
           _MoreTile(
             tileKey: const Key('mais-excluir-conta'),

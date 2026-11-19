@@ -137,6 +137,7 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 | RF028 | Ferramenta "Calculadora à vista ou parcelado": comparar pagar à vista × parcelar no cartão deixando a reserva no CDB liquidez diária ou Tesouro Selic, com IR/IOF e dias úteis; só simulação, sem lançamentos (`docs/ferramentas/a_vista_ou_parcelado.md`) | Média | APROVADO (14/11/2026; exceção à §3.2 e RN007 restrita à ferramenta) |
 | RF029 | Ferramenta "Gestão de Faturas de Cartões": dinheiro reservado para os cartões, faturas por cartão (parcelas, assinaturas ou valor informado), pagamento da fatura inteira pela reserva ou outras fontes e "Saldo não comprometido = reservado − comprometido"; separada, sem lançamentos (`docs/ferramentas/gestao_de_faturas.md`) | Média | APROVADO como produto (16/11/2026; exceções à §3.2, RN020, RN029/RN030 e RN033 restritas à ferramenta); desenvolvimento PENDENTE de autorização |
 | RF030 | Importar dados por CSV (somente Web; Mais → Importar dados): **um único arquivo CSV por importação**, de um tipo só ou misto, inclusive os exportados pelo Norte; associação de colunas; classificação explícita; categorias existentes, novas ou nenhuma; sugestão de recorrências mensais com confirmação e âncora no último lançamento da série; revisão de duplicidades; prévia e confirmação antes de gravar; processamento idempotente em blocos com retomada; histórico e desfazer condicional (só registros inalterados) (`docs/importacao.md`) | Média | APROVADO como produto (18/11/2026; exceção à §3.2; RN046–RN055); desenvolvimento PENDENTE de autorização (depois de validar RL, GF e P8 — D31) |
+| RF031 | Apagar todos os lançamentos (Mais → Apagar todos os lançamentos, Android e Web): apaga de uma vez todas as receitas, despesas e investimentos, de todos os períodos, e desativa as recorrências; exige conexão, nada pendente de envio e nenhum conflito aberto; dupla confirmação (resumo com as contagens e digitar APAGAR); não pode ser desfeito (RN056) | Média | APROVADO (19/11/2026) |
 
 ### 6.1 Critérios de aceitação
 
@@ -203,6 +204,12 @@ Prioridades: **Essencial** = necessário ao funcionamento central; **Alta** = pa
 - Valor ou data ambíguos nunca são interpretados sem escolha do usuário; nenhum valor passa por ponto flutuante.
 - Recorrências e duplicidades só com decisão do usuário; reenviar não duplica.
 - Desfazer cancela só o que não foi alterado depois e informa o que foi preservado.
+
+**RF031 — Apagar todos os lançamentos** (RN056)
+- Fica em Mais, junto de "Excluir conta"; Android e Web, sempre com conexão.
+- 1ª confirmação: quantas receitas, despesas, investimentos e recorrências saem e o que continua; na Web, atalho para exportar o CSV antes. 2ª confirmação: digitar APAGAR.
+- Apaga como o "Apagar" de sempre (RN029): sai do dinheiro livre e das listas na hora, guardado 12 meses e auditado. Recorrências são desativadas para não gerar lançamentos novos.
+- Categorias, período, preferências, Gestão de Faturas e histórico de importações continuam.
 
 **RF023 — Alertas**
 - Alertas móveis previstos: três dias antes do vencimento, no dia e diariamente após o vencimento enquanto a despesa estiver pendente.

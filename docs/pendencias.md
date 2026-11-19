@@ -1,6 +1,6 @@
 # Pendências, ajustes e melhorias — Norte
 
-Lista-mestra única do que falta. **Atualizado em:** 18/11/2026.
+Lista-mestra única do que falta. **Atualizado em:** 19/11/2026.
 Regras: cada item tem ID fixo (não reaproveitar). Concluiu → apagar a linha e registrar na entrega da fase. Achou algo fora da entrega em curso → registrar aqui, não resolver sozinho. Melhorias (M) só com aprovação.
 
 ## D — Decisões abertas (responsável)
@@ -105,6 +105,22 @@ Validado pelo responsável em 19/11/2026 ("validado"), com os pontos abaixo acei
 - **X-F, textos:** "Apagar lançamento", "Apagar este lançamento?", "Ele sai do dinheiro livre e some da lista na hora. Não é possível desfazer." Investimento no mesmo padrão. Motivo da recusa: "Este lançamento foi apagado (em outro aparelho ou há mais de 12 meses) e não existe mais no servidor. Descarte a alteração."
 - **X-G, primeira sincronização após a atualização:** cada aparelho baixa de novo todos os lançamentos uma vez. Não foi conferido no emulador.
 - **X-H, política de privacidade (D12, Entrega 80):** deve informar os 12 meses e o prazo dos backups (Entrega 77).
+
+## AT — Apagar todos os lançamentos (autorizada em 19/11/2026)
+RF031, RN056. Plano e as 5 recomendações aceitos pelo responsável em 19/11/2026 ("Sigo suas recomendações; pode implementar de AT0 até AT4, valido td no final"): apagar como o "Apagar" de hoje (12 meses); desativar todas as recorrências; sempre os três tipos; exigir conexão também no celular; categorias, período, preferências, Faturas e histórico de importações continuam.
+| ID | Entrega | Situação |
+|---|---|---|
+| AT0 | Documentação: RF031, RN056, `mapa_app.md`, `banco_de_dados.md`, `arquitetura.md` §3, este registro | Feita 19/11/2026, validada pelo responsável em 19/11/2026 |
+| AT1 | Servidor: migration `20261119000100_wipe_entries.sql` (`wipe_entries_preview`, `wipe_entries_run`) e `rpc_wipe_entries_test.sql`. Aplicada **só no Supabase local** (`supabase migration up --local`) | Feita 19/11/2026, validada pelo responsável em 19/11/2026 |
+| AT2 | App: item em Mais, fluxo com as duas confirmações, progresso, sincronização em seguida no celular (`features/wipe_entries/`) | Feita 19/11/2026, validada pelo responsável em 19/11/2026 |
+| AT3 | Testes: execução em partes, leitura das respostas, 9 testes de tela, integração com dois aparelhos (`test/integration/wipe_entries_test.dart`) | Feita 19/11/2026, validada pelo responsável em 19/11/2026 |
+| AT4 | Homologação: aplicar `20261119000100_wipe_entries.sql` em `norte-homologacao` (ação do responsável) e rodar `tooling/test_integration_homolog.ps1` | Pendente do responsável |
+
+Pontos para a validação:
+- **AT-A, o que bloqueia:** qualquer conflito aberto bloqueia, mesmo de categoria ou período (mais simples e seguro). No celular, também qualquer item na fila ou conflito local.
+- **AT-B, aparelho offline com recorrência ativa:** um segundo celular parado pode gerar só no aparelho (a geração local não sobe ao servidor) a ocorrência de um mês novo antes de sincronizar. Depois da sincronização o modelo chega desativado e nada novo é gerado, mas essa cópia local pode continuar no aparelho até um download desde o início. É o mesmo caso que já existe hoje ao desativar uma recorrência em outro aparelho. Não foi testado no emulador.
+- **AT-C, textos:** item "Apagar todos os lançamentos" (ícone vermelho); "Apagar todos os lançamentos?"; segunda tela "Confirme para apagar" com o botão "Apagar tudo"; ao fim "N lançamentos apagados.".
+- Não conferido no navegador nem no emulador (telas cobertas por testes de widget).
 
 ## T — Pendências técnicas
 | ID | Item |
