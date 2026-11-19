@@ -81,6 +81,14 @@ BEGIN
         'anon', 'public.delete_my_account(text)', 'EXECUTE') THEN
         RAISE EXCEPTION 'anon must not execute delete_my_account';
     END IF;
+    -- T12: limite de tempo próprio (o do papel, 8 s, não basta com muito dado).
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_catalog.pg_proc p
+        WHERE p.oid = 'public.delete_my_account(text)'::regprocedure
+          AND 'statement_timeout=120s' = ANY (p.proconfig)
+    ) THEN
+        RAISE EXCEPTION 'delete_my_account must keep its own statement_timeout';
+    END IF;
 END;
 $test$;
 

@@ -297,6 +297,13 @@ class InvestmentAllocations extends OwnedRecord {
   ];
 }
 
+// Índice da conferência de duplicidade ao baixar a auditoria (T6): sem ele,
+// cada evento lia a tabela inteira e a primeira sincronização crescia
+// quadraticamente com o volume.
+@TableIndex(
+  name: 'audit_events_operation_idx',
+  columns: {#ownerId, #operationId, #entityId, #operation},
+)
 class AuditEvents extends OwnedRecord {
   TextColumn get entityType => text()();
   TextColumn get entityId => text()();
@@ -526,7 +533,7 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
   PorquinhoDatabase(super.executor);
 
   @override
-  int get schemaVersion => 11;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -676,6 +683,11 @@ class PorquinhoDatabase extends _$PorquinhoDatabase {
           schema.userPreferences,
           schema.userPreferences.reports,
         );
+      },
+      // v12 (T6, desempenho): índice da auditoria para o download não ler a
+      // tabela inteira a cada evento; nenhuma coluna ou dado muda.
+      from11To12: (migrator, schema) async {
+        await migrator.create(schema.auditEventsOperationIdx);
       },
     ),
     beforeOpen: (_) async => customStatement('PRAGMA foreign_keys = ON'),

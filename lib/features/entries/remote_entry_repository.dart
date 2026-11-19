@@ -15,23 +15,33 @@ class RemoteEntryRepository implements EntryRepository {
   final SyncRemoteGateway _gateway;
   final String Function() _newId;
 
+  /// As três consultas (receitas, despesas e receitas pendentes) saem ao mesmo
+  /// tempo: em sequência, cada uma paga a ida e volta da rede (T6). A ordem do
+  /// resultado é a mesma de antes: receitas, despesas, pendentes.
   @override
   Future<List<EntryRecord>> entriesInPeriod(PeriodRange range) async {
-    final result = <EntryRecord>[];
-    for (final kind in EntryKind.values) {
-      final rows = await _reader.select(
-        kind.table,
-        filters: [
-          RemoteFilter.gte(kind.dateColumn, range.start.toIso()),
-          RemoteFilter.lt(kind.dateColumn, range.end.toIso()),
-        ],
-        orderBy: kind.dateColumn,
-      );
-      result.addAll(rows.map((r) => _fromRow(kind, r)));
-    }
-    result.addAll(await _pendingIncomeIn(range));
+    final parts = await Future.wait([
+      for (final kind in EntryKind.values) _entriesOf(kind, range),
+      _pendingIncomeIn(range),
+    ]);
+    final result = [for (final part in parts) ...part];
     result.sort((a, b) => b.date.compareTo(a.date));
     return result;
+  }
+
+  Future<List<EntryRecord>> _entriesOf(
+    EntryKind kind,
+    PeriodRange range,
+  ) async {
+    final rows = await _reader.select(
+      kind.table,
+      filters: [
+        RemoteFilter.gte(kind.dateColumn, range.start.toIso()),
+        RemoteFilter.lt(kind.dateColumn, range.end.toIso()),
+      ],
+      orderBy: kind.dateColumn,
+    );
+    return rows.map((r) => _fromRow(kind, r)).toList();
   }
 
   /// Receita recorrente ainda sem data de recebimento (pendente): aparece no

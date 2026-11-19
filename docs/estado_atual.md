@@ -1,6 +1,6 @@
 # Estado atual — Norte
 
-**Atualizado em:** 19/11/2026 (Apagar todos os lançamentos, AT0–AT3 validadas).
+**Atualizado em:** 19/11/2026 (T6: desempenho com muitos dados medido no Supabase local; índice da auditoria no celular, Drift v12, aguardando validação).
 
 ## Fase
 - Fases 1–7: CONCLUÍDAS e validadas (detalhe em `historico/`).

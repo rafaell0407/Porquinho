@@ -7,6 +7,7 @@ param(
   [string[]]$Tests = @('test/integration'),
   [string]$Url = 'https://fxjkulkyzpwgaeeiwbbl.supabase.co',
   [string]$PublishableKey = 'sb_publishable_gQyYjKwyJmRPCedf-LGjxA_1svDZC1X',
+  [string[]]$Defines = @(),
   [switch]$KeepTestData
 )
 $ErrorActionPreference = 'Continue'
@@ -17,7 +18,7 @@ if (-not $secret.StartsWith('sb_secret_')) { throw 'Chave secreta inválida (dev
 flutter test @Tests `
   "--dart-define=SUPABASE_URL=$Url" `
   "--dart-define=SUPABASE_PUBLISHABLE_KEY=$PublishableKey" `
-  "--dart-define=SUPABASE_SECRET_KEY=$secret"
+  "--dart-define=SUPABASE_SECRET_KEY=$secret" @Defines
 $code = $LASTEXITCODE
 # Apaga as contas de teste criadas (e de rodadas anteriores) para o banco de
 # homologação não crescer a cada rodada (T10). -KeepTestData pula a limpeza.

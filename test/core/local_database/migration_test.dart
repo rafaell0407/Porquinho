@@ -630,4 +630,51 @@ void main() {
       await db.close();
     });
   });
+
+  group('v11 -> v12 (índice da auditoria, T6)', () {
+    test(
+      'produz o esquema do snapshot v12, cria o índice e preserva a auditoria',
+      () async {
+        final schema = await verifier.schemaAt(11);
+        schema.rawDatabase.execute(
+          "INSERT INTO audit_events (id, owner_id, version, created_at, "
+          "updated_at, entity_type, entity_id, operation, actor_id, "
+          "occurred_at, old_snapshot_json, new_snapshot_json, operation_id) "
+          "VALUES ('a1', 'u1', 1, 'x', 'x', 'expense_entry', 'e1', 'create', "
+          "'u1', '2026-01-01T00:00:00Z', NULL, '{}', 'op1')",
+        );
+        final db = PorquinhoDatabase(schema.newConnection());
+        await verifier.migrateAndValidate(db, 12);
+        final rows = await db.customSelect('SELECT * FROM audit_events').get();
+        expect(rows, hasLength(1));
+        expect(rows.single.data['operation_id'], 'op1');
+        final plan = await db
+            .customSelect(
+              'EXPLAIN QUERY PLAN SELECT 1 FROM audit_events WHERE '
+              "owner_id = 'u1' AND operation_id = 'op1' AND entity_id = 'e1' "
+              "AND operation = 'create'",
+            )
+            .get();
+        expect(
+          plan.map((r) => r.data['detail']).join(' '),
+          contains('audit_events_operation_idx'),
+        );
+        await db.close();
+      },
+    );
+
+    test('criação direta na v12 equivale ao snapshot v12', () async {
+      final schema = await verifier.schemaAt(12);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 12);
+      await db.close();
+    });
+
+    test('v1 -> v12 (todos os passos)', () async {
+      final schema = await verifier.schemaAt(1);
+      final db = PorquinhoDatabase(schema.newConnection());
+      await verifier.migrateAndValidate(db, 12);
+      await db.close();
+    });
+  });
 }

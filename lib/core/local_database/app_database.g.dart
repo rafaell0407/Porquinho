@@ -14448,6 +14448,10 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
     'unique_investment_occurrence_schedule',
     'CREATE UNIQUE INDEX unique_investment_occurrence_schedule ON investment_allocations (owner_id, recurrence_template_id, scheduled_for_date) WHERE recurrence_template_id IS NOT NULL',
   );
+  late final Index auditEventsOperationIdx = Index(
+    'audit_events_operation_idx',
+    'CREATE INDEX audit_events_operation_idx ON audit_events (owner_id, operation_id, entity_id, operation)',
+  );
   late final Index syncOutboxStateIdx = Index(
     'sync_outbox_state_idx',
     'CREATE INDEX sync_outbox_state_idx ON sync_outbox (owner_id, state)',
@@ -14482,6 +14486,7 @@ abstract class _$PorquinhoDatabase extends GeneratedDatabase {
     uniqueIncomeOccurrenceSchedule,
     uniqueExpenseOccurrenceSchedule,
     uniqueInvestmentOccurrenceSchedule,
+    auditEventsOperationIdx,
     syncOutboxStateIdx,
   ];
 }
