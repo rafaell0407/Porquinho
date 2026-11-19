@@ -26,6 +26,10 @@ import '../features/preferences/preferences_providers.dart';
 import '../features/preferences/theme_screen.dart';
 import '../features/periods/period_settings_screen.dart';
 import '../features/export/export_screen.dart';
+import '../features/import/screens/import_batch_screen.dart';
+import '../features/import/screens/import_home_screen.dart';
+import '../features/import/screens/import_guide_screen.dart';
+import '../features/import/screens/import_wizard_screen.dart';
 import '../features/recurrence/recurrences_screen.dart';
 import 'theme/norte_theme.dart';
 import '../features/tools/screens/manage_tools_screen.dart';
@@ -39,7 +43,7 @@ import '../shared/main_shell.dart';
 /// e `/mais`. `/relatorios` (+ `/catalogo`, `/personalizar`, `/<id>`),
 /// `/juros-compostos` (+ `/retiradas`) e
 /// `/a-vista-ou-parcelado` e `/gestao-de-faturas` são ferramentas do
-/// catálogo.
+/// catálogo. `/importar` (+ `/como-importar`, `/nova`, `/<id>`) fica em Mais (RF030, só Web).
 final routerProvider = Provider<GoRouter>((ref) {
   final controller = ref.watch(sessionControllerProvider);
   final refresh = ValueNotifier<int>(0);
@@ -100,6 +104,29 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(path: '/tema', builder: (_, _) => const ThemeScreen()),
       GoRoute(path: '/exportar', builder: (_, _) => const ExportScreen()),
+      GoRoute(
+        path: ImportHomeScreen.route,
+        builder: (_, _) => const ImportHomeScreen(),
+        routes: [
+          GoRoute(
+            path: 'como-importar',
+            builder: (_, _) => const ImportGuideScreen(),
+          ),
+          GoRoute(
+            path: 'nova',
+            builder: (_, state) => ImportWizardScreen(
+              resume: state.extra is ImportResumeRequest
+                  ? state.extra! as ImportResumeRequest
+                  : null,
+            ),
+          ),
+          GoRoute(
+            path: ':id',
+            builder: (_, state) =>
+                ImportBatchScreen(batchId: state.pathParameters['id']!),
+          ),
+        ],
+      ),
       GoRoute(
         path: '/recorrencias',
         builder: (_, _) => const RecurrencesScreen(),

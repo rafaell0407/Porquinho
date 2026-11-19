@@ -10,7 +10,7 @@ import '../sync/sync_indicator.dart';
 import '../sync/sync_providers.dart';
 
 /// Aba "Mais": atalhos para categorias, período, tema, recorrências,
-/// exportação, segurança, exclusão de conta e saída. Relatórios ficam na aba
+/// exportação, importação, segurança, exclusão de conta e saída. Relatórios ficam na aba
 /// Ferramentas.
 class MoreScreen extends ConsumerWidget {
   const MoreScreen({super.key});
@@ -59,6 +59,12 @@ class MoreScreen extends ConsumerWidget {
             icon: Icons.download_outlined,
             title: 'Exportar dados (CSV)',
             onTap: () => context.push('/exportar'),
+          ),
+          _MoreTile(
+            tileKey: const Key('mais-importar'),
+            icon: Icons.upload_file_outlined,
+            title: 'Importar dados (CSV)',
+            onTap: () => context.push('/importar'),
           ),
           if (!kIsWeb)
             _MoreTile(
