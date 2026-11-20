@@ -8,7 +8,6 @@ Regras: cada item tem ID fixo (não reaproveitar). Concluiu → apagar a linha e
 |---|---|---|
 | D1 | Nome Norte e `applicationId` `br.com.norte.app` | Aprovados 12/11/2026; confirmar como definitivos antes da 1ª publicação. Falta ícone. Domínio próprio opcional até a Entrega 79. |
 | D5 | E-mail Resend / SMTP | Aprovado 12/11/2026; configurar na Entrega 79 (exige domínio). |
-| D14 | Política para futura alteração da zona IANA do usuário | Decidido pelo responsável em 18/11/2026: a mudança vale só dali em diante; lançamentos e períodos passados não são recalculados. Falta virar RN em `regras_negocio.md` quando a troca de fuso for implementada. |
 
 ## R — Ações do responsável
 - R1: Validar a Entrega 76 (homologação `norte-homologacao`, exceto SMTP).
