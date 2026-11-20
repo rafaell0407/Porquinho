@@ -96,19 +96,16 @@ void main() {
     expect(find.text('Sem vencimento'), findsNothing);
     expect(find.text('8 de nov'), findsOneWidget);
 
-    await tester.tap(
-      find.descendant(
-        of: find.byKey(const Key('ordenar-por')),
-        matching: find.text('Vencimento'),
-      ),
-    );
+    await tester.tap(find.byKey(const Key('ordenar-por')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Vencimento'));
     await tester.pumpAndSettle();
     expect(find.text('Vence 20 de nov'), findsOneWidget);
     expect(find.text('Vence 12 de nov'), findsOneWidget);
     expect(find.text('Sem vencimento'), findsOneWidget);
     double y(String t) => tester.getTopLeft(find.text(t)).dy;
-    expect(y('Aluguel'), lessThan(y('Internet')));
-    expect(y('Internet'), lessThan(y('Sem vencimento')));
+    expect(y('Internet'), lessThan(y('Aluguel')));
+    expect(y('Aluguel'), lessThan(y('Sem vencimento')));
     expect(y('Sem vencimento'), lessThan(y('Mercado')));
   });
 

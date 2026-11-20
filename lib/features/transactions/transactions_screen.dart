@@ -97,23 +97,49 @@ class TransactionsScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: TextField(
-                key: const Key('busca-lancamentos'),
-                onChanged: (t) => ref.read(entrySearchProvider.notifier).set(t),
-                decoration: InputDecoration(
-                  hintText: 'Buscar',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(999),
-                    borderSide: BorderSide(color: scheme.outlineVariant),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const Key('busca-lancamentos'),
+                      onChanged: (t) =>
+                          ref.read(entrySearchProvider.notifier).set(t),
+                      decoration: InputDecoration(
+                        hintText: 'Buscar',
+                        prefixIcon: const Icon(Icons.search, size: 20),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          borderSide: BorderSide(color: scheme.outlineVariant),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(999),
+                          borderSide: BorderSide(color: scheme.primary),
+                        ),
+                      ),
+                    ),
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(999),
-                    borderSide: BorderSide(color: scheme.primary),
+                  const SizedBox(width: 4),
+                  PopupMenuButton<EntrySort>(
+                    key: const Key('ordenar-por'),
+                    tooltip: 'Ordenar por',
+                    icon: const Icon(Icons.swap_vert),
+                    initialValue: sort,
+                    onSelected: (o) =>
+                        ref.read(entrySortProvider.notifier).set(o),
+                    itemBuilder: (_) => [
+                      for (final o in EntrySort.values)
+                        CheckedPopupMenuItem(
+                          value: o,
+                          checked: o == sort,
+                          child: Text(o.label),
+                        ),
+                    ],
                   ),
-                ),
+                ],
               ),
             ),
             SingleChildScrollView(
@@ -140,32 +166,6 @@ class TransactionsScreen extends ConsumerWidget {
                       ),
                     ),
                 ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-              child: SizedBox(
-                width: double.infinity,
-                child: SegmentedButton<EntrySort>(
-                  key: const Key('ordenar-por'),
-                  showSelectedIcon: false,
-                  segments: [
-                    for (final o in EntrySort.values)
-                      ButtonSegment(
-                        value: o,
-                        label: Text(o.label),
-                        icon: Icon(
-                          o == EntrySort.byDate
-                              ? Icons.event_note_outlined
-                              : Icons.event_busy_outlined,
-                          size: 18,
-                        ),
-                      ),
-                  ],
-                  selected: {sort},
-                  onSelectionChanged: (v) =>
-                      ref.read(entrySortProvider.notifier).set(v.first),
-                ),
               ),
             ),
             Expanded(
@@ -425,15 +425,15 @@ class _EntryList extends ConsumerWidget {
     ]..sort((a, b) => b.date.compareTo(a.date));
     final byDue = sort == EntrySort.byDue;
     if (byDue) {
-      // Mais próximo/recente primeiro, igual à visão por data; sem vencimento
-      // vai para o fim (a ordenação é estável, mantendo a ordem por data).
+      // Vencimento mais próximo primeiro (crescente); sem vencimento vai para
+      // o fim (a ordenação é estável, mantendo a ordem por data).
       rows.sort((a, b) {
         final da = a.dueDate;
         final db = b.dueDate;
         if (da == null && db == null) return 0;
         if (da == null) return 1;
         if (db == null) return -1;
-        return db.compareTo(da);
+        return da.compareTo(db);
       });
     }
     if (rows.isEmpty) {
