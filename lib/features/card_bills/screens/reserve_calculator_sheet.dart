@@ -93,92 +93,102 @@ class _CalculatorSheetState extends ConsumerState<_CalculatorSheet> {
     Widget digit(int d) => _key('$d', () => _press((c) => c.digit(d)));
     Widget op(CalcOp o) =>
         _key(o.symbol, () => _press((c) => c.operation(o)), accent: true);
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('Dinheiro reservado', style: theme.textTheme.titleLarge),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                _calc.display.isEmpty ? '0' : _calc.display,
-                key: const Key('cb-calc-visor'),
-                textAlign: TextAlign.right,
-                style: theme.textTheme.headlineSmall,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error ??
-                  (value == null
-                      ? ' '
-                      : calculatorSummary(widget.current, value)),
-              key: const Key('cb-calc-resumo'),
-              textAlign: TextAlign.right,
-              style: TextStyle(
-                color: error == null
-                    ? theme.colorScheme.onSurfaceVariant
-                    : theme.colorScheme.error,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Table(
-              children: [
-                TableRow(
-                  children: [
-                    _key('C', () => _press((c) => c.clear())),
-                    _key('⌫', () => _press((c) => c.backspace())),
-                    op(CalcOp.divide),
-                    op(CalcOp.multiply),
-                  ],
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('Dinheiro reservado', style: theme.textTheme.titleLarge),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                TableRow(
-                  children: [digit(7), digit(8), digit(9), op(CalcOp.subtract)],
-                ),
-                TableRow(
-                  children: [digit(4), digit(5), digit(6), op(CalcOp.add)],
-                ),
-                TableRow(
-                  children: [
-                    digit(1),
-                    digit(2),
-                    digit(3),
-                    _key('=', () => _press((c) => c.equals()), accent: true),
-                  ],
-                ),
-                TableRow(
-                  children: [
-                    const SizedBox.shrink(),
-                    digit(0),
-                    _key(',', () => _press((c) => c.comma())),
-                    const SizedBox.shrink(),
-                  ],
-                ),
-              ],
-            ),
-            if (_saveError != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  _saveError!,
-                  style: TextStyle(color: theme.colorScheme.error),
+                  _calc.display.isEmpty ? '0' : _calc.display,
+                  key: const Key('cb-calc-visor'),
+                  textAlign: TextAlign.right,
+                  style: theme.textTheme.headlineSmall,
                 ),
               ),
-            const SizedBox(height: 12),
-            FilledButton(
-              key: const Key('cb-calc-confirmar'),
-              onPressed: _busy || value == null ? null : () => _confirm(value),
-              child: const Text('Confirmar'),
-            ),
-          ],
+              const SizedBox(height: 8),
+              Text(
+                error ??
+                    (value == null
+                        ? ' '
+                        : calculatorSummary(widget.current, value)),
+                key: const Key('cb-calc-resumo'),
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  color: error == null
+                      ? theme.colorScheme.onSurfaceVariant
+                      : theme.colorScheme.error,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Table(
+                children: [
+                  TableRow(
+                    children: [
+                      _key('C', () => _press((c) => c.clear())),
+                      _key('⌫', () => _press((c) => c.backspace())),
+                      op(CalcOp.divide),
+                      op(CalcOp.multiply),
+                    ],
+                  ),
+                  TableRow(
+                    children: [
+                      digit(7),
+                      digit(8),
+                      digit(9),
+                      op(CalcOp.subtract),
+                    ],
+                  ),
+                  TableRow(
+                    children: [digit(4), digit(5), digit(6), op(CalcOp.add)],
+                  ),
+                  TableRow(
+                    children: [
+                      digit(1),
+                      digit(2),
+                      digit(3),
+                      _key('=', () => _press((c) => c.equals()), accent: true),
+                    ],
+                  ),
+                  TableRow(
+                    children: [
+                      const SizedBox.shrink(),
+                      digit(0),
+                      _key(',', () => _press((c) => c.comma())),
+                      const SizedBox.shrink(),
+                    ],
+                  ),
+                ],
+              ),
+              if (_saveError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    _saveError!,
+                    style: TextStyle(color: theme.colorScheme.error),
+                  ),
+                ),
+              const SizedBox(height: 12),
+              FilledButton(
+                key: const Key('cb-calc-confirmar'),
+                onPressed: _busy || value == null
+                    ? null
+                    : () => _confirm(value),
+                child: const Text('Confirmar'),
+              ),
+            ],
+          ),
         ),
       ),
     );
