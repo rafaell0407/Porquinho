@@ -32,6 +32,28 @@ enum EntryFilter {
   final String label;
 }
 
+/// Como o extrato é posicionado: pela data da despesa (padrão) ou pela data
+/// de vencimento. Só muda a visualização; o período e o dinheiro livre
+/// continuam pela data da despesa (RN017).
+enum EntrySort {
+  byDate('Data da despesa'),
+  byDue('Vencimento');
+
+  const EntrySort(this.label);
+  final String label;
+}
+
+class EntrySortNotifier extends Notifier<EntrySort> {
+  @override
+  EntrySort build() => EntrySort.byDate;
+
+  void set(EntrySort sort) => state = sort;
+}
+
+final entrySortProvider = NotifierProvider<EntrySortNotifier, EntrySort>(
+  EntrySortNotifier.new,
+);
+
 enum _NewItem { income, expense, investment }
 
 class EntryFilterNotifier extends Notifier<EntryFilter> {
@@ -64,6 +86,7 @@ class TransactionsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final view = ref.watch(selectedPeriodProvider);
     final filter = ref.watch(entryFilterProvider);
+    final sort = ref.watch(entrySortProvider);
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Lançamentos')),
@@ -119,6 +142,32 @@ class TransactionsScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+              child: SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<EntrySort>(
+                  key: const Key('ordenar-por'),
+                  showSelectedIcon: false,
+                  segments: [
+                    for (final o in EntrySort.values)
+                      ButtonSegment(
+                        value: o,
+                        label: Text(o.label),
+                        icon: Icon(
+                          o == EntrySort.byDate
+                              ? Icons.event_note_outlined
+                              : Icons.event_busy_outlined,
+                          size: 18,
+                        ),
+                      ),
+                  ],
+                  selected: {sort},
+                  onSelectionChanged: (v) =>
+                      ref.read(entrySortProvider.notifier).set(v.first),
+                ),
+              ),
+            ),
             Expanded(
               child: view.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -129,7 +178,7 @@ class TransactionsScreen extends ConsumerWidget {
                   if (v == null) {
                     return const Center(child: Text('Nenhum período ainda.'));
                   }
-                  return _EntryList(filter: filter);
+                  return _EntryList(filter: filter, sort: sort);
                 },
               ),
             ),
@@ -313,12 +362,21 @@ class _Row {
   final InvestmentRecord? investment;
 
   CalendarDate get date => entry?.date ?? investment!.date;
+
+  /// Data usada na visão por vencimento: despesa usa o vencimento; receita e
+  /// investimento usam a própria data. Despesa sem vencimento → `null`.
+  CalendarDate? get dueDate {
+    final e = entry;
+    if (e == null) return investment!.date;
+    return e.kind == EntryKind.expense ? e.dueOn : e.date;
+  }
 }
 
 class _EntryList extends ConsumerWidget {
-  const _EntryList({required this.filter});
+  const _EntryList({required this.filter, required this.sort});
 
   final EntryFilter filter;
+  final EntrySort sort;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -365,6 +423,19 @@ class _EntryList extends ConsumerWidget {
         for (final i in investments.requireValue)
           if (!i.cancelled && matches('investimento')) _Row.investment(i),
     ]..sort((a, b) => b.date.compareTo(a.date));
+    final byDue = sort == EntrySort.byDue;
+    if (byDue) {
+      // Mais próximo/recente primeiro, igual à visão por data; sem vencimento
+      // vai para o fim (a ordenação é estável, mantendo a ordem por data).
+      rows.sort((a, b) {
+        final da = a.dueDate;
+        final db = b.dueDate;
+        if (da == null && db == null) return 0;
+        if (da == null) return 1;
+        if (db == null) return -1;
+        return db.compareTo(da);
+      });
+    }
     if (rows.isEmpty) {
       return Center(
         child: Text(
@@ -378,10 +449,21 @@ class _EntryList extends ConsumerWidget {
     final today = ref.watch(userClockProvider).today();
     final items = <Object>[];
     CalendarDate? lastDay;
+    var semVencimento = false;
     for (final row in rows) {
-      if (lastDay == null || row.date.toBr() != lastDay.toBr()) {
-        items.add(_dayLabel(row.date, today));
-        lastDay = row.date;
+      final day = byDue ? row.dueDate : row.date;
+      if (day == null) {
+        if (!semVencimento) {
+          items.add('Sem vencimento');
+          semVencimento = true;
+        }
+      } else if (lastDay == null || day.toBr() != lastDay.toBr()) {
+        items.add(
+          byDue
+              ? 'Vence ${_dayLabel(day, today).toLowerCase()}'
+              : _dayLabel(day, today),
+        );
+        lastDay = day;
       }
       items.add(row);
     }

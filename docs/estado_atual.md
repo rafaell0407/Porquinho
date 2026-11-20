@@ -137,6 +137,9 @@ Autorizada pelo responsável em 19/11/2026, com as recomendações aceitas; acom
 ## Apagar lançamento recorrente (19/11/2026) — aguardando validação
 Pedido do responsável. Ao apagar uma despesa ou receita recorrente, o diálogo oferece "Apagar só este" (recorrência continua) ou "Apagar e parar de repetir" (apaga e desativa o modelo; outras ocorrências ficam). Sem mudança de banco, Drift ou sincronização (usa o "Parar de repetir" existente). RN029. Arquivo: `transactions_screen.dart`. Testes: `flutter analyze` sem problemas; recorrência e lançamentos passando, com 1 teste novo cobrindo os dois caminhos. Não conferido no emulador. Investimento recorrente não foi alterado.
 
+## Lançamentos: ordenar por data da despesa ou vencimento (19/11/2026) — aguardando validação
+Pedido do responsável. Em Lançamentos, seletor "Data da despesa | Vencimento". Por vencimento, as despesas ficam agrupadas por "Vence <dia>" e as sem vencimento vão para o grupo "Sem vencimento" no fim; receitas e investimentos entram pela própria data. Só muda a visualização: período e dinheiro livre seguem pela data da despesa (RN017). A escolha vale na sessão (não é gravada). Sem mudança de banco, Drift ou sincronização. Arquivo: `transactions_screen.dart`. Testes: `flutter analyze` sem problemas; testes da tela de lançamentos passando, com 1 novo. Não conferido no emulador. Possível extra (não feito): filtro "Vencendo no período".
+
 ## Próximo passo
 Retenção (D15) concluída também em `norte-homologacao` (agendamento diário conferido; 42 testes de integração passando em 19/11/2026). Em 18/11/2026 o responsável aplicou em `norte-homologacao` (`supabase db push --remote`) as migrations de GF6.3/F10, RL8 e IM10; os testes de integração em homologação passaram em 19/11/2026 (o de volume, 1.005 lançamentos, levou 4min18 do limite de 5min; 1ª tentativa estourou por rede). Importação CSV validada (19/11/2026). Próximo: retomar a Fase 8 (75 final/D1, 76 com SMTP/D5, 77 backup).
 

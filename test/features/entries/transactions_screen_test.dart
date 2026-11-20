@@ -77,6 +77,41 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  testWidgets('ordenar por vencimento: agrupa e põe sem vencimento no fim', (
+    tester,
+  ) async {
+    EntryDraft expense(String desc, int day, {int? dueDay}) => EntryDraft(
+      kind: EntryKind.expense,
+      amount: BigInt.from(1000),
+      date: CalendarDate(2026, 11, day),
+      description: desc,
+      dueOn: dueDay == null ? null : CalendarDate(2026, 11, dueDay),
+    );
+    await service.create(expense('Aluguel', 2, dueDay: 20));
+    await service.create(expense('Mercado', 5));
+    await service.create(expense('Internet', 8, dueDay: 12));
+    await pumpScreen(tester);
+
+    // Padrão: por data da despesa, sem grupo "Sem vencimento".
+    expect(find.text('Sem vencimento'), findsNothing);
+    expect(find.text('8 de nov'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(const Key('ordenar-por')),
+        matching: find.text('Vencimento'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Vence 20 de nov'), findsOneWidget);
+    expect(find.text('Vence 12 de nov'), findsOneWidget);
+    expect(find.text('Sem vencimento'), findsOneWidget);
+    double y(String t) => tester.getTopLeft(find.text(t)).dy;
+    expect(y('Aluguel'), lessThan(y('Internet')));
+    expect(y('Internet'), lessThan(y('Sem vencimento')));
+    expect(y('Sem vencimento'), lessThan(y('Mercado')));
+  });
+
   testWidgets('cadastra receita e despesa, filtra, paga e cancela', (
     tester,
   ) async {

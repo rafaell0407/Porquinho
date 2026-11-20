@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -138,7 +140,11 @@ class _PaySheetState extends ConsumerState<_PaySheet> {
         20,
         0,
         20,
-        20 + MediaQuery.viewInsetsOf(context).bottom,
+        20 +
+            math.max(
+              MediaQuery.viewInsetsOf(context).bottom,
+              MediaQuery.viewPaddingOf(context).bottom,
+            ),
       ),
       child: SingleChildScrollView(
         child: Column(
