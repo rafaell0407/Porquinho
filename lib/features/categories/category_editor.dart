@@ -81,8 +81,12 @@ class _CategoryEditorState extends State<_CategoryEditor> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    final systemBar = MediaQuery.viewPaddingOf(context).bottom;
     return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      // Com teclado, ele já cobre a barra do sistema; sem teclado, reserva
+      // o espaço da barra de navegação do celular.
+      padding: EdgeInsets.only(bottom: keyboard > 0 ? keyboard : systemBar),
       child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
         child: Column(

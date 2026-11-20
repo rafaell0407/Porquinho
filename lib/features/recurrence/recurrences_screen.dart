@@ -52,26 +52,36 @@ class RecurrencesScreen extends ConsumerWidget {
         ),
       );
     }
-    // Ativas primeiro; a ordem entre elas se mantém.
-    final tiles = <({bool active, Widget tile})>[
-      for (final t in list)
-        (
-          active: t.isActive,
-          tile: _TemplateTile(
-            template: t,
-            categoryName: cats?.categories
-                .where((c) => c.id == t.categoryId)
-                .firstOrNull
-                ?.name,
+    // Só as recorrências ativas aparecem; as interrompidas ficam ocultas.
+    final ordered = <Widget>[
+      for (final t in list.where((t) => t.isActive))
+        _TemplateTile(
+          template: t,
+          categoryName: cats?.categories
+              .where((c) => c.id == t.categoryId)
+              .firstOrNull
+              ?.name,
+          subcategoryName: t.subcategoryId == null
+              ? null
+              : cats?.subcategories
+                    .where((s) => s.id == t.subcategoryId)
+                    .firstOrNull
+                    ?.name,
+        ),
+      for (final t in investments.where((t) => t.isActive))
+        _InvestmentTemplateTile(template: t),
+    ];
+    if (ordered.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24),
+        child: Center(
+          child: Text(
+            'Nenhuma recorrência ativa.',
+            textAlign: TextAlign.center,
           ),
         ),
-      for (final t in investments)
-        (active: t.isActive, tile: _InvestmentTemplateTile(template: t)),
-    ];
-    final ordered = [
-      ...tiles.where((e) => e.active),
-      ...tiles.where((e) => !e.active),
-    ];
+      );
+    }
     return RefreshIndicator(
       onRefresh: () async {
         ref.invalidate(recurringTemplatesProvider);
@@ -80,17 +90,22 @@ class RecurrencesScreen extends ConsumerWidget {
       child: ListView.separated(
         itemCount: ordered.length,
         separatorBuilder: (_, _) => const Divider(height: 1),
-        itemBuilder: (context, i) => ordered[i].tile,
+        itemBuilder: (context, i) => ordered[i],
       ),
     );
   }
 }
 
 class _TemplateTile extends ConsumerWidget {
-  const _TemplateTile({required this.template, this.categoryName});
+  const _TemplateTile({
+    required this.template,
+    this.categoryName,
+    this.subcategoryName,
+  });
 
   final RecurringTemplate template;
   final String? categoryName;
+  final String? subcategoryName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -119,9 +134,9 @@ class _TemplateTile extends ConsumerWidget {
       subtitle: Text(
         [
           t.kind.label,
+          ?subcategoryName,
           t.scheduleLabel,
           ?(value.isEmpty ? null : value),
-          if (!t.isActive) 'Interrompida',
         ].join(' · '),
       ),
       onTap: t.isActive ? () => _actions(context, ref) : null,

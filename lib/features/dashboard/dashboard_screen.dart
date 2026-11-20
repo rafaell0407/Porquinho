@@ -10,6 +10,7 @@ import '../entries/entry_providers.dart';
 import '../periods/period_navigation.dart';
 import '../periods/period_providers.dart';
 import '../sync/sync_providers.dart';
+import '../transactions/transactions_screen.dart';
 
 /// Dashboard: dinheiro livre do período e sua composição (receitas, despesas
 /// e investimentos; decisão D1 da Fase 7, revisa a D9 da Fase 4). Nenhum
@@ -500,13 +501,13 @@ class _AttentionCard extends StatelessWidget {
 
 /// Receitas pendentes (recorrentes ainda não confirmadas): não entram no
 /// dinheiro livre até a confirmação (RN005).
-class _ReceivableSection extends StatelessWidget {
+class _ReceivableSection extends ConsumerWidget {
   const _ReceivableSection({required this.items});
 
   final List<EntryRecord> items;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final colors = NorteColors.of(context);
     return Card(
@@ -524,43 +525,48 @@ class _ReceivableSection extends StatelessWidget {
             ),
             for (final e in items) ...[
               const SizedBox(height: 12),
-              Row(
-                children: [
-                  _IconBubble(icon: Icons.arrow_upward, color: colors.income),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          e.description?.trim().isNotEmpty == true
-                              ? e.description!
-                              : 'Receita',
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+              InkWell(
+                key: Key('a-receber-${e.id}'),
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => showEntryActions(context, ref, e),
+                child: Row(
+                  children: [
+                    _IconBubble(icon: Icons.arrow_upward, color: colors.income),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            e.description?.trim().isNotEmpty == true
+                                ? e.description!
+                                : 'Receita',
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                        Text(
-                          'previsto ${e.date.day} '
-                          '${_monthsShort[e.date.month - 1]}',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                          Text(
+                            'previsto ${e.date.day} '
+                            '${_monthsShort[e.date.month - 1]}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    formatBrl(e.amount ?? BigInt.zero),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontFeatures: _tabular,
-                      color: theme.colorScheme.onSurfaceVariant,
+                    const SizedBox(width: 8),
+                    Text(
+                      formatBrl(e.amount ?? BigInt.zero),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        fontFeatures: _tabular,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ],

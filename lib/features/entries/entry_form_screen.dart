@@ -8,6 +8,7 @@ import '../../core/domain/recurrence_schedule.dart';
 import '../categories/category_appearance.dart';
 import '../categories/category_editor.dart';
 import '../categories/category_models.dart';
+import '../categories/category_name_dialog.dart';
 import '../categories/category_picker.dart';
 import '../categories/category_providers.dart';
 import '../categories/category_service.dart';
@@ -141,8 +142,30 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
         });
       case PickedCreate():
         await _createCategory();
+      case PickedCreateSub(:final categoryId):
+        await _createSubcategory(data, categoryId);
       case null:
         break;
+    }
+  }
+
+  /// Cria a subcategoria na categoria escolhida e já a deixa selecionada.
+  Future<void> _createSubcategory(CategoryData data, String categoryId) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final parent = data.categories.firstWhere((c) => c.id == categoryId);
+    final name = await askName(context, title: 'Nova subcategoria');
+    if (name == null || !mounted) return;
+    try {
+      final service = await ref.read(categoryServiceProvider.future);
+      final id = await service.createSubcategory(parent, name);
+      ref.invalidate(categoryDataProvider);
+      if (!mounted) return;
+      setState(() {
+        _categoryId = categoryId;
+        _subcategoryId = id;
+      });
+    } on Object catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -566,6 +589,18 @@ class _EntryFormScreenState extends ConsumerState<EntryFormScreen> {
                             final picked = await _pick(_dueOn ?? _date);
                             if (picked != null) setState(() => _dueOn = picked);
                           },
+                        ),
+                        Padding(
+                          key: const Key('aviso-data-vencimento'),
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Text(
+                            'A data da despesa define em qual período ela '
+                            'entra no cálculo. O vencimento só serve para '
+                            'exibição e alertas, e pagar não muda o período.',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
                         ),
                         if (!_editing)
                           _FieldRow(

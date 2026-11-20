@@ -16,6 +16,12 @@ class PickedCategory extends CategoryPick {
   final String? subcategoryId;
 }
 
+/// O usuário quer criar uma subcategoria nova dentro de [categoryId].
+class PickedCreateSub extends CategoryPick {
+  const PickedCreateSub(this.categoryId);
+  final String categoryId;
+}
+
 /// "Sem categoria".
 class PickedNone extends CategoryPick {
   const PickedNone();
@@ -123,7 +129,9 @@ class _PickerState extends State<_Picker> {
         Expanded(
           child: ListView(
             controller: widget.controller,
-            padding: const EdgeInsets.only(bottom: 24),
+            padding: EdgeInsets.only(
+              bottom: 24 + MediaQuery.viewPaddingOf(context).bottom,
+            ),
             children: [
               if (q.isEmpty)
                 ListTile(
@@ -183,6 +191,20 @@ class _PickerState extends State<_Picker> {
                     ),
                     onTap: () =>
                         Navigator.pop(context, PickedCategory(c.id, s.id)),
+                  ),
+                if (q.isEmpty && c.isActive)
+                  ListTile(
+                    key: Key('nova-subcategoria-${c.id}'),
+                    contentPadding: const EdgeInsets.only(left: 28, right: 16),
+                    leading: CircleAvatar(
+                      radius: 17,
+                      backgroundColor:
+                          theme.colorScheme.surfaceContainerHighest,
+                      foregroundColor: theme.colorScheme.onSurfaceVariant,
+                      child: const Icon(Icons.add, size: 18),
+                    ),
+                    title: const Text('Nova subcategoria'),
+                    onTap: () => Navigator.pop(context, PickedCreateSub(c.id)),
                   ),
               ],
               if (q.isEmpty) ...[

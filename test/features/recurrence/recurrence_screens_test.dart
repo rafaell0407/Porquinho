@@ -195,8 +195,61 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('confirmar-parar')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Interrompida'), findsOneWidget);
+    expect(find.textContaining('Todo dia 5'), findsNothing);
   });
+
+  testWidgets(
+    'Apagar despesa recorrente: só este ou apagar e parar de repetir',
+    (tester) async {
+      await service.create(
+        _expense(1000, CalendarDate(2026, 11, 5)),
+        repeat: _monthly,
+      );
+      await pump(tester, const TransactionsWithAdd());
+      final period = (await periods.periodFor(CalendarDate(2026, 11, 10)));
+      final totals = LocalTotalsRepository(db, 'u1');
+      expect((await totals.totalsFor(period)).surplus, BigInt.from(-1000));
+
+      Future<void> openCancel() async {
+        await tester.tap(find.text('Academia').first);
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('acao-cancelar')));
+        await tester.pumpAndSettle();
+      }
+
+      // Diálogo oferece as duas opções; "só este" não para a recorrência.
+      await openCancel();
+      expect(
+        find.byKey(const Key('confirmar-cancelar-e-parar')),
+        findsOneWidget,
+      );
+      await tester.tap(find.byKey(const Key('confirmar-cancelar')));
+      await tester.pumpAndSettle();
+      expect((await totals.totalsFor(period)).surplus, BigInt.zero);
+      Future<int> activeModels() async =>
+          (await db
+                  .customSelect(
+                    'SELECT COUNT(*) AS n FROM expense_recurrence_templates '
+                    'WHERE is_active = 1',
+                  )
+                  .getSingle())
+              .read<int>('n');
+      expect(await activeModels(), 1);
+
+      // "Apagar e parar de repetir": apaga a ocorrência e desativa o modelo.
+      await service.create(
+        _expense(2000, CalendarDate(2026, 11, 6)),
+        repeat: _monthly,
+      );
+      await pump(tester, const TransactionsWithAdd());
+      expect(await activeModels(), 2);
+      await openCancel();
+      await tester.tap(find.byKey(const Key('confirmar-cancelar-e-parar')));
+      await tester.pumpAndSettle();
+      expect((await totals.totalsFor(period)).surplus, BigInt.zero);
+      expect(await activeModels(), 1);
+    },
+  );
 
   testWidgets('Repetir no investimento: sem pagar/vencimento, lista, edita o '
       'valor de um mês e das próximas, para de repetir', (tester) async {
@@ -276,7 +329,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('confirmar-parar')));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Interrompida'), findsOneWidget);
+    expect(find.textContaining('Todo dia 5'), findsNothing);
     expect((await investmentTemplates.templates()).single.isActive, isFalse);
   });
 }

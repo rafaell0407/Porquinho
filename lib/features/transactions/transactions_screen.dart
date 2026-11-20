@@ -753,6 +753,14 @@ String entryStatusLabel(EntryRecord e) {
   return e.isPaid ? 'Paga' : 'Pendente';
 }
 
+/// Abre o mesmo menu de ações de um lançamento da lista (usado também pela
+/// Home, nas receitas a receber).
+Future<void> showEntryActions(
+  BuildContext context,
+  WidgetRef ref,
+  EntryRecord entry,
+) => _EntryTile(entry: entry)._showActions(context, ref);
+
 class _EntryTile extends ConsumerWidget {
   const _EntryTile({required this.entry, this.category, this.subcategory});
 
@@ -1037,29 +1045,73 @@ class _EntryTile extends ConsumerWidget {
   }
 
   Future<void> _cancel(BuildContext context, WidgetRef ref) async {
-    final ok = await showDialog<bool>(
+    final recurring = entry.isRecurring && entry.templateId != null;
+    // null = voltar; false = só este; true = apagar e parar de repetir.
+    final choice = await showDialog<bool?>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Apagar este lançamento?'),
-        content: const Text(
-          'Ele sai do dinheiro livre e some da lista na hora. '
-          'Não é possível desfazer.',
+        content: Text(
+          recurring
+              ? 'Ele sai do dinheiro livre e some da lista na hora. '
+                    'Não é possível desfazer.\n\n'
+                    'Este lançamento se repete todo mês. Você pode apagar só '
+                    'este ou apagar e parar de repetir (nenhum lançamento '
+                    'novo será criado; os outros continuam como estão).'
+              : 'Ele sai do dinheiro livre e some da lista na hora. '
+                    'Não é possível desfazer.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(context),
             child: const Text('Voltar'),
           ),
+          if (recurring)
+            TextButton(
+              key: const Key('confirmar-cancelar-e-parar'),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Apagar e parar de repetir'),
+            ),
           FilledButton(
             key: const Key('confirmar-cancelar'),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Apagar lançamento'),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(recurring ? 'Apagar só este' : 'Apagar lançamento'),
           ),
         ],
       ),
     );
-    if (ok == true && context.mounted) {
+    if (choice == null || !context.mounted) return;
+    if (!choice) {
       await _run(context, ref, (s) => s.cancel(entry));
+      return;
+    }
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final blocked = await ref.read(writeGateProvider).blockedReason();
+      if (blocked != null) {
+        messenger.showSnackBar(SnackBar(content: Text(blocked)));
+        return;
+      }
+      final repo = await ref.read(recurrenceRepositoryProvider.future);
+      final template = await repo.template(entry.kind, entry.templateId!);
+      final entries = await ref.read(entryServiceProvider.future);
+      await entries.cancel(entry);
+      refreshFinanceData(ref);
+      if (template == null) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Lançamento apagado. Não achei a recorrência para parar.',
+            ),
+          ),
+        );
+        return;
+      }
+      final recurrences = await ref.read(recurrenceServiceProvider.future);
+      await recurrences.stop(template);
+      ref.invalidate(recurringTemplatesProvider);
+    } on Object catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 }
