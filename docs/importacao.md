@@ -1,6 +1,6 @@
 # Importação de dados (CSV) — especificação
 
-**Status:** RF030 e RN046–RN055 APROVADOS pelo responsável em 18/11/2026, com as decisões D16–D31 (§18); revisão antes da implementação (18/11/2026) aceita pelo responsável: D32–D36 e ajustes V15–V25. Plano IM0–IM10 aceito (§17). IM0 feita em 18/11/2026. **IM1–IM9 autorizadas pelo responsável em 18/11/2026 e feitas no mesmo dia; IM0–IM9 validadas pelo responsável em 19/11/2026.** Migration aplicada no Supabase local e em `norte-homologacao` (IM10, testes de integração passando em 19/11/2026). Acompanhamento: `pendencias.md` §IM. Ajustes da implementação estão na §19.
+**Status:** RF030 e RN046–RN055 APROVADOS pelo responsável em 18/11/2026, com as decisões D16–D31 (§18); revisão antes da implementação (18/11/2026) aceita pelo responsável: D32–D36 e ajustes V15–V25. Plano IM0–IM10 aceito (§17). IM0 feita em 18/11/2026. **IM1–IM9 autorizadas pelo responsável em 18/11/2026 e feitas no mesmo dia; IM0–IM9 validadas pelo responsável em 19/11/2026.** Migration aplicada no Supabase local e em `norte-homologacao` (IM10, testes de integração passando em 19/11/2026). Acompanhamento: `entregas_fase8.md` §9. Ajustes da implementação estão na §19.
 
 ## 1. Para que serve
 Trazer para o Norte o histórico de lançamentos que o usuário tem em outro lugar (planilha própria, extrato, outro app ou uma exportação do próprio Norte), com revisão antes de gravar e possibilidade de desfazer o que não foi mexido depois.
@@ -183,7 +183,7 @@ Rotas `/importar` e `/importar/<id>`; item novo em Mais. Ao implementar: `mapa_a
 ## 17. Plano de entregas (uma por vez, cada uma para validação)
 | ID | Entrega |
 |---|---|
-| IM0 | Documentação: RF030, RN046–RN055, esta spec, `pendencias.md` §IM — **feita 18/11/2026** |
+| IM0 | Documentação: RF030, RN046–RN055, esta spec, `entregas_fase8.md` §9 — **feita 18/11/2026** |
 | IM1 | Domínio: leitura (encoding, separador, RFC 4180) e formatos do Norte — **feita 18/11/2026** |
 | IM2 | Domínio: colunas, valores, datas, classificação, regras e linhas rejeitadas — **feita 18/11/2026** |
 | IM3 | Domínio: categorias e duplicidades — **feita 18/11/2026** |
@@ -192,7 +192,7 @@ Rotas `/importar` e `/importar/<id>`; item novo em Mais. Ao implementar: `mapa_a
 | IM6 | Servidor: `undo_preview/undo_batch`, testes SQL — **feita 18/11/2026** |
 | IM7 | Dados e aplicação na Web: escolha do arquivo, repositório, blocos, retomada, integração local — **feita 18/11/2026** |
 | IM8 | Telas das etapas 1–9 — **feita 18/11/2026** |
-| IM9 | Processamento, resultado, histórico e desfazer; item em Mais; conferência no navegador — **feita 18/11/2026, exceto a conferência visual no navegador** (compilação Web conferida; ver `pendencias.md` §IM) |
+| IM9 | Processamento, resultado, histórico e desfazer; item em Mais; conferência no navegador — **feita 18/11/2026, exceto a conferência visual no navegador** (compilação Web conferida; ver `entregas_fase8.md` §9) |
 | IM10 | Homologação, só com autorização (R2) |
 
 ## 18. Decisões (aceitas pelo responsável em 18/11/2026)

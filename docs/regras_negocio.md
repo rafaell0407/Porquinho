@@ -18,7 +18,7 @@
 
 ## 2. Períodos de apuração
 
-> **Reestruturação de períodos — APROVADA pelo responsável em 13/11/2026; implementada nas entregas P2–P7 (13/11/2026), aguardando validação** (`pendencias.md` §P). As regras desta seção, RN010, RN014, RN017 e RN036–RN038 descrevem o comportamento do app. Texto superado: histórico do Git (commit `07c9226`).
+> **Reestruturação de períodos — APROVADA pelo responsável em 13/11/2026; implementada nas entregas P2–P7 (13/11/2026) e validada pelo responsável em 18/11/2026** (`entregas_fase8.md` §9). As regras desta seção, RN010, RN014, RN017 e RN036–RN038 descrevem o comportamento do app. Texto superado: histórico do Git (commit `07c9226`).
 
 ### RN001 — Modalidades de período
 
@@ -264,6 +264,8 @@ O usuário pode cancelar qualquer lançamento a qualquer momento, independenteme
 **Retenção (D15, 18/11/2026):** o registro cancelado fica guardado, invisível, por **12 meses contados da última alteração** e depois é apagado fisicamente, no servidor e no aparelho. Exceções, que esperam:
 - **ocorrência de recorrência** (tem modelo): fica guardada enquanto o modelo existir, porque é ela que impede o app de gerar de novo aquele mês (o gerador preenche os meses vazios desde o início do modelo);
 - registro com **conflito de sincronização em aberto** ou com **alteração ainda não enviada** pelo aparelho: espera a resolução.
+
+**Apagar ocorrência de recorrência (19/11/2026, pedido do responsável):** ao apagar um lançamento recorrente (despesa ou receita), o app oferece "Apagar só este" (a recorrência continua) ou "Apagar e parar de repetir" (apaga a ocorrência e desativa o modelo, como "Parar de repetir"; as outras ocorrências continuam como estão).
 
 Excluir a conta apaga tudo na hora (`delete_my_account`). A limpeza não muda nenhum total: o cancelado já não conta.
 

@@ -1,6 +1,6 @@
 # Relatórios (central modular e personalizável) — especificação
 
-**Status:** decisões de produto e arquitetura APROVADAS pelo responsável na discussão de 17/11/2026 (§10) e plano de entregas aprovado (§12). **RL1–RL7 implementadas em 17/11/2026 (autorizadas em sequência), aguardando validação**; homologação pendente de autorização. Requisito: RF025 e `requisitos.md` §13.7 (sem mudança de conteúdo nem de cálculo). Acompanhamento: `pendencias.md` §RL.
+**Status:** decisões de produto e arquitetura APROVADAS pelo responsável na discussão de 17/11/2026 (§10) e plano de entregas aprovado (§12). **RL1–RL7 implementadas em 17/11/2026 e validadas pelo responsável em 18/11/2026**; migration aplicada em homologação (testes passaram em 19/11/2026). Requisito: RF025 e `requisitos.md` §13.7 (sem mudança de conteúdo nem de cálculo). Acompanhamento: `entregas_fase8.md` §9.
 
 ## 1. Para que serve
 Transformar a ferramenta Relatórios numa central em que cada usuário escolhe quais relatórios quer ver, organiza a própria área e acrescenta novos relatórios conforme forem disponibilizados, sem precisar abrir um relatório de cada vez.
