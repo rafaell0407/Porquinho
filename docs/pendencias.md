@@ -1,6 +1,6 @@
 # Pendências, ajustes e melhorias — Norte
 
-Lista-mestra única do que falta. **Atualizado em:** 19/11/2026 (T6 e T12 validados e registrados em `entregas_fase8.md` §9; restos viraram T13 e T14. Antes, limpeza: planos P, GF, RL, IM, X, AT e T10 concluídos foram registrados em `entregas_fase8.md` §9).
+Lista-mestra única do que falta. **Atualizado em:** 20/11/2026 (R1 validado e registrado em `entregas_fase8.md` §9; T15 corrigido e validado; T7 reduzido ao que falta e A9 registrado após testes de borda de período e conferência no emulador; T13 removido: tempo da lista aceito pelo responsável; T6 e T12 validados e registrados em `entregas_fase8.md` §9; resto era o T14, concluído em 21/11/2026. Antes, limpeza: planos P, GF, RL, IM, X, AT e T10 concluídos foram registrados em `entregas_fase8.md` §9).
 Regras: cada item tem ID fixo (não reaproveitar). Concluiu → apagar a linha e registrar na entrega da fase. Achou algo fora da entrega em curso → registrar aqui, não resolver sozinho. Melhorias (M) só com aprovação.
 
 ## D — Decisões abertas (responsável)
@@ -10,9 +10,7 @@ Regras: cada item tem ID fixo (não reaproveitar). Concluiu → apagar a linha e
 | D5 | E-mail Resend / SMTP | Aprovado 12/11/2026; configurar na Entrega 79 (exige domínio). |
 
 ## R — Ações do responsável
-- R1: Validar a Entrega 76 (homologação `norte-homologacao`, exceto SMTP).
-- R2: Autorizar e fornecer referências do Supabase gerenciado nas próximas etapas (nunca agir sem autorização).
-- R3: Rodar `supabase migration up` no local quando houver migration nova.
+- R2: Autorização dada em 21/11/2026 para usar o Supabase gerenciado nas próximas etapas (Entregas 77–79). Falta o responsável fornecer as referências (projeto de produção, URL, chaves por canal seguro, nunca no repositório). Ações irreversíveis ou em produção (`db push`, restauração, apagar dados) continuam sendo confirmadas antes.
 - R4: Roteiro manual de validação da Fase 8 (`entregas_fase8.md` §8).
 - R6: Buscar o nome "Norte" no INPI antes de publicar nas lojas e, se possível, consultar advogado de propriedade intelectual.
 
@@ -24,15 +22,13 @@ Regras: cada item tem ID fixo (não reaproveitar). Concluiu → apagar a linha e
 |---|---|
 | T1 | Processo de promoção homologação → produção; validar grants/RLS/ownership em produção |
 | T2 | Backup, restauração e retenção (Entrega 77) |
-| T3 | Observabilidade (Vector do Supabase local reiniciando) |
+| T3 | Observabilidade. Vector do Supabase local reinicia em loop (diagnosticado em 20/11/2026): tenta ler o Docker por TCP `:2375` em IPv6 e recebe "Network unreachable"; é limitação do ambiente Docker/Windows, sem efeito no app (só a tela de Logs do Studio local fica vazia). Aceito; não afeta a produção. Monitoramento de produção segue na Entrega 79 |
 | T4 | Sincronização ponta a ponta: roteiro manual e rodada contra o hospedado |
 | T5 | Notificações: validação completa no Android 13+ |
-| T7 | Testar no app: ciclos dias 29–31, ano bissexto, repetição com dia útil anterior, troca de configuração, alertas após o fim do período, cinco relatórios |
+| T7 | Feito em 20/11/2026: ciclos 29–31, ano bissexto, troca de configuração e despesa não paga após o fim do período em teste automatizado de ponta a ponta (`test/features/periods/period_edge_totals_test.dart`, 10 casos); repetição com dia útil e alertas já tinham testes; no emulador, ciclo dia 31 (período 31/10–29/11, Home e Lançamentos iguais e iguais ao servidor, configuração devolvida ao dia 20). Falta só: ver os cinco relatórios na tela com ciclo 29–31 e conferir alerta/notificação no aparelho (T5) |
 | T8 | Paridade BRL/datas no Flutter Web × Drift/PostgreSQL |
 | T9 | `flutter test --platform chrome` não carrega nenhum teste nesta máquina (inclusive os antigos: "Connection closed before test suite loaded"); investigar o ambiente. Telas novas (Relatórios, Importação, Apagar todos) não foram conferidas pelo agente no navegador |
-| T11 | A suíte de integração completa em homologação roda os arquivos ao mesmo tempo; com a importação de 20 mil linhas junto, testes curtos passam de 30 s. Opção: rodar a importação e o volume separados (ou `-j 1`) |
-| T13 | Lista de lançamentos de 1 mês na Web acima da meta de 1 s com muito dado: 1.322 ms com 100 mil lançamentos em `norte-homologacao` (cerca de 830 linhas do mês trazidas de uma vez; 970 ms com 20 mil antes das 3 consultas em paralelo). Decidir a correção: pedir só as colunas usadas e/ou paginar a lista. Sobrou do T6 (validado em 19/11/2026) |
-| T14 | Limite de 120 s do `delete_my_account` (migration `20261119000300_delete_account_timeout.sql`) aplicado só no Supabase local. Falta: aplicar em `norte-homologacao` (precisa de autorização do responsável), repetir a medição com 100 mil e conferir se "Apagar todos os lançamentos" (RF031) tem o mesmo limite com esse volume. Ressalva: se o gateway da nuvem cortar a chamada antes de 120 s, a exclusão pode seguir no servidor sem o app saber. Sobrou do T12 (validado em 19/11/2026) |
+| T11 | A suíte de integração completa em homologação roda os arquivos ao mesmo tempo; com a importação de 20 mil linhas junto, testes curtos passam de 30 s. Opção: rodar a importação e o volume separados (ou `-j 1`). Confirmado em 20/11/2026: `parity_test.dart` estourou os 5 min na rodada completa e passou isolado em 4min19 com `-Defines "--timeout=15m"` em `tooling/test_integration_homolog.ps1` |
 
 ## A — Ajustes e lacunas conhecidas (comportamento atual a corrigir ou aceito)
 | ID | Item | Situação |

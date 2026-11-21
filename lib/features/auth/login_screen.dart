@@ -26,6 +26,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   final _formKey = GlobalKey<FormState>();
   final _email = TextEditingController();
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   bool _creating = false;
   bool _busy = false;
   bool _hidePassword = true;
@@ -73,6 +74,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _returnTimer?.cancel();
     _email.dispose();
     _password.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -341,7 +343,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
           TextFormField(
             controller: _password,
             obscureText: _hidePassword,
-            textInputAction: TextInputAction.done,
+            textInputAction: _creating
+                ? TextInputAction.next
+                : TextInputAction.done,
             autofillHints: [
               _creating ? AutofillHints.newPassword : AutofillHints.password,
             ],
@@ -367,8 +371,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             ),
             validator: (v) =>
                 (v == null || v.isEmpty) ? 'Informe a senha.' : null,
-            onFieldSubmitted: (_) => _busy ? null : _submit(),
+            onFieldSubmitted: (_) => _creating || _busy ? null : _submit(),
           ),
+          if (_creating) ...[
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _confirmPassword,
+              obscureText: _hidePassword,
+              textInputAction: TextInputAction.done,
+              autofillHints: const [AutofillHints.newPassword],
+              style: TextStyle(fontSize: 16, color: scheme.onSurface),
+              decoration: _fieldDecoration(
+                context,
+                label: 'Repita a senha',
+                icon: Icons.lock_outline_rounded,
+              ),
+              validator: (v) =>
+                  v != _password.text ? 'As senhas não são iguais.' : null,
+              onFieldSubmitted: (_) => _busy ? null : _submit(),
+            ),
+          ],
           const SizedBox(height: 16),
           if (_blockedCount > 0)
             _message(
@@ -481,6 +503,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     ? null
                     : () => setState(() {
                         _creating = !_creating;
+                        _confirmPassword.clear();
                         _error = null;
                         _info = null;
                       }),

@@ -6,7 +6,7 @@
 - Fases 1–7: CONCLUÍDAS e validadas (detalhe em `historico/`).
 - **Fase 8** (sincronização completa, qualidade e publicação — `entregas_fase8.md`): EM EXECUÇÃO.
   - Validadas: 69–74 e 75 parcial (falta D1).
-  - 76: feita exceto SMTP, aguardando validação (homologação `norte-homologacao`, 19 migrations, 33 testes de integração passando).
+  - 76: feita e validada em 20/11/2026, exceto SMTP (homologação `norte-homologacao`, 32 migrations, 44 testes de integração passando; login com e-mail e Google e isolamento conferidos no emulador).
   - Restam: 75 final, 77–82 (ver `pendencias.md` §E).
 - Plataformas: Android (offline) e Web (somente online). iOS fora do MVP.
 

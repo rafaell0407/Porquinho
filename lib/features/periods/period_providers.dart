@@ -25,7 +25,12 @@ final userClockProvider = Provider<UserClock>((ref) => const UserClock());
 /// Banco local aberto; `null` na Web.
 final localDatabaseProvider = FutureProvider<PorquinhoDatabase?>((ref) async {
   final manager = ref.watch(localDatabaseManagerProvider);
-  return manager?.open();
+  if (manager == null) return null;
+  // Depois de sair da conta o banco é fechado e apagado: refaz a conexão para
+  // o próximo login não usar a antiga, já fechada (T15).
+  final sub = manager.wiped.listen((_) => ref.invalidateSelf());
+  ref.onDispose(sub.cancel);
+  return manager.open();
 });
 
 final remoteTableReaderProvider = Provider<RemoteTableReader>(

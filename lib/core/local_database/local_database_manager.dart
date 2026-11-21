@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:sqlite3/common.dart' show SqliteException;
@@ -101,5 +102,12 @@ class LocalDatabaseManager {
     _opening = null;
     await LocalDataCleaner(_store, databasePath: path).wipe();
     await _store.delete(ownerEntryName);
+    _wiped.add(null);
   }
+
+  final _wiped = StreamController<void>.broadcast(sync: true);
+
+  /// Avisa quando o banco foi fechado e apagado. Quem guardou a conexão
+  /// anterior (ex.: providers) deve descartá-la: ela não abre de novo (T15).
+  Stream<void> get wiped => _wiped.stream;
 }

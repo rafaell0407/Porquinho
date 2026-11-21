@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../app/theme/norte_theme.dart';
 import '../../../core/domain/money.dart';
-import '../../../shared/main_shell.dart' show NorteNavBar;
 import '../../tools/registry/tool_registry.dart' show cardBillsTool;
 import '../../tools/widgets/tool_explanation.dart' show showToolInfoSheet;
-import '../../transactions/transactions_screen.dart' show showNewEntryChooser;
 import '../application/card_bills_providers.dart';
 import '../application/card_bills_service.dart';
 import '../card_bills_texts.dart';
@@ -54,11 +51,6 @@ class CardBillsScreen extends ConsumerWidget {
               onPressed: () => _showAddMenu(context, hasCards),
             ),
         ],
-      ),
-      bottomNavigationBar: NorteNavBar(
-        currentIndex: 1,
-        onTab: (i) => context.go(NorteNavBar.tabRoutes[i]),
-        onAdd: () => showNewEntryChooser(context, ref),
       ),
       body: snapshot.when(
         loading: () => const Center(child: CircularProgressIndicator()),

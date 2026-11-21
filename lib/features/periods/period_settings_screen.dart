@@ -47,11 +47,14 @@ class _PeriodSettingsScreenState extends ConsumerState<PeriodSettingsScreen> {
     try {
       final service = await ref.read(periodServiceProvider.future);
       await service.change(config);
-      ref.invalidate(periodSettingsProvider);
+      // Espera a configuração nova antes de redesenhar; com invalidate a tela
+      // reaproveitava o valor antigo em cache (A9).
+      final fresh = await ref.refresh(periodSettingsProvider.future);
       refreshFinanceData(ref);
       if (mounted) {
         setState(() {
-          _mode = null; // volta a ler o estado salvo
+          _mode = fresh?.mode ?? config.mode;
+          _day = fresh?.customStartDay ?? config.customStartDay ?? 1;
           _saving = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
