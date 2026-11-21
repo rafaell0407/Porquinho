@@ -21,7 +21,7 @@ Regras: cada item tem ID fixo (não reaproveitar). Concluiu → apagar a linha e
 | ID | Item |
 |---|---|
 | T1 | Processo de promoção homologação → produção; validar grants/RLS/ownership em produção |
-| T2 | Backup, restauração e retenção (Entrega 77) |
+| T2 | Backup (Entrega 77): material pronto e ensaiado no Supabase local (`docs/backup.md`). Falta o responsável montar o repositório privado e os segredos e rodar a 1ª vez contra produção |
 | T3 | Observabilidade. Vector do Supabase local reinicia em loop (diagnosticado em 20/11/2026): tenta ler o Docker por TCP `:2375` em IPv6 e recebe "Network unreachable"; é limitação do ambiente Docker/Windows, sem efeito no app (só a tela de Logs do Studio local fica vazia). Aceito; não afeta a produção. Monitoramento de produção segue na Entrega 79 |
 | T4 | Sincronização ponta a ponta: roteiro manual e rodada contra o hospedado |
 | T5 | Notificações: validação completa no Android 13+ |

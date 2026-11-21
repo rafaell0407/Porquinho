@@ -1,0 +1,73 @@
+# Entrega 77 (D8): backup diário do Supabase de produção.
+# Este arquivo NÃO roda neste repositório. Copie-o para o repositório PRIVADO de
+# backup, em `.github/workflows/backup.yml` (passo a passo em docs/backup.md).
+#
+# Segredos necessários no repositório privado (Settings → Secrets → Actions):
+#   BACKUP_DATABASE_URL  string de conexão "Session pooler" do projeto de produção
+#                        (o endereço direto do Supabase é só IPv6 e o GitHub não alcança)
+#   BACKUP_PASSPHRASE    frase longa e aleatória que cifra o arquivo. Guarde uma cópia
+#                        FORA do GitHub (gerenciador de senhas): sem ela o backup não abre.
+name: backup-diario
+
+on:
+  schedule:
+    - cron: '0 6 * * *' # 06:00 UTC = 03:00 em Brasília
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Instalar o cliente PostgreSQL 17
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -q
+          sudo apt-get install -y -q postgresql-client-17
+
+      - name: Gerar o dump (esquemas public, auth e histórico de migrations)
+        env:
+          DATABASE_URL: ${{ secrets.BACKUP_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          stamp=$(date -u +%Y%m%d-%H%M)
+          echo "STAMP=$stamp" >> "$GITHUB_ENV"
+          /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" \
+            --format=custom --no-owner --no-privileges \
+            --schema=public --schema=auth --schema=supabase_migrations \
+            --file="norte-$stamp.dump"
+
+      - name: Conferir o dump (lista legível e tamanho mínimo)
+        run: |
+          set -euo pipefail
+          lista=$(/usr/lib/postgresql/17/bin/pg_restore --list "norte-$STAMP.dump")
+          echo "$lista" | grep -q 'TABLE DATA public expense_entries' || { echo 'dump sem despesas'; exit 1; }
+          echo "$lista" | grep -q 'TABLE DATA auth users' || { echo 'dump sem usuários'; exit 1; }
+          echo "$lista" | grep -q 'TABLE DATA public deleted_accounts' || { echo 'dump sem deleted_accounts'; exit 1; }
+          ls -l "norte-$STAMP.dump"
+
+      - name: Cifrar (AES-256) e apagar o arquivo aberto
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$BACKUP_PASSPHRASE" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --symmetric --cipher-algo AES256 \
+            --output "norte-$STAMP.dump.gpg" "norte-$STAMP.dump"
+          rm -f "norte-$STAMP.dump"
+          sha256sum "norte-$STAMP.dump.gpg" | tee "norte-$STAMP.dump.gpg.sha256"
+
+      - name: Guardar por 30 dias
+        uses: actions/upload-artifact@v4
+        with:
+          name: norte-${{ env.STAMP }}
+          path: |
+            norte-${{ env.STAMP }}.dump.gpg
+            norte-${{ env.STAMP }}.dump.gpg.sha256
+          retention-days: 30
+          if-no-files-found: error
