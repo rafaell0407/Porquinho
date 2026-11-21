@@ -1,18 +1,15 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:porquinho/core/domain/calendar_date.dart';
 import 'package:porquinho/features/cash_or_installments/domain/cash_or_installments_engine.dart';
 
+import '../../fixtures/fixture_text.dart';
+
 /// Tabela de casos gerada pela referência independente
 /// (`tooling/a_vista_ou_parcelado_referencia.py`). Não editar à mão.
 Map<String, dynamic> loadCashOrInstallmentsFixture() =>
-    jsonDecode(
-          File(
-            'test/fixtures/cash_or_installments_cases.json',
-          ).readAsStringSync(),
-        )
+    jsonDecode(readFixture('test/fixtures/cash_or_installments_cases.json'))
         as Map<String, dynamic>;
 
 BigInt fixtureCents(Object? v) => BigInt.from(v! as int);

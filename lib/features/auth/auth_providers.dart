@@ -48,12 +48,13 @@ final sessionControllerProvider = Provider<SessionController>((ref) {
     ref.watch(pendingSyncCounterProvider),
     flushPending: ref.watch(syncNowProvider),
     binder: manager == null ? null : ManagedLocalOwnerBinder(manager),
+    // Sem sessão, por qualquer motivo (inclusive sessão recusada pelo
+    // servidor): os alertas agendados não podem continuar avisando (A9).
+    onNoSession: () => ref.read(alertSchedulerProvider).cancelAll(),
     // Logout só chega aqui sem pendências: apaga banco, chave e PIN locais.
     onSignedOut: manager == null
         ? null
         : (_) async {
-            // Os alertas agendados pertencem ao usuário que saiu.
-            await ref.read(alertSchedulerProvider).cancelAll();
             await manager.closeAndWipe();
             await lock.clear();
           },

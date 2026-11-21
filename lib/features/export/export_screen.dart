@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/exact_money_columns.dart';
 import '../../core/infra_providers.dart';
 import 'csv_export.dart';
 import 'file_download.dart';
@@ -23,10 +24,12 @@ class SupabaseExportSource implements ExportSource {
     for (var from = 0; ; from += pageSize) {
       final page = await _client
           .from(table)
-          .select()
+          .select(exactSelect(table))
           .order('id', ascending: true)
           .range(from, from + pageSize - 1);
-      rows.addAll(page.map((r) => Map<String, dynamic>.from(r)));
+      rows.addAll(
+        page.map((r) => applyExactMoney(table, Map<String, dynamic>.from(r))),
+      );
       if (page.length < pageSize) return rows;
     }
   }

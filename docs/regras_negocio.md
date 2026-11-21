@@ -425,7 +425,7 @@ O usuário pode registrar receitas e despesas sem categoria. Nos relatórios por
 
 ### RN045 — Moeda, escala e sinal dos valores
 
-Todos os valores financeiros do MVP são denominados em BRL e representados em centavos. Entradas aceitam até duas casas decimais; casas excedentes e valores negativos são rejeitados, sem arredondamento implícito. Valor zero é permitido. Nenhum limite de produto foi definido. Em 09/11/2026 o responsável validou o schema físico PostgreSQL `BIGINT` assinado de 64 bits por valor individual e a estratégia local/Web de exatidão (`BigInt`, texto decimal e protocolo em string). Drift grava e lê valores exatos no SQLite nativo; a validação Web continua pendente.
+Todos os valores financeiros do MVP são denominados em BRL e representados em centavos. Entradas aceitam até duas casas decimais; casas excedentes e valores negativos são rejeitados, sem arredondamento implícito. Valor zero é permitido. Nenhum limite de produto foi definido. Em 09/11/2026 o responsável validou o schema físico PostgreSQL `BIGINT` assinado de 64 bits por valor individual e a estratégia local/Web de exatidão (`BigInt`, texto decimal e protocolo em string). Drift grava e lê valores exatos no SQLite nativo; a Web lê e mostra valores exatos, recebendo do servidor os valores em texto (validado pelo responsável em 21/11/2026, T8).
 
 **Status:** APROVADO — decisão do responsável pelo produto em 08/11/2026.
 

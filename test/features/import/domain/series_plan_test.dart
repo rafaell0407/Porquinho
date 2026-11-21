@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:porquinho/core/domain/calendar_date.dart';
@@ -16,6 +15,8 @@ import 'package:porquinho/features/import/domain/import_plan.dart';
 import 'package:porquinho/features/import/domain/series_detection.dart';
 import 'package:porquinho/features/import/domain/text_decoding.dart';
 import 'package:porquinho/features/import/domain/value_parsing.dart';
+
+import '../../../fixtures/fixture_text.dart';
 
 final today = CalendarDate(2026, 11, 18);
 
@@ -291,11 +292,7 @@ void main() {
 
     test('mesma data da tabela de casos do servidor', () {
       final json =
-          jsonDecode(
-                File(
-                  'test/fixtures/monthly_recurrence_cases.json',
-                ).readAsStringSync(),
-              )
+          jsonDecode(readFixture('test/fixtures/monthly_recurrence_cases.json'))
               as Map<String, dynamic>;
       var checked = 0;
       for (final c in (json['cases'] as List).cast<Map<String, dynamic>>()) {

@@ -24,9 +24,14 @@ class ReportScope extends InheritedWidget {
       oldWidget.definition.id != definition.id;
 }
 
-/// Participação em pontos-base (1/100 de %) como "12,3%" (truncado).
+/// Participação em pontos-base (1/100 de %) como "12,3%", arredondada na
+/// 1ª casa com meio para cima (A10, 21/11/2026: 88,79% → "88,8%").
+///
+/// [basisPoints] já vem truncado (`CategoryBreakdown.basisPoints`); como o
+/// ponto de meio cai sempre num ponto-base inteiro, arredondar a partir dele
+/// dá o mesmo resultado que arredondar o valor exato.
 String formatPercent(int basisPoints) {
-  final tenths = basisPoints ~/ 10;
+  final tenths = (basisPoints + 5) ~/ 10;
   return '${tenths ~/ 10},${tenths % 10}%';
 }
 

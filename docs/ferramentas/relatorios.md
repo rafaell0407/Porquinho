@@ -56,6 +56,7 @@ Transformar a ferramenta Relatórios numa central em que cada usuário escolhe q
 | 5. Comparativo | Os três totais do período; barra dividida proporcional entre os três | Gráfico agrupado da sequência + legenda | Gráfico + cartão por período com dinheiro livre (como hoje) |
 
 Regras:
+- Percentual das categorias (relatórios 1 e 2): uma casa decimal, arredondada com meio para cima (88,79% → 88,8%; 12,35% → 12,4%); só exibição, os valores seguem em centavos (A10, decidido pelo responsável em 21/11/2026).
 - Período sem lançamentos: o compacto mostra a frase de vazio atual (ex.: "Nenhuma receita recebida neste período."), nunca gráfico zerado.
 - Gráficos usam `double` só para desenhar; todo valor escrito vem dos centavos exatos.
 - "+N categorias" e a parte "demais" da barra do compacto **não mostram soma nova** (só desenho).

@@ -26,7 +26,7 @@ Fonte de verdade: `requisitos.md` (escopo) e `regras_negocio.md` (financeiro) pr
 ## 2. Comandos (Windows / PowerShell)
 - `flutter pub get` · `dart run build_runner build --delete-conflicting-outputs`
 - `dart format lib test` · `flutter analyze`
-- `flutter test [arquivo]` · Web: `flutter test --platform chrome`
+- `flutter test [arquivo]` · Web: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tooling/test_web.ps1 [arquivos]` (exige `tooling/flutter_web_test_t9.patch` no Flutter local) · paridade Web × servidor: `tooling/test_web_parity.ps1`
 - PostgreSQL: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File tooling/test_postgres_schema.ps1`
 - Supabase local: `supabase start` / `supabase status`
 

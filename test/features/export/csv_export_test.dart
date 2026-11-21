@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -171,11 +172,16 @@ void main() {
     expect(csvField('linha\nnova'), '"linha\nnova"');
   });
 
-  testWidgets('no celular a tela orienta a usar a Web', (tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: ExportScreen())),
-    );
-    expect(find.byKey(const Key('exportar-so-web')), findsOneWidget);
-    expect(find.byKey(const Key('exportar-receitas')), findsNothing);
-  });
+  testWidgets(
+    'no celular a tela orienta a usar a Web',
+    (tester) async {
+      await tester.pumpWidget(
+        const ProviderScope(child: MaterialApp(home: ExportScreen())),
+      );
+      expect(find.byKey(const Key('exportar-so-web')), findsOneWidget);
+      expect(find.byKey(const Key('exportar-receitas')), findsNothing);
+    },
+    // Na Web a tela mostra a exportação de verdade; o caso é só do celular.
+    skip: kIsWeb,
+  );
 }

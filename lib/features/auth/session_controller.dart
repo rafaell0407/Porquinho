@@ -33,10 +33,19 @@ class SessionController {
     this._pending, {
     Future<void> Function(String ownerId)? onSignedOut,
     Future<void> Function(String ownerId)? flushPending,
+    Future<void> Function()? onNoSession,
     LocalOwnerBinder? binder,
   }) : _onSignedOut = onSignedOut,
        _flushPending = flushPending,
+       _onNoSession = onNoSession,
        _binder = binder;
+
+  /// Chamado sempre que o app fica sem sessão, por qualquer motivo (logout,
+  /// conta excluída, sessão recusada pelo servidor, nenhuma sessão ao abrir).
+  /// Ao contrário de [_onSignedOut], não apaga dados locais: serve para o que
+  /// não pode continuar sem conta, como os alertas agendados (RF023).
+  /// Falhas são ignoradas.
+  final Future<void> Function()? _onNoSession;
 
   final AuthRepository _auth;
   final PendingSyncCounter _pending;
@@ -157,6 +166,7 @@ class SessionController {
   Future<void> _setUser(AuthUser? user) async {
     if (user == null) {
       _recoveryPending = false;
+      await _endedWithoutSession();
       _emit(SessionSignedOut(blockedPendingCount: _blockedPending));
       return;
     }
@@ -173,6 +183,7 @@ class SessionController {
           // Mesmo sem encerrar a sessão remota, a área logada não abre.
         }
         _recoveryPending = false;
+        await _endedWithoutSession();
         _emit(SessionSignedOut(blockedPendingCount: _blockedPending));
         return;
       }
@@ -185,6 +196,14 @@ class SessionController {
       _emit(SessionPasswordRecovery(user));
     } else {
       _emit(SessionSignedIn(user));
+    }
+  }
+
+  Future<void> _endedWithoutSession() async {
+    try {
+      await _onNoSession?.call();
+    } on Object {
+      // Nunca impede a saída da área logada.
     }
   }
 

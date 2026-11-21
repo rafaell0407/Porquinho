@@ -14,25 +14,74 @@ String _label(SeriesItem item) {
   return start.length >= 5 ? start.substring(0, 5) : start;
 }
 
-FlTitlesData _titles(List<SeriesItem> items, TextStyle? style) => FlTitlesData(
-  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-  leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-  bottomTitles: AxisTitles(
-    sideTitles: SideTitles(
-      showTitles: true,
-      reservedSize: 28,
-      getTitlesWidget: (value, meta) {
-        final i = value.toInt();
-        if (i < 0 || i >= items.length) return const SizedBox.shrink();
-        return Padding(
-          padding: const EdgeInsets.only(top: 6),
-          child: Text(_label(items[i]), style: style),
-        );
-      },
+/// Espaço mínimo entre dois rótulos do eixo, em pixels lógicos.
+const double _labelGap = 8;
+
+/// De quantos em quantos períodos mostrar rótulo no eixo (A8): 1 mostra
+/// todos; 2 mostra um sim, outro não; e assim por diante. Calculado pela
+/// largura disponível, para que os rótulos nunca fiquem colados.
+@visibleForTesting
+int axisLabelStep({
+  required int count,
+  required double width,
+  required double labelWidth,
+}) {
+  if (count <= 1 || width <= 0 || !width.isFinite) return 1;
+  final slot = width / count;
+  final step = ((labelWidth + _labelGap) / slot).ceil();
+  return step < 1 ? 1 : step;
+}
+
+/// Se o rótulo do índice [i] aparece. Conta a partir do período mais
+/// recente (à direita), que sempre tem rótulo.
+@visibleForTesting
+bool showAxisLabel(int i, int count, int step) => (count - 1 - i) % step == 0;
+
+double _labelWidth(TextStyle? style, TextScaler scaler) {
+  final painter = TextPainter(
+    text: TextSpan(text: '00/00', style: style),
+    textDirection: TextDirection.ltr,
+    textScaler: scaler,
+  )..layout();
+  final w = painter.width;
+  painter.dispose();
+  return w;
+}
+
+FlTitlesData _titles(
+  BuildContext context,
+  List<SeriesItem> items,
+  TextStyle? style,
+  double width,
+) {
+  final step = axisLabelStep(
+    count: items.length,
+    width: width,
+    labelWidth: _labelWidth(style, MediaQuery.textScalerOf(context)),
+  );
+  return FlTitlesData(
+    topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+    bottomTitles: AxisTitles(
+      sideTitles: SideTitles(
+        showTitles: true,
+        reservedSize: 28,
+        getTitlesWidget: (value, meta) {
+          final i = value.toInt();
+          if (i < 0 || i >= items.length) return const SizedBox.shrink();
+          if (!showAxisLabel(i, items.length, step)) {
+            return const SizedBox.shrink();
+          }
+          return Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(_label(items[i]), style: style),
+          );
+        },
+      ),
     ),
-  ),
-);
+  );
+}
 
 /// Uma barra por período (mais antigo à esquerda) com o valor de [valueOf].
 /// Negativos na cor de erro.
@@ -57,35 +106,37 @@ class SeriesBarChart extends StatelessWidget {
     final small = Theme.of(context).textTheme.labelSmall;
     return SizedBox(
       height: height,
-      child: BarChart(
-        BarChartData(
-          titlesData: _titles(items, small),
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
-          barTouchData: BarTouchData(
-            touchTooltipData: BarTouchTooltipData(
-              getTooltipItem: (group, _, rod, _) => BarTooltipItem(
-                formatBrl(valueOf(items[group.x])),
-                TextStyle(color: scheme.onInverseSurface),
+      child: LayoutBuilder(
+        builder: (context, box) => BarChart(
+          BarChartData(
+            titlesData: _titles(context, items, small, box.maxWidth),
+            gridData: const FlGridData(show: false),
+            borderData: FlBorderData(show: false),
+            barTouchData: BarTouchData(
+              touchTooltipData: BarTouchTooltipData(
+                getTooltipItem: (group, _, rod, _) => BarTooltipItem(
+                  formatBrl(valueOf(items[group.x])),
+                  TextStyle(color: scheme.onInverseSurface),
+                ),
               ),
             ),
+            barGroups: [
+              for (var i = 0; i < items.length; i++)
+                BarChartGroupData(
+                  x: i,
+                  barRods: [
+                    BarChartRodData(
+                      toY: _reais(valueOf(items[i])),
+                      color: valueOf(items[i]).isNegative
+                          ? scheme.error
+                          : color ?? scheme.primary,
+                      width: 14,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ],
+                ),
+            ],
           ),
-          barGroups: [
-            for (var i = 0; i < items.length; i++)
-              BarChartGroupData(
-                x: i,
-                barRods: [
-                  BarChartRodData(
-                    toY: _reais(valueOf(items[i])),
-                    color: valueOf(items[i]).isNegative
-                        ? scheme.error
-                        : color ?? scheme.primary,
-                    width: 14,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ],
-              ),
-          ],
         ),
       ),
     );
@@ -142,43 +193,45 @@ class ComparisonChart extends StatelessWidget {
         const SizedBox(height: 8),
         SizedBox(
           height: 200,
-          child: BarChart(
-            BarChartData(
-              titlesData: _titles(items, small),
-              gridData: const FlGridData(show: false),
-              borderData: FlBorderData(show: false),
-              barTouchData: BarTouchData(
-                touchTooltipData: BarTouchTooltipData(
-                  getTooltipItem: (group, _, rod, rodIndex) {
-                    final t = items[group.x].totals;
-                    final v = [t.income, t.expense, t.investment][rodIndex];
-                    return BarTooltipItem(
-                      '${names[rodIndex]}\n${formatBrl(v)}',
-                      TextStyle(color: scheme.onInverseSurface),
-                    );
-                  },
-                ),
-              ),
-              barGroups: [
-                for (var i = 0; i < items.length; i++)
-                  BarChartGroupData(
-                    x: i,
-                    barsSpace: 2,
-                    barRods: [
-                      for (final (j, v) in [
-                        items[i].totals.income,
-                        items[i].totals.expense,
-                        items[i].totals.investment,
-                      ].indexed)
-                        BarChartRodData(
-                          toY: _reais(v),
-                          color: colors[j],
-                          width: 6,
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                    ],
+          child: LayoutBuilder(
+            builder: (context, box) => BarChart(
+              BarChartData(
+                titlesData: _titles(context, items, small, box.maxWidth),
+                gridData: const FlGridData(show: false),
+                borderData: FlBorderData(show: false),
+                barTouchData: BarTouchData(
+                  touchTooltipData: BarTouchTooltipData(
+                    getTooltipItem: (group, _, rod, rodIndex) {
+                      final t = items[group.x].totals;
+                      final v = [t.income, t.expense, t.investment][rodIndex];
+                      return BarTooltipItem(
+                        '${names[rodIndex]}\n${formatBrl(v)}',
+                        TextStyle(color: scheme.onInverseSurface),
+                      );
+                    },
                   ),
-              ],
+                ),
+                barGroups: [
+                  for (var i = 0; i < items.length; i++)
+                    BarChartGroupData(
+                      x: i,
+                      barsSpace: 2,
+                      barRods: [
+                        for (final (j, v) in [
+                          items[i].totals.income,
+                          items[i].totals.expense,
+                          items[i].totals.investment,
+                        ].indexed)
+                          BarChartRodData(
+                            toY: _reais(v),
+                            color: colors[j],
+                            width: 6,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                      ],
+                    ),
+                ],
+              ),
             ),
           ),
         ),

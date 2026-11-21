@@ -1,12 +1,12 @@
-@TestOn('vm')
-library;
-
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:porquinho/core/domain/calendar_date.dart';
 import 'package:porquinho/core/domain/recurrence_schedule.dart';
+
+import '../../fixtures/fixture_text.dart';
 
 CalendarDate d(String iso) => CalendarDate.parse(iso);
 
@@ -130,11 +130,7 @@ void main() {
     'tabela única de casos (test/fixtures/monthly_recurrence_cases.json)',
     () {
       final json =
-          jsonDecode(
-                File(
-                  'test/fixtures/monthly_recurrence_cases.json',
-                ).readAsStringSync(),
-              )
+          jsonDecode(readFixture('test/fixtures/monthly_recurrence_cases.json'))
               as Map<String, dynamic>;
       final cases = (json['cases'] as List).cast<Map<String, dynamic>>();
 
@@ -151,7 +147,8 @@ void main() {
             ),
           );
         }
-      });
+        // Lê o SQL do disco: só no celular/VM (os casos rodam nos dois).
+      }, skip: kIsWeb);
 
       for (final c in cases) {
         test('${c['year']}-${c['month']} dia ${c['day']}', () {

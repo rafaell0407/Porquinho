@@ -10,6 +10,22 @@
   - Restam: 75 final, 77–82 (ver `pendencias.md` §E).
 - Plataformas: Android (offline) e Web (somente online). iOS fora do MVP.
 
+## T8 — paridade de BRL e datas na Web (21/11/2026) — validado pelo responsável em 21/11/2026 (registro em `entregas_fase8.md` §9; RN045 atualizada)
+- **Achado e corrigido:** na Web, valores lidos direto das tabelas acima de 2^53 centavos (≈ R$ 90 trilhões) mudavam no navegador (lista, investimentos, recorrências, exportação, conflitos). Agora chegam em texto, exatos. Totais e dinheiro livre já eram exatos (servidor soma e devolve texto). Datas não dependem do fuso do navegador.
+- **Testes:** `tooling/test_web_parity.ps1` passando no Chrome contra o Supabase local; suíte Web (`tooling/test_web.ps1`) 56 arquivos, 1.337 passando; no celular/VM 1.307 passando nas partes afetadas; `flutter analyze` sem problemas. Detalhe em `pendencias.md` T8.
+
+## T7 e T9 (21/11/2026) — T7 e A10 validados pelo responsável em 21/11/2026; T9 validado pelo responsável em 21/11/2026
+- **T7 concluído e validado:** no emulador, com conta de teste local em ciclo dia 31 e 12 meses de lançamentos nos dias 29–31, os cinco relatórios e a tela completa do relatório 4 batem com o servidor em todos os períodos. Os alertas agendados no aparelho batem com a RN018/RN041. Achado A10: o percentual dos relatórios 1 e 2 era cortado. O responsável decidiu arredondar e isso já foi feito (88,79% → 88,8%), com testes passando. Registro em `entregas_fase8.md` §9.
+- **T9 resolvido e validado (registro em `entregas_fase8.md` §9):** os testes voltam a rodar no Chrome (`tooling/test_web.ps1`: 48 arquivos, 445 passando, 1 pulado de propósito). Eram três defeitos do Flutter 3.47.9 no Windows, corrigidos no Flutter desta máquina (`tooling/flutter_web_test_t9.patch`, reaplicar após `flutter upgrade` se preciso). No projeto, só ajustes de teste, sem mudança no app. Detalhe em `pendencias.md` T9; T8 desbloqueado.
+
+## T5 e A9 — notificações (21/11/2026) — validados pelo responsável
+- **T5 validado pelo responsável em 21/11/2026** (registro em `entregas_fase8.md` §9). No emulador (Android 16): permissão pedida ao abrir; negar não quebra nada; avisos às 9h de Brasília; notificação real na barra sem valores; avisos recriados após religar; pagar remove os avisos da despesa.
+- **A9 corrigido e validado pelo responsável em 21/11/2026:** quando a sessão cai sozinha (renovação recusada, conta removida), o app agora apaga os avisos agendados, sem apagar os dados locais (`session_controller.dart`, `onNoSession`). Conferido no emulador (30 → 0). Testes: `test/features/auth`, `app_lock` e `alerts` passando, exceto T16 (falha antiga, sem relação).
+- Conta de teste local para alertas: `t5-alertas@teste.local`.
+
+## A8 — rótulos do eixo nos Relatórios (21/11/2026) — validado pelo responsável em 21/11/2026
+Gráficos de evolução (relatórios 4 e 5 e mini-gráficos) calculam pela largura disponível de quantos em quantos períodos mostrar a data: com espaço, todas; no celular com 11–12 períodos, uma sim, outra não (a do período mais recente sempre aparece). Tocar na barra continua mostrando o valor. Sem mudança de regra, banco ou rotas. Testes: `series_chart_labels_test.dart` e pasta `test/features/reports` passando.
+
 ## Renovação visual (12/11/2026)
 Direção aprovada: Menta (cor) + Inter (fonte), claro e escuro, categorias com ícone e cor. Página de referência: https://claude.ai/artifact/3fe4gLefj1U3voHDRq6cA6 (privada).
 - **V1–V5 feitas (12/11/2026), validadas pelo responsável em 18/11/2026:**

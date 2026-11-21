@@ -1,7 +1,5 @@
-// ignore_for_file: avoid_relative_lib_imports
 import 'package:flutter_test/flutter_test.dart';
-
-import '../../../lib/core/local_database/database_key.dart';
+import 'package:porquinho/core/local_database/database_key.dart';
 
 void main() {
   const valid =

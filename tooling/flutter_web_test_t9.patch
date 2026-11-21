@@ -1,0 +1,40 @@
+diff --git a/packages/flutter_tools/lib/src/test/flutter_web_platform.dart b/packages/flutter_tools/lib/src/test/flutter_web_platform.dart
+index 1782f62060f..ccb472c5e0b 100644
+--- a/packages/flutter_tools/lib/src/test/flutter_web_platform.dart
++++ b/packages/flutter_tools/lib/src/test/flutter_web_platform.dart
+@@ -516,7 +516,10 @@ window.\$dartLoader.loader.nextAttempt();
+   /// Serves a local build of CanvasKit, replacing the CDN build, which can
+   /// cause test flakiness due to reliance on network.
+   shelf.Response _localCanvasKitHandler(shelf.Request request) {
+-    final String fullPath = _fileSystem.path.fromUri(request.url);
++    // Correção local (Norte, T9, 21/11/2026): no Windows `path.fromUri` usa
++    // barra invertida e o teste abaixo nunca casava (canvaskit 404). Mesma
++    // causa de flutter/flutter#193505, já corrigida no master.
++    final String fullPath = request.url.path;
+     if (!fullPath.startsWith('canvaskit/')) {
+       return shelf.Response.notFound('Not a CanvasKit file request');
+     }
+@@ -565,7 +568,10 @@ window.\$dartLoader.loader.nextAttempt();
+   shelf.Response _wrapperHandler(shelf.Request request) {
+     final String path = _fileSystem.path.fromUri(request.url);
+     if (path.endsWith('.html')) {
+-      final test = '${_fileSystem.path.withoutExtension(path)}.dart';
++      // Local patch (Norte/T9): selector must use '/' like webTestMap keys,
++      // not Windows '\' (which also breaks the JS string literal).
++      final String urlPath = request.url.path;
++      final test = '${urlPath.substring(0, urlPath.length - '.html'.length)}.dart';
+       // TODO(vegorov): this should probably be part of Wasm bootstrapping
+       // script when compiling for testing (just like it is part of DDC runtime)
+       final bumpStackTraceLimit = useWasm ? 'Error.stackTraceLimit = Infinity;' : '';
+diff --git a/packages/flutter_tools/static/index.html b/packages/flutter_tools/static/index.html
+index 85ebd46c4c6..6ba2e4e8700 100644
+--- a/packages/flutter_tools/static/index.html
++++ b/packages/flutter_tools/static/index.html
+@@ -29,6 +29,7 @@ found in the LICENSE file. -->
+ </head>
+ <body>
+   <div id="dark"></div>
++  <div id="play" style="display: none"></div>
+   <script src="host.dart.js"></script>
+ </body>
+ </html>

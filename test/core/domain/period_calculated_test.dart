@@ -1,12 +1,10 @@
-@TestOn('vm')
-library;
-
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:porquinho/core/domain/calendar_date.dart';
 import 'package:porquinho/core/domain/period_calendar.dart';
+
+import '../../fixtures/fixture_text.dart';
 
 /// Período calculado por data (reestruturação, P2): tabela única de casos,
 /// também usada para conferir o servidor (P3), e limites de navegação (RN002).
@@ -15,7 +13,7 @@ PeriodRange r(CalendarDate a, CalendarDate b) => PeriodRange(a, b);
 
 List<Map<String, dynamic>> loadPeriodCases() {
   final json =
-      jsonDecode(File('test/fixtures/period_cases.json').readAsStringSync())
+      jsonDecode(readFixture('test/fixtures/period_cases.json'))
           as Map<String, dynamic>;
   return (json['cases'] as List).cast<Map<String, dynamic>>();
 }

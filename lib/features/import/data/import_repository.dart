@@ -143,19 +143,21 @@ class RemoteImportRepository implements ImportRepository {
       'subcategories',
       'id,category_id,name,is_active',
     );
+    // Valores em texto: na Web, número JSON acima de 2^53 perde exatidão
+    // (RN045; `core/exact_money_columns.dart`).
     final incomes = await _backend.selectAll(
       'income_entries',
-      'id,description,amount_centavos,status,received_on,scheduled_for_date,'
+      'id,description,amount_centavos::text,status,received_on,scheduled_for_date,'
           'category_id,recurrence_template_id',
     );
     final expenses = await _backend.selectAll(
       'expense_entries',
-      'id,description,amount_centavos,status,competence_on,category_id,'
+      'id,description,amount_centavos::text,status,competence_on,category_id,'
           'recurrence_template_id',
     );
     final investments = await _backend.selectAll(
       'investment_allocations',
-      'id,amount_centavos,allocated_on,cancelled_at,recurrence_template_id',
+      'id,amount_centavos::text,allocated_on,cancelled_at,recurrence_template_id',
     );
     final incomeTemplates = await _backend.selectAll(
       'income_recurrence_templates',
@@ -167,7 +169,7 @@ class RemoteImportRepository implements ImportRepository {
     );
     final investmentTemplates = await _backend.selectAll(
       'investment_recurrence_templates',
-      'id,default_amount_centavos,is_active',
+      'id,default_amount_centavos::text,is_active',
     );
     final batches = await _backend.selectAll('import_batches', _batchColumns);
 

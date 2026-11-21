@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/exact_money_columns.dart';
 import 'sync_models.dart';
 
 /// Filtro simples de leitura direta das tabelas do usuário (Web e consultas
@@ -34,7 +35,7 @@ class SupabaseTableReader implements RemoteTableReader {
     String? orderBy,
   }) async {
     try {
-      var query = _client.from(table).select();
+      var query = _client.from(table).select(exactSelect(table));
       for (final f in filters) {
         query = switch (f.op) {
           'gte' => query.gte(f.column, f.value),
@@ -45,7 +46,9 @@ class SupabaseTableReader implements RemoteTableReader {
       final rows = orderBy == null
           ? await query.limit(1000)
           : await query.order(orderBy, ascending: true).limit(1000);
-      return rows.map((r) => Map<String, dynamic>.from(r)).toList();
+      return rows
+          .map((r) => applyExactMoney(table, Map<String, dynamic>.from(r)))
+          .toList();
     } on PostgrestException catch (e) {
       throw SyncTransientError(e.message);
     } catch (e) {

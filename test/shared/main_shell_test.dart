@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -86,7 +87,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Categorias'), findsOneWidget);
     expect(find.text('Itens que precisam de atenção'), findsOneWidget);
-    expect(find.text('Segurança'), findsOneWidget);
+    // Segurança (PIN) só existe no celular; na Web fica escondida.
+    expect(find.text('Segurança'), kIsWeb ? findsNothing : findsOneWidget);
     expect(find.text('Sair'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('nav-home')));

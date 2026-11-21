@@ -128,6 +128,10 @@ void main() {
     expect(find.text('Já tem conta?'), findsOneWidget);
     expect(find.text('Esqueci minha senha'), findsNothing);
     await _fill(tester, 'novo@b.com', 'senha-segura-123');
+    await tester.enterText(
+      find.widgetWithText(TextFormField, 'Repita a senha'),
+      'senha-segura-123',
+    );
     await tester.tap(find.widgetWithText(FilledButton, 'Criar conta'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Enviamos um e-mail de confirmação'), findsOne);

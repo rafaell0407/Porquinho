@@ -90,6 +90,55 @@ void main() {
     await c.dispose();
   });
 
+  test('A9: sessão recusada pelo servidor limpa alertas sem apagar dados '
+      'locais', () async {
+    auth.restored = _user;
+    var noSession = 0;
+    var wiped = false;
+    final c = SessionController(
+      auth,
+      FakePending(2),
+      onNoSession: () async => noSession++,
+      onSignedOut: (_) async => wiped = true,
+    );
+    await c.start();
+    expect(noSession, 0);
+    auth.changes.add(null);
+    await Future<void>.delayed(Duration.zero);
+    expect(c.state, isA<SessionSignedOut>());
+    expect(noSession, 1);
+    expect(wiped, isFalse);
+    await c.dispose();
+  });
+
+  test('A9: abrir sem sessão também limpa alertas; falha não trava', () async {
+    final c = SessionController(
+      auth,
+      FakePending(0),
+      onNoSession: () async => throw StateError('plugin'),
+    );
+    await c.start();
+    expect(c.state, isA<SessionSignedOut>());
+    await c.dispose();
+  });
+
+  test('A9: logout voluntário limpa alertas e dados', () async {
+    auth.restored = _user;
+    var noSession = 0;
+    String? wipedOwner;
+    final c = SessionController(
+      auth,
+      FakePending(0),
+      onNoSession: () async => noSession++,
+      onSignedOut: (id) async => wipedOwner = id,
+    );
+    await c.start();
+    expect(await c.signOut(), isA<LogoutDone>());
+    expect(noSession, 1);
+    expect(wipedOwner, 'u1');
+    await c.dispose();
+  });
+
   test(
     'logout bloqueado com pendências: nada é encerrado nem apagado',
     () async {
